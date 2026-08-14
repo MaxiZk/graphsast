@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GraphSAST</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-brand">
+        <h1>GraphSAST <span id="engine-badge" class="engine-badge memory">Memoria</span></h1>
+        <p>Analizador estático · grafo de flujo de datos · detección de taint</p>
+      </div>
+      <dl class="legend" aria-label="Leyenda del grafo">
+        <div><dt class="swatch source"></dt><dd>Source</dd></div>
+        <div><dt class="swatch sink"></dt><dd>Sink</dd></div>
+        <div><dt class="swatch risk"></dt><dd>Camino de riesgo</dd></div>
+      </dl>
+    </header>
+
+    <main class="layout">
+      <section class="panel editor-panel">
+        <div class="panel-head">
+          <h2>Código</h2>
+          <div class="btn-row">
+            <button type="button" id="copy-btn" class="btn-ghost" title="JSON al portapapeles">JSON</button>
+            <button type="button" id="html-btn" class="btn-ghost" title="Descargar informe HTML">HTML</button>
+            <button type="button" id="pdf-btn" class="btn-ghost" title="Imprimir / guardar PDF">PDF</button>
+            <button type="button" id="analyze-btn" class="btn-primary">Analizar</button>
+          </div>
+        </div>
+
+        <label class="field-label" for="example-select">Ejemplo</label>
+        <select id="example-select" class="select"></select>
+        <p id="example-desc" class="example-desc"></p>
+
+        <textarea id="code-input" spellcheck="false" aria-label="Código fuente"></textarea>
+
+        <p class="field-label">Líneas del camino de riesgo</p>
+        <div id="code-lines" class="code-lines" aria-live="polite"></div>
+
+        <dl id="stats" class="stats" hidden></dl>
+        <p id="status" class="status" role="status"></p>
+        <p class="hint">Ctrl+Enter para analizar</p>
+      </section>
+
+      <section class="panel graph-panel">
+        <div class="panel-head">
+          <h2>Grafo</h2>
+          <button type="button" id="fit-btn" class="btn-ghost">Centrar</button>
+        </div>
+
+        <fieldset id="edge-filters" class="edge-filters">
+          <legend>Aristas visibles</legend>
+          <label><input type="checkbox" value="FLOWS_TO" checked /> FLOWS_TO</label>
+          <label><input type="checkbox" value="CALLS" checked /> CALLS</label>
+          <label><input type="checkbox" value="BINDS_TO" checked /> BINDS_TO</label>
+          <label><input type="checkbox" value="RETURNS" checked /> RETURNS</label>
+          <label><input type="checkbox" id="dim-toggle" checked /> Atenuar resto</label>
+        </fieldset>
+
+        <div id="cy" class="cy"></div>
+        <pre id="node-detail" class="node-detail"></pre>
+      </section>
+
+      <aside class="panel findings-panel">
+        <h2>Hallazgos</h2>
+        <div id="verdict" class="verdict" hidden></div>
+        <h3 class="subhead">Catálogo CWE</h3>
+        <ul id="catalog-list" class="catalog-list"></ul>
+        <h3 class="subhead">Reglas activas</h3>
+        <ul id="rules-list" class="rules-list"></ul>
+        <ul id="findings-list" class="findings-list"></ul>
+      </aside>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "@graphsast/core",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "benchmark": "npm run build && node dist/eval/run-benchmark.cli.js",
+    "neo4j:probe": "npm run build && node dist/eval/neo4j-probe.js"
+  },
+  "dependencies": {
+    "neo4j-driver": "^6.2.0",
+    "ts-morph": "^23.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

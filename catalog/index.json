@@ -1,0 +1,4 @@
+{
+  "version": 1,
+  "entries": ["cwe-89-sqli.json", "cwe-78-cmdi.json", "cwe-79-xss.json"]
+}
