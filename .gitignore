@@ -1,18 +1,13 @@
-# Dependencies
 node_modules/
-
-# Environment/credentials — never commit these
-.env
-.env.local
-
-# Build output
 dist/
-build/
-
-# OS
+coverage/
+*.log
+~$*
+*.txt
 .DS_Store
-Thumbs.db
-
-# Editor
-.vscode/
-.idea/
+*.stackdump
+*.stackdump
+*.tsbuildinfo
+.obsidian/
+.claude/
+Untitled.*
