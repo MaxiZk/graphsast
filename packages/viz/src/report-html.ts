@@ -23,6 +23,8 @@ export interface VizAnalysisReport {
   catalog?: { cwe: number; name: string }[];
 }
 
+import { plural } from "./labels.js";
+
 function esc(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -51,6 +53,12 @@ export function reportToHtml(report: VizAnalysisReport): string {
     .map((c) => `<li>CWE-${c.cwe}: ${esc(c.name)}</li>`)
     .join("\n");
 
+  const resumen = report.findings.length === 0
+    ? "Sin caminos source → sink sin sanitizar."
+    : report.findings.length === 1
+      ? "<strong>1 vulnerabilidad</strong> detectada."
+      : `<strong>${report.findings.length} vulnerabilidades</strong> detectadas.`;
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -72,12 +80,10 @@ export function reportToHtml(report: VizAnalysisReport): string {
 <body>
   <h1>GraphSAST — Informe de análisis</h1>
   <p class="meta">Generado: ${esc(report.analyzedAt)} · Motor: ${report.engine} · Archivo: ${esc(report.file)}</p>
-  <p class="meta">${report.stats.elapsedMs} ms · ${report.stats.lineCount} líneas · ${report.stats.nodeCount} nodos · ${report.stats.edgeCount} aristas</p>
+  <p class="meta">${report.stats.elapsedMs} ms · ${plural(report.stats.lineCount, "línea", "líneas")} · ${plural(report.stats.nodeCount, "nodo", "nodos")} · ${plural(report.stats.edgeCount, "arista", "aristas")}</p>
 
   <div class="${report.findings.length ? "warn" : "ok"}">
-    ${report.findings.length
-      ? `<strong>${report.findings.length} vulnerabilidad(es)</strong> detectada(s).`
-      : "Sin caminos source → sink sin sanitizar."}
+    ${resumen}
   </div>
 
   <h2>Hallazgos</h2>

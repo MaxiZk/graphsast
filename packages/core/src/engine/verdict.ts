@@ -1,6 +1,7 @@
 import type { IRGraph } from "../ir/types.js";
 import type { TaintFinding, TaintRoles } from "../taint/types.js";
 import type { ParseResult } from "../parser/parser.js";
+import { plural } from "../util/plural.js";
 
 export type VerdictKind =
   /** El parser no entendió el texto: no hay veredicto que dar. */
@@ -31,15 +32,6 @@ export interface VerdictInput {
   roles: TaintRoles;
   findings: TaintFinding[];
   parse: Pick<ParseResult, "syntaxErrors" | "messages" | "dialect">;
-}
-
-/**
- * Concordancia de número. Las plantillas decían «N vulnerabilidad(es)
- * detectada(s)»: proyectado en una demo eso se lee como un descuido de la
- * herramienta, justo en el texto que tiene que sonar preciso.
- */
-function plural(n: number, singular: string, plural_: string): string {
-  return `${n} ${n === 1 ? singular : plural_}`;
 }
 
 /**
