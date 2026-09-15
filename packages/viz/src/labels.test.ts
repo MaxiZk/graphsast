@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { analyzeGraph, analyzeTaint } from "@graphsast/core";
-import { describeFinding } from "./labels.js";
+import { describeFinding, describeNoFinding } from "./labels.js";
 
 function firstFinding(code: string) {
   const graph = analyzeGraph(code, "demo.ts");
@@ -54,6 +54,29 @@ function handler(input) {
     expect(describeFinding(graph, finding)).toBe(
       "El dato entra por el parámetro input y llega a eval sin pasar por "
         + "ninguna función de saneamiento.",
+    );
+  });
+});
+
+describe("describeNoFinding", () => {
+  it("concuerda en singular", () => {
+    expect(describeNoFinding(1, 1)).toBe(
+      "Ningún dato llega de 1 entrada a 1 operación sensible sin pasar por "
+        + "una función de saneamiento.",
+    );
+  });
+
+  it("concuerda en plural", () => {
+    expect(describeNoFinding(2, 3)).toBe(
+      "Ningún dato llega de 2 entradas a 3 operaciones sensibles sin pasar "
+        + "por una función de saneamiento.",
+    );
+  });
+
+  it("sin cobertura, no afirma que el código sea seguro", () => {
+    expect(describeNoFinding(1, 0)).toBe(
+      "No hay camino que describir: el código tiene 1 entrada y "
+        + "0 operaciones sensibles.",
     );
   });
 });

@@ -6,7 +6,12 @@ import {
   DEMO_EXAMPLES,
   getExample,
 } from "./examples.js";
-import { describeFinding, findingTitle, formatFindingPath } from "./labels.js";
+import {
+  describeFinding,
+  describeNoFinding,
+  findingTitle,
+  formatFindingPath,
+} from "./labels.js";
 import { downloadHtmlReport, printHtmlReport } from "./report-export.js";
 import type { VizAnalysisReport } from "./report-html.js";
 
@@ -465,14 +470,10 @@ function renderReading() {
     readingEl.textContent = "";
     return;
   }
-  const sources = lastRoles.sourceIds.length;
-  const sinks = lastRoles.sinkIds.length;
-  readingEl.textContent =
-    sources === 0 || sinks === 0
-      ? `No hay camino que describir: el código tiene ${sources} entrada(s) `
-        + `y ${sinks} operación(es) sensible(s).`
-      : `Ningún dato de las ${sources} entrada(s) llega a las ${sinks} `
-        + "operación(es) sensible(s) sin pasar por una función de saneamiento.";
+  readingEl.textContent = describeNoFinding(
+    lastRoles.sourceIds.length,
+    lastRoles.sinkIds.length,
+  );
 }
 
 function renderFindings() {
