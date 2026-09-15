@@ -88,7 +88,13 @@ let lastStats: AnalysisStats | null = null;
 let lastRules: Record<string, string> = {};
 let lastRoles: TaintRoles = { sourceIds: [], sinkIds: [], sanitizerIds: [] };
 let lastReport: VizAnalysisReport | null = null;
-let lastCatalog: { cwe: number; name: string; sinks: number; sanitizers: number }[] = [];
+let lastCatalog: {
+  cwe: number;
+  name: string;
+  description?: string;
+  sinks: number;
+  sanitizers: number;
+}[] = [];
 let lastEngine = "memory";
 let highlightIndex = 0;
 /**
@@ -360,7 +366,24 @@ function renderCatalog() {
   }
   for (const entry of lastCatalog) {
     const li = document.createElement("li");
-    li.innerHTML = `<strong>CWE-${entry.cwe}</strong> ${entry.name}<br /><span class="muted">${entry.sinks} sinks · ${entry.sanitizers} sanitizers</span>`;
+    const titulo = document.createElement("p");
+    titulo.className = "catalog-title";
+    titulo.innerHTML = `<strong>CWE-${entry.cwe}</strong> ${entry.name}`;
+    li.appendChild(titulo);
+
+    // La descripción sale del catálogo, no de la UI: si se agrega una familia
+    // nueva al JSON, se explica sola.
+    if (entry.description) {
+      const desc = document.createElement("p");
+      desc.className = "catalog-desc";
+      desc.textContent = entry.description;
+      li.appendChild(desc);
+    }
+
+    const conteo = document.createElement("p");
+    conteo.className = "muted catalog-count";
+    conteo.textContent = `${entry.sinks} sinks · ${entry.sanitizers} sanitizers`;
+    li.appendChild(conteo);
     catalogList.appendChild(li);
   }
 }
@@ -576,7 +599,13 @@ async function runAnalysis() {
       engine?: string;
       verdict?: Verdict;
       report?: VizAnalysisReport;
-      catalog?: { cwe: number; name: string; sinks: number; sanitizers: number }[];
+      catalog?: {
+        cwe: number;
+        name: string;
+        description?: string;
+        sinks: number;
+        sanitizers: number;
+      }[];
       error?: string;
     };
     if (!res.ok || data.error) {

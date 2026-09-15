@@ -171,9 +171,30 @@ body {
 }
 
 .catalog-list li {
-  margin-bottom: 0.35rem;
-  padding-bottom: 0.35rem;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.55rem;
   border-bottom: 1px solid var(--border);
+}
+
+.catalog-title {
+  margin: 0;
+  color: var(--text);
+}
+
+.catalog-title strong {
+  color: var(--text);
+}
+
+/* Qué es la debilidad, no qué es un catálogo: es lo que hay que poder leer
+   sin que nadie lo explique de palabra. */
+.catalog-desc {
+  margin: 0.2rem 0 0;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.catalog-count {
+  margin: 0.25rem 0 0;
 }
 
 .catalog-list .muted {

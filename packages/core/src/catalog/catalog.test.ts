@@ -75,6 +75,16 @@ describe("catalog CWE", () => {
     expect(cweForSinkNode(rules, call("connection.execute")).cwe).toBe(89);
   });
 
+  it("toda familia explica qué es la debilidad, no solo cómo se llama", () => {
+    for (const entry of bundle.entries) {
+      expect(entry.description, `CWE-${entry.cwe} sin description`).toBeTruthy();
+      // Una frase corta no alcanza para explicar nada.
+      expect(entry.description!.length).toBeGreaterThan(60);
+      // El nombre ya está en el título: la descripción tiene que agregar algo.
+      expect(entry.description).not.toBe(entry.name);
+    }
+  });
+
   it("expone etiquetas legibles para la UI", () => {
     const labels = labelsFromCatalog(bundle);
     expect(labels["param-any"]).toBeTruthy();

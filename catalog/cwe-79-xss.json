@@ -1,6 +1,7 @@
 {
   "cwe": 79,
   "name": "Cross-Site Scripting (XSS)",
+  "description": "El dato del usuario se devuelve dentro del HTML sin escapar, y el navegador de otra persona lo ejecuta como código. Sirve para robar sesiones o actuar en nombre de quien mira la página.",
   "sources": [
     "req.query",
     "req.body",

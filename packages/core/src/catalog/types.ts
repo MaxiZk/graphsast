@@ -1,6 +1,8 @@
 export interface CweCatalogEntry {
   cwe: number;
   name: string;
+  /** Qué es esa debilidad, en una frase, para mostrar junto a la familia. */
+  description?: string;
   sources: string[];
   sinks: string[];
   sanitizers: string[];

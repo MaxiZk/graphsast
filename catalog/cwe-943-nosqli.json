@@ -1,7 +1,12 @@
 {
   "cwe": 943,
   "name": "NoSQL Injection / Manipulación de la lógica de consulta de datos",
-  "sources": ["req.query", "req.body", "req.params"],
+  "description": "El dato del usuario llega sin acotar a una consulta o una escritura de la base, y cambia a qué documentos alcanza o qué campos toca. En MongoDB no hay SQL que inyectar: lo que se manipula es la estructura de la consulta.",
+  "sources": [
+    "req.query",
+    "req.body",
+    "req.params"
+  ],
   "sinks": [
     ".save",
     ".create",

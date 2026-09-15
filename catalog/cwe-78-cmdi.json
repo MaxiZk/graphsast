@@ -1,7 +1,12 @@
 {
   "cwe": 78,
   "name": "OS Command Injection",
-  "sources": ["req.query", "req.body", "req.params"],
+  "description": "El dato del usuario termina en un comando del sistema operativo. El shell ejecuta lo que el atacante agregue, con los permisos del proceso que corre la aplicación.",
+  "sources": [
+    "req.query",
+    "req.body",
+    "req.params"
+  ],
   "sinks": [
     "eval",
     "exec",
@@ -10,5 +15,10 @@
     "spawn",
     "execSync"
   ],
-  "sanitizers": ["sanitize", "escape", "validate", "shellEscape"]
+  "sanitizers": [
+    "sanitize",
+    "escape",
+    "validate",
+    "shellEscape"
+  ]
 }

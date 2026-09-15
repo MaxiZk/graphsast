@@ -154,6 +154,7 @@ function analyzeMiddleware(): Connect.NextHandleFunction {
           catalog: catalog.entries.map((e) => ({
             cwe: e.cwe,
             name: e.name,
+            description: e.description ?? "",
             sinks: e.sinks.length,
             sanitizers: e.sanitizers.length,
           })),

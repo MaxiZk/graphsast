@@ -1,7 +1,12 @@
 {
   "cwe": 89,
   "name": "SQL Injection",
-  "sources": ["req.query", "req.body", "req.params"],
+  "description": "El dato del usuario se concatena en una consulta SQL, así que el motor de base de datos lo interpreta como parte de la instrucción y no como un valor. Permite leer, alterar o borrar datos de otras tablas.",
+  "sources": [
+    "req.query",
+    "req.body",
+    "req.params"
+  ],
   "sinks": [
     "db.query",
     "connection.execute",
