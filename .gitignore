@@ -5,3 +5,8 @@ coverage/
 ~$*
 *.txt
 .DS_Store
+*.stackdump
+*.tsbuildinfo
+.obsidian/
+.claude/
+Untitled.*
