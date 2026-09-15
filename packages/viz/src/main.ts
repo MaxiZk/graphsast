@@ -11,6 +11,7 @@ import {
   describeNoFinding,
   findingTitle,
   formatFindingPath,
+  plural,
 } from "./labels.js";
 import { downloadHtmlReport, printHtmlReport } from "./report-export.js";
 import type { VizAnalysisReport } from "./report-html.js";
@@ -409,7 +410,11 @@ function fallbackVerdict(): Verdict {
       ...base,
       kind: "vulnerable",
       conclusive: true,
-      title: `${findings.length} vulnerabilidad(es) detectada(s)`,
+      title: plural(
+        findings.length,
+        "vulnerabilidad detectada",
+        "vulnerabilidades detectadas",
+      ),
       detail:
         "Hay caminos de datos desde una entrada no confiable hasta una "
         + "operación peligrosa, sin sanitizador en el medio.",
@@ -422,7 +427,8 @@ function fallbackVerdict(): Verdict {
       conclusive: false,
       title: "Sin vulnerabilidades, pero no hay nada que evaluar",
       detail:
-        `Se analizó el código, pero hay ${sources} source(s) y ${sinks} sink(s). `
+        `Se analizó el código, pero hay ${plural(sources, "source", "sources")} `
+        + `y ${plural(sinks, "sink", "sinks")}. `
         + "El resultado no afirma que el código sea seguro.",
     };
   }
@@ -432,7 +438,8 @@ function fallbackVerdict(): Verdict {
     conclusive: true,
     title: "Sin caminos source → sink sin sanitizar",
     detail:
-      `Se recorrieron los caminos entre ${sources} source(s) y ${sinks} sink(s) `
+      `Se recorrieron los caminos entre ${plural(sources, "source", "sources")} `
+      + `y ${plural(sinks, "sink", "sinks")} `
       + "y ninguno llega sin sanitizar. Alcance: este archivo.",
   };
 }

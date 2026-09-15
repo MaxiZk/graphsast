@@ -34,6 +34,15 @@ export interface VerdictInput {
 }
 
 /**
+ * Concordancia de número. Las plantillas decían «N vulnerabilidad(es)
+ * detectada(s)»: proyectado en una demo eso se lee como un descuido de la
+ * herramienta, justo en el texto que tiene que sonar preciso.
+ */
+function plural(n: number, singular: string, plural_: string): string {
+  return `${n} ${n === 1 ? singular : plural_}`;
+}
+
+/**
  * Traduce el resultado del análisis a una afirmación que se sostiene.
  *
  * Existe porque «0 hallazgos» tiene tres causas muy distintas —no se entendió
@@ -59,8 +68,9 @@ export function buildVerdict(input: VerdictInput): Verdict {
       conclusive: false,
       title: "No se pudo analizar este código",
       detail:
-        `El parser encontró ${syntaxErrors} error(es) de sintaxis, así que no `
-        + "llegó a construir el grafo. GraphSAST solo analiza JavaScript y "
+        `El parser encontró ${plural(syntaxErrors, "error", "errores")} de `
+        + "sintaxis, así que no llegó a construir el grafo. "
+        + "GraphSAST solo analiza JavaScript y "
         + `TypeScript: si esto es Go, Python, Java o PHP, no está soportado.${muestra}`,
     };
   }
@@ -70,10 +80,15 @@ export function buildVerdict(input: VerdictInput): Verdict {
       ...base,
       kind: "vulnerable",
       conclusive: true,
-      title: `${findings} vulnerabilidad(es) detectada(s)`,
+      title: plural(
+        findings,
+        "vulnerabilidad detectada",
+        "vulnerabilidades detectadas",
+      ),
       detail:
-        `Hay ${findings} camino(s) de datos desde una entrada no confiable `
-        + "hasta una operación peligrosa, sin sanitizador en el medio.",
+        `Hay ${plural(findings, "camino", "caminos")} de datos desde una `
+        + "entrada no confiable hasta una operación peligrosa, "
+        + "sin sanitizador en el medio.",
     };
   }
 
@@ -91,7 +106,9 @@ export function buildVerdict(input: VerdictInput): Verdict {
       detail:
         `Se analizó el código correctamente, pero no contiene ${falta}. `
         + "El resultado no afirma que el código sea seguro: afirma que este "
-        + `catálogo no tiene nada que revisar acá (${sources} source(s), ${sinks} sink(s)).`,
+        + "catálogo no tiene nada que revisar acá "
+        + `(${plural(sources, "source", "sources")}, `
+        + `${plural(sinks, "sink", "sinks")}).`,
     };
   }
 
@@ -101,7 +118,8 @@ export function buildVerdict(input: VerdictInput): Verdict {
     conclusive: true,
     title: "Sin caminos source → sink sin sanitizar",
     detail:
-      `Se recorrieron los caminos entre ${sources} source(s) y ${sinks} sink(s) `
+      `Se recorrieron los caminos entre ${plural(sources, "source", "sources")} `
+      + `y ${plural(sinks, "sink", "sinks")} `
       + "y ninguno llega sin sanitizar. Alcance: este archivo; el flujo que "
       + "entra o sale por imports no se sigue.",
   };

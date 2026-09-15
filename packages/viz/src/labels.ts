@@ -92,7 +92,8 @@ export function describeFinding(graph: IRGraph, finding: TaintFinding): string {
   return `${parts.slice(0, -1).join(", ")} y ${parts[parts.length - 1]} ${closing}`;
 }
 
-function plural(n: number, singular: string, plural_: string): string {
+/** Concordancia de número. Compartido con el veredicto de respaldo de main.ts. */
+export function plural(n: number, singular: string, plural_: string): string {
   return `${n} ${n === 1 ? singular : plural_}`;
 }
 
