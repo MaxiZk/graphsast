@@ -121,6 +121,46 @@ function deleteFinance(req, res) {
   Finance.findByIdAndDelete(req.params.id);
 }`,
   },
+  {
+    id: "template-sqli",
+    title: "M1 · SQLi por template literal",
+    description: "El dato se interpola en la query; el flujo cruza el template.",
+    expectFinding: true,
+    code: `app.get('/users/:id', async (req, res) => {
+  const id = req.params.id;
+  db.query(\`SELECT * FROM users WHERE id=\${id}\`);
+});`,
+  },
+  {
+    id: "concat-sqli",
+    title: "M2 · SQLi por concatenación",
+    description: "Concatenación de string con el dato de req.params.",
+    expectFinding: true,
+    code: `function getUser(req) {
+  const id = req.params.id;
+  db.query("SELECT * FROM users WHERE id=" + id);
+}`,
+  },
+  {
+    id: "class-handler",
+    title: "M12 · Handler como método de clase",
+    description: "El controlador es un método; req.body llega al sink.",
+    expectFinding: true,
+    code: `class UserController {
+  handle(req) {
+    db.query(req.body);
+  }
+}`,
+  },
+  {
+    id: "naming-negative",
+    title: "N1 · Nombre parecido a un sink",
+    description: "evaluatePrice contiene 'eval' pero no es el sink eval.",
+    expectFinding: false,
+    code: `function h(input) {
+  evaluatePrice(input);
+}`,
+  },
 ];
 
 export const DEFAULT_EXAMPLE_ID = "intra";

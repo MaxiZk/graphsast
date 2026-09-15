@@ -33,6 +33,17 @@ interface TaintRoles {
   sanitizerIds: string[];
 }
 
+interface Verdict {
+  kind: "not-analyzable" | "no-coverage" | "clean" | "vulnerable";
+  title: string;
+  detail: string;
+  conclusive: boolean;
+  sources: number;
+  sinks: number;
+  findings: number;
+  syntaxErrors: number;
+}
+
 interface AnalysisStats {
   elapsedMs: number;
   lineCount: number;
@@ -57,6 +68,7 @@ const findingsList = document.querySelector<HTMLUListElement>("#findings-list")!
 const catalogList = document.querySelector<HTMLUListElement>("#catalog-list")!;
 const engineBadge = document.querySelector<HTMLSpanElement>("#engine-badge")!;
 const rulesList = document.querySelector<HTMLUListElement>("#rules-list")!;
+const rulesSummary = document.querySelector<HTMLElement>("#rules-summary")!;
 const verdictEl = document.querySelector<HTMLDivElement>("#verdict")!;
 const nodeDetail = document.querySelector<HTMLPreElement>("#node-detail")!;
 const edgeFilters = document.querySelector<HTMLFieldSetElement>("#edge-filters")!;
@@ -72,6 +84,14 @@ let lastReport: VizAnalysisReport | null = null;
 let lastCatalog: { cwe: number; name: string; sinks: number; sanitizers: number }[] = [];
 let lastEngine = "memory";
 let highlightIndex = 0;
+/**
+ * Código al que corresponden los resultados en pantalla. Si el textarea deja
+ * de coincidir, lo mostrado es de otro análisis y hay que invalidarlo: sin
+ * esto, pegar código nuevo dejaba los hallazgos del ejemplo anterior a la
+ * vista, atribuidos al código recién pegado.
+ */
+let analyzedCode: string | null = null;
+let lastVerdict: Verdict | null = null;
 
 const ALL_EDGE_KINDS = ["FLOWS_TO", "CALLS", "BINDS_TO", "RETURNS"] as const;
 type IREdgeKind = (typeof ALL_EDGE_KINDS)[number];
@@ -244,6 +264,27 @@ function renderGraph() {
   renderCodeHighlight();
 }
 
+/**
+ * Descarta el resultado en pantalla. Se usa cuando el análisis falla: sin esto
+ * queda el grafo del análisis anterior, que no corresponde al código actual.
+ */
+function clearAnalysisView() {
+  graph = null;
+  findings = [];
+  lastStats = null;
+  lastRoles = { sourceIds: [], sinkIds: [], sanitizerIds: [] };
+  lastReport = null;
+  lastVerdict = null;
+  highlightIndex = 0;
+
+  cy?.elements().remove();
+  verdictEl.hidden = true;
+  findingsList.innerHTML = "";
+  statsEl.hidden = true;
+  codeLinesEl.innerHTML = "";
+  nodeDetail.textContent = "";
+}
+
 function renderStats() {
   if (!lastStats) {
     statsEl.hidden = true;
@@ -289,22 +330,85 @@ function renderEngineBadge() {
 
 function renderRules() {
   rulesList.innerHTML = "";
-  for (const [id, label] of Object.entries(lastRules)) {
+  const entries = Object.entries(lastRules);
+  rulesSummary.textContent = `Ver reglas activas (${entries.length})`;
+  for (const [id, label] of entries) {
     const li = document.createElement("li");
     li.innerHTML = `<strong>${id}</strong> — ${label}`;
     rulesList.appendChild(li);
   }
 }
 
+/** Clase CSS por veredicto: solo `clean` merece el verde pleno. */
+const VERDICT_CLASS: Record<Verdict["kind"], string> = {
+  "not-analyzable": "verdict error",
+  "no-coverage": "verdict unknown",
+  clean: "verdict ok",
+  vulnerable: "verdict warn",
+};
+
+/**
+ * Veredicto derivado en el cliente cuando la respuesta no trae uno: pasa con
+ * un servidor de dev viejo, levantado antes de que el endpoint lo incluyera.
+ * Sin esto el panel decía «Sin analizar todavía» justo después de analizar.
+ * No puede detectar `not-analyzable` —eso lo sabe solo el parser—, así que se
+ * limita a lo que el cliente sí puede ver: hallazgos, sources y sinks.
+ */
+function fallbackVerdict(): Verdict {
+  const sources = lastRoles.sourceIds.length;
+  const sinks = lastRoles.sinkIds.length;
+  const base = { sources, sinks, findings: findings.length, syntaxErrors: 0 };
+
+  if (findings.length > 0) {
+    return {
+      ...base,
+      kind: "vulnerable",
+      conclusive: true,
+      title: `${findings.length} vulnerabilidad(es) detectada(s)`,
+      detail:
+        "Hay caminos de datos desde una entrada no confiable hasta una "
+        + "operación peligrosa, sin sanitizador en el medio.",
+    };
+  }
+  if (sources === 0 || sinks === 0) {
+    return {
+      ...base,
+      kind: "no-coverage",
+      conclusive: false,
+      title: "Sin vulnerabilidades, pero no hay nada que evaluar",
+      detail:
+        `Se analizó el código, pero hay ${sources} source(s) y ${sinks} sink(s). `
+        + "El resultado no afirma que el código sea seguro.",
+    };
+  }
+  return {
+    ...base,
+    kind: "clean",
+    conclusive: true,
+    title: "Sin caminos source → sink sin sanitizar",
+    detail:
+      `Se recorrieron los caminos entre ${sources} source(s) y ${sinks} sink(s) `
+      + "y ninguno llega sin sanitizar. Alcance: este archivo.",
+  };
+}
+
 function renderVerdict() {
   verdictEl.hidden = false;
-  if (findings.length > 0) {
-    verdictEl.className = "verdict warn";
-    verdictEl.textContent = `${findings.length} vulnerabilidad(es) detectada(s)`;
+  const verdict = lastVerdict;
+  if (!verdict) {
+    // Solo se llega acá sin analizar; tras un análisis hay fallback.
+    verdictEl.className = "verdict unknown";
+    verdictEl.textContent = "Sin analizar todavía.";
     return;
   }
-  verdictEl.className = "verdict ok";
-  verdictEl.textContent = "Sin caminos source → sink sin sanitizar";
+  verdictEl.className = VERDICT_CLASS[verdict.kind];
+  verdictEl.innerHTML = "";
+  const title = document.createElement("strong");
+  title.textContent = verdict.title;
+  const detail = document.createElement("p");
+  detail.className = "verdict-detail";
+  detail.textContent = verdict.detail;
+  verdictEl.append(title, detail);
 }
 
 function renderFindings() {
@@ -319,7 +423,7 @@ function renderFindings() {
     li.textContent =
       sinks === 0
         ? "Sin sinks detectados. Reiniciá npm start si actualizaste el proyecto."
-        : `Sin camino source→sink (${sources} source(s), ${sink(s)} sink(s) en el grafo).`;
+        : `Sin camino source→sink (${sources} source(s), ${sinks} sink(s) en el grafo).`;
     findingsList.appendChild(li);
     return;
   }
@@ -340,7 +444,15 @@ function renderFindings() {
   });
 }
 
+/** Entrada del desplegable que representa el código propio del usuario. */
+const CUSTOM_EXAMPLE_ID = "__custom__";
+
 function populateExamples() {
+  const custom = document.createElement("option");
+  custom.value = CUSTOM_EXAMPLE_ID;
+  custom.textContent = "✎ Mi código (pegar abajo)";
+  exampleSelect.appendChild(custom);
+
   for (const ex of DEMO_EXAMPLES) {
     const opt = document.createElement("option");
     opt.value = ex.id;
@@ -351,6 +463,20 @@ function populateExamples() {
   loadExample(DEFAULT_EXAMPLE_ID);
 }
 
+/**
+ * Vacía el editor para pegar código propio. No dispara análisis: no hay nada
+ * que analizar todavía.
+ */
+function loadCustom() {
+  exampleDesc.textContent =
+    "Pegá tu código JavaScript o TypeScript y apretá Ctrl+Enter para analizarlo.";
+  codeInput.value = "";
+  clearAnalysisView();
+  analyzedCode = null;
+  statusEl.textContent = "Pegá tu código y apretá Ctrl+Enter o «Analizar».";
+  codeInput.focus();
+}
+
 function loadExample(id: string) {
   const ex = getExample(id);
   exampleDesc.textContent = ex.description;
@@ -358,6 +484,7 @@ function loadExample(id: string) {
 }
 
 async function runAnalysis() {
+  const submittedCode = codeInput.value;
   statusEl.textContent = "Analizando…";
   analyzeBtn.disabled = true;
   nodeDetail.textContent = "";
@@ -365,7 +492,7 @@ async function runAnalysis() {
     const res = await fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: codeInput.value, file: "demo.ts" }),
+      body: JSON.stringify({ code: submittedCode, file: "demo.ts" }),
     });
     const data = (await res.json()) as {
       graph?: IRGraph;
@@ -374,6 +501,7 @@ async function runAnalysis() {
       stats?: AnalysisStats;
       rules?: Record<string, string>;
       engine?: string;
+      verdict?: Verdict;
       report?: VizAnalysisReport;
       catalog?: { cwe: number; name: string; sinks: number; sanitizers: number }[];
       error?: string;
@@ -390,10 +518,14 @@ async function runAnalysis() {
     lastReport = data.report ?? null;
     lastCatalog = data.catalog ?? [];
     lastEngine = data.engine ?? "memory";
+    lastVerdict = data.verdict ?? fallbackVerdict();
     highlightIndex = 0;
+    analyzedCode = submittedCode;
 
     const roleHint = `${lastRoles.sourceIds.length} source(s) · ${lastRoles.sinkIds.length} sink(s)`;
-    statusEl.textContent = `Análisis en ${lastStats?.elapsedMs ?? "?"} ms · ${findings.length} hallazgo(s) · ${roleHint}`;
+    statusEl.textContent = lastVerdict && !lastVerdict.conclusive
+      ? `${lastVerdict.title} · ${lastStats?.elapsedMs ?? "?"} ms`
+      : `Análisis en ${lastStats?.elapsedMs ?? "?"} ms · ${findings.length} hallazgo(s) · ${roleHint}`;
     renderEngineBadge();
     renderCatalog();
     renderRules();
@@ -401,11 +533,9 @@ async function runAnalysis() {
     renderFindings();
     renderGraph();
   } catch (err) {
+    clearAnalysisView();
+    analyzedCode = null;
     statusEl.textContent = `Error: ${err}`;
-    verdictEl.hidden = true;
-    findingsList.innerHTML = "";
-    statsEl.hidden = true;
-    codeLinesEl.innerHTML = "";
   } finally {
     analyzeBtn.disabled = false;
   }
@@ -462,6 +592,10 @@ function exportPdf() {
 
 populateExamples();
 exampleSelect.addEventListener("change", () => {
+  if (exampleSelect.value === CUSTOM_EXAMPLE_ID) {
+    loadCustom();
+    return;
+  }
   loadExample(exampleSelect.value);
   void runAnalysis();
 });
@@ -471,6 +605,17 @@ htmlBtn.addEventListener("click", () => exportHtml());
 pdfBtn.addEventListener("click", () => exportPdf());
 fitBtn.addEventListener("click", () => cy?.fit(undefined, 36));
 edgeFilters.addEventListener("change", () => renderGraph());
+codeInput.addEventListener("input", () => {
+  // El contenido ya no es el del ejemplo elegido: que el rótulo no mienta.
+  if (exampleSelect.value !== CUSTOM_EXAMPLE_ID) {
+    exampleSelect.value = CUSTOM_EXAMPLE_ID;
+    exampleDesc.textContent = "Código propio, sin analizar todavía.";
+  }
+  if (analyzedCode === null || codeInput.value === analyzedCode) return;
+  clearAnalysisView();
+  analyzedCode = null;
+  statusEl.textContent = "Código modificado — Ctrl+Enter o «Analizar» para analizarlo.";
+});
 codeInput.addEventListener("keydown", (e) => {
   if (e.ctrlKey && e.key === "Enter") {
     e.preventDefault();

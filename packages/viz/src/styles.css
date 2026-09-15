@@ -224,6 +224,12 @@ body {
   color: #fdba74;
 }
 
+/* `display: grid` le gana a `[hidden]` de la hoja del navegador; sin esto el
+   panel sigue visible después de statsEl.hidden = true. */
+.stats[hidden] {
+  display: none;
+}
+
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -268,14 +274,32 @@ body {
   cursor: pointer;
 }
 
+.rules-details {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.65rem;
+}
+
+.rules-details summary {
+  cursor: pointer;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.rules-details[open] summary {
+  margin-bottom: 0.5rem;
+}
+
 .rules-list {
   list-style: none;
-  margin: 0 0 0.75rem;
+  margin: 0;
   padding: 0;
   font-size: 0.72rem;
   color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.65rem;
+  max-height: 40vh;
+  overflow-y: auto;
 }
 
 .rules-list li {
@@ -376,12 +400,41 @@ body {
   color: #fdba74;
 }
 
+/* Ámbar: se analizó, pero el resultado no sostiene una afirmación de seguridad. */
+.verdict.unknown {
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  color: #fde68a;
+}
+
+/* Rojo: no se pudo analizar. No es un veredicto de seguridad. */
+.verdict.error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.verdict strong {
+  display: block;
+  font-size: 0.86rem;
+}
+
+.verdict-detail {
+  margin: 0.3rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  opacity: 0.85;
+}
+
+.findings-panel {
+  overflow-y: auto;
+}
+
 .findings-list {
   list-style: none;
-  margin: 0;
+  margin: 0 0 0.25rem;
   padding: 0;
-  overflow-y: auto;
-  flex: 1;
+  flex: none;
 }
 
 .findings-list li {

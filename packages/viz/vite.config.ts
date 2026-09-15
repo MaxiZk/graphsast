@@ -3,7 +3,9 @@ import { fileURLToPath } from "node:url";
 import { defineConfig, type Connect, type Plugin } from "vite";
 import type { Driver } from "neo4j-driver";
 import {
-  analyzeGraph,
+  buildVerdict,
+  graphFromSourceFile,
+  parseSource,
   analyzeWithEngine,
   buildAnalysisReport,
   createNeo4jDriver,
@@ -75,7 +77,41 @@ function analyzeMiddleware(): Connect.NextHandleFunction {
       };
       const code = body.code ?? "";
       const file = body.file ?? "input.ts";
-      const graph = analyzeGraph(code, file);
+      const parsed = parseSource(code, file);
+
+      // Si el parser no entendió el texto no hay grafo que mostrar, y un
+      // panel vacío se leería como «sin vulnerabilidades». Se responde el
+      // veredicto explícito en su lugar.
+      if (parsed.syntaxErrors > 0) {
+        const verdict = buildVerdict({
+          graph: { file, nodes: [], edges: [] },
+          roles: { sourceIds: [], sinkIds: [], sanitizerIds: [] },
+          findings: [],
+          parse: parsed,
+        });
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({
+          graph: { file, nodes: [], edges: [] },
+          findings: [],
+          roles: { sourceIds: [], sinkIds: [], sanitizerIds: [] },
+          engine: "memory",
+          verdict,
+          report: null,
+          stats: {
+            elapsedMs: Math.round(performance.now() - started),
+            lineCount: code.split("\n").length,
+            nodeCount: 0,
+            edgeCount: 0,
+            edgeKinds: {},
+            findingCount: 0,
+          },
+          rules: getRuleLabels(),
+          catalog: [],
+        }));
+        return;
+      }
+
+      const graph = graphFromSourceFile(parsed.sourceFile, file);
       const driver = await resolveNeo4j();
       const { engine, findings } = await analyzeWithEngine(graph, { driver: driver ?? undefined });
       const roles = rolesForGraph(graph);
@@ -95,6 +131,8 @@ function analyzeMiddleware(): Connect.NextHandleFunction {
         catalog,
       });
 
+      const verdict = buildVerdict({ graph, roles, findings, parse: parsed });
+
       res.setHeader("Content-Type", "application/json");
       res.end(
         JSON.stringify({
@@ -102,6 +140,7 @@ function analyzeMiddleware(): Connect.NextHandleFunction {
           findings,
           roles,
           engine,
+          verdict,
           report,
           stats: {
             elapsedMs,

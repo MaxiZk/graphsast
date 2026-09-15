@@ -67,11 +67,15 @@
       <aside class="panel findings-panel">
         <h2>Hallazgos</h2>
         <div id="verdict" class="verdict" hidden></div>
+        <ul id="findings-list" class="findings-list"></ul>
+
         <h3 class="subhead">Catálogo CWE</h3>
         <ul id="catalog-list" class="catalog-list"></ul>
-        <h3 class="subhead">Reglas activas</h3>
-        <ul id="rules-list" class="rules-list"></ul>
-        <ul id="findings-list" class="findings-list"></ul>
+
+        <details class="rules-details">
+          <summary id="rules-summary">Ver reglas activas</summary>
+          <ul id="rules-list" class="rules-list"></ul>
+        </details>
       </aside>
     </main>
 
