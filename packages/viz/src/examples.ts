@@ -20,7 +20,9 @@ export const DEMO_EXAMPLES: DemoExample[] = [
   {
     id: "inter",
     title: "B · SQLi inter-procedural",
-    description: "El dato cruza funciones vía BINDS_TO.",
+    description:
+      "El dato entra en handler y llega al sink dentro de otra función: el "
+      + "grafo muestra el cruce que el código no evidencia.",
     expectFinding: true,
     code: `function sink(q) {
   db.query(q);
@@ -163,7 +165,13 @@ function deleteFinance(req, res) {
   },
 ];
 
-export const DEFAULT_EXAMPLE_ID = "intra";
+/**
+ * Arranca en el caso inter-procedural: con el intra-procedural de tres líneas
+ * el grafo no agrega nada que el código no muestre mejor. Acá el dato cruza
+ * de `handler` a `sink` vía BINDS_TO, que es justamente lo que no se ve
+ * leyendo el archivo de arriba abajo.
+ */
+export const DEFAULT_EXAMPLE_ID = "inter";
 
 export function getExample(id: string): DemoExample {
   return DEMO_EXAMPLES.find((e) => e.id === id) ?? DEMO_EXAMPLES[0]!;

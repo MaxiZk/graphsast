@@ -15,15 +15,22 @@
   box-sizing: border-box;
 }
 
+/* Alto fijo de viewport con scroll por panel: el panel derecho creció con los
+   bloques explicativos y, estirando el grid, empujaba el grafo abajo del
+   pliegue. Ahora cada columna scrollea sola y el grafo siempre se ve entero. */
 body {
   margin: 0;
   font-family: "Segoe UI", system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -217,7 +224,8 @@ body {
 .layout {
   display: grid;
   grid-template-columns: minmax(300px, 1fr) 2.2fr minmax(260px, 0.9fr);
-  min-height: calc(100vh - 64px);
+  flex: 1;
+  min-height: 0;
 }
 
 .panel {
@@ -226,6 +234,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow-y: auto;
   background: var(--surface);
 }
 
@@ -559,8 +568,17 @@ body {
 }
 
 @media (max-width: 1100px) {
+  body {
+    height: auto;
+    overflow: visible;
+  }
+
   .layout {
     grid-template-columns: 1fr;
+  }
+
+  .panel {
+    overflow-y: visible;
   }
 
   .header {
