@@ -34,6 +34,19 @@ function handler(input) {
     expect(text.endsWith("sin pasar por ninguna función de saneamiento.")).toBe(true);
   });
 
+  it("contrae «a el» al cruzar un parámetro", () => {
+    const { graph, finding } = firstFinding(`function runQuery(sql) {
+  db.query(sql);
+}
+
+function handler(input) {
+  runQuery(input);
+}`);
+    const text = describeFinding(graph, finding);
+    expect(text).toContain("pasa al parámetro sql");
+    expect(text).not.toContain("a el parámetro");
+  });
+
   it("sin camino intermedio, encadena entrada y sink", () => {
     const { graph, finding } = firstFinding(`function handler(input) {
   eval(input);

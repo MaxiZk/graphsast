@@ -33,6 +33,35 @@ function handler(input) {
 }`,
   },
   {
+    id: "two-paths",
+    title: "B+ · Dos caminos al mismo sink",
+    description:
+      "Dos controladores llegan al mismo db.query por servicios distintos. "
+      + "Uno sanea el dato y el otro no: el motor resalta solo el inseguro. "
+      + "El reporte da una línea; el grafo muestra cuál de las dos rutas es.",
+    expectFinding: true,
+    code: `function runQuery(sql) {
+  db.query(sql);
+}
+
+function searchService(rawTerm) {
+  runQuery(rawTerm);
+}
+
+function reportService(userTerm) {
+  const safeTerm = sanitize(userTerm);
+  runQuery(safeTerm);
+}
+
+function searchController(req) {
+  searchService(req.query.q);
+}
+
+function reportController(req) {
+  reportService(req.query.q);
+}`,
+  },
+  {
     id: "safe-literal",
     title: "C · Sin vulnerabilidad",
     description: "El sink usa un literal, no el dato tainted.",

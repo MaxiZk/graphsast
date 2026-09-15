@@ -109,7 +109,7 @@ function cytoscapeStyle(): cytoscape.Stylesheet[] {
       selector: "node",
       style: {
         label: "data(label)",
-        "font-size": 10,
+        "font-size": 12,
         "text-wrap": "wrap",
         "text-max-width": 110,
         "background-color": "#475569",
@@ -178,7 +178,7 @@ function cytoscapeStyle(): cytoscape.Stylesheet[] {
         "target-arrow-shape": "triangle",
         "curve-style": "bezier",
         label: "data(label)",
-        "font-size": 8,
+        "font-size": 9,
         color: "#cbd5e1",
       },
     },
@@ -272,7 +272,12 @@ function renderGraph() {
       name: "breadthfirst",
       directed: true,
       padding: 36,
-      spacingFactor: 1.15,
+      // Sin contar la etiqueta, el layout separa círculos de 58px mientras el
+      // texto ocupa hasta 110: en grafos de más de diez nodos los rótulos se
+      // pisaban y no se leía cuál era cuál.
+      nodeDimensionsIncludeLabels: true,
+      avoidOverlap: true,
+      spacingFactor: 1.3,
     })
     .run();
   instance.fit(undefined, 36);

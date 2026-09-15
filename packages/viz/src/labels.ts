@@ -53,6 +53,10 @@ function stepPhrase(node: IRNode): string {
       return `cruza ${nodePhrase(node)}`;
     case "Call":
       return `pasa por ${nodePhrase(node)}`;
+    // `nodePhrase` devuelve «el parámetro x»: con «pasa a» delante hay que
+    // contraer, o sale «pasa a el parámetro x».
+    case "Parameter":
+      return `pasa al parámetro ${node.name}`;
     default:
       return `pasa a ${nodePhrase(node)}`;
   }
