@@ -5,11 +5,18 @@ import type { CatalogBundle, CatalogLabels, CweCatalogEntry } from "./types.js";
 const SOURCE_PARAM_BLOCKLIST = new Set(["res", "next", "_"]);
 
 /** ¿El callee coincide con un patrón del catálogo? */
+/**
+ * Coincidencia de callee contra un patrón del catálogo.
+ *
+ * Solo exacta o por sufijo de miembro (`.save` / `create` → `Finance.create`).
+ * NO se usa `includes`: hacerlo daba falsos positivos (`evaluatePrice` contra
+ * el sink `eval`, `spawnConfetti` contra `spawn`) y falsos negativos
+ * (`escapeNothing` pasaba por sanitizer `escape`, suprimiendo un hallazgo real).
+ */
 export function calleeMatchesPattern(callee: string, pattern: string): boolean {
   if (callee === pattern) return true;
   if (pattern.startsWith(".")) return callee.endsWith(pattern);
-  if (callee.endsWith(`.${pattern}`)) return true;
-  return callee.includes(pattern);
+  return callee.endsWith(`.${pattern}`);
 }
 
 function sinkRule(entry: CweCatalogEntry, pattern: string): TaintRule {

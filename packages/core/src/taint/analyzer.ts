@@ -19,25 +19,28 @@ function rootSources(graph: IRGraph, sources: IRNode[]): IRNode[] {
   );
 }
 
-/** ¿Hay un sanitizer estrictamente entre source y sink en el camino? */
-function pathSanitized(
-  path: string[],
+/**
+ * Sanitizers a excluir del recorrido para un par (source, sink) dado.
+ * Los extremos nunca se bloquean: un nodo puede ser sink y sanitizer a la vez.
+ */
+function blockedFor(
+  sanitizerIds: ReadonlySet<string>,
   sourceId: string,
   sinkId: string,
-  sanitizerIds: ReadonlySet<string>,
-): boolean {
-  const start = path.indexOf(sourceId);
-  const end = path.indexOf(sinkId);
-  if (start === -1 || end === -1 || start >= end) return false;
-  for (let i = start + 1; i < end; i++) {
-    if (sanitizerIds.has(path[i]!)) return true;
-  }
-  return false;
+): Set<string> {
+  const blocked = new Set(sanitizerIds);
+  blocked.delete(sourceId);
+  blocked.delete(sinkId);
+  return blocked;
 }
 
 /**
  * Detecta caminos source → sink sin sanitizer intermedio sobre el grafo IR.
- * Motor en memoria (previo a persistencia Cypher del Hito 5).
+ *
+ * Los sanitizers se **quitan del grafo** antes de buscar el camino, de modo
+ * que todo camino hallado es por construcción no sanitizado. Inspeccionar un
+ * único camino más corto a posteriori era incorrecto: un sanitizer sobre el
+ * camino corto suprimía hallazgos alcanzables por otra ruta.
  */
 export function analyzeTaint(
   graph: IRGraph,
@@ -60,11 +63,14 @@ export function analyzeTaint(
 
   for (const source of sources) {
     for (const sink of sinks) {
-      const path = findPath(graph, source.id, sink.id, reachConfig);
+      const path = findPath(
+        graph,
+        source.id,
+        sink.id,
+        reachConfig,
+        blockedFor(sanitizerIds, source.id, sink.id),
+      );
       if (!path) continue;
-
-      const sanitized = pathSanitized(path, source.id, sink.id, sanitizerIds);
-      if (sanitized) continue;
 
       findings.push({
         sourceId: source.id,

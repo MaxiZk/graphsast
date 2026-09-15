@@ -25,6 +25,8 @@ export interface BenchmarkCaseResult {
   predicted: BenchmarkLabel;
   classification: Classification;
   correct: boolean;
+  /** Hallazgos dentro de [minFindings, maxFindings]; independiente de la clasificación. */
+  countOk: boolean;
   elapsedMs: number;
   lineCount: number;
   cwe?: string;

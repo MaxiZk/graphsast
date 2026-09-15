@@ -30,9 +30,22 @@ describe("buildInterproc — BINDS_TO (argumento -> parámetro)", () => {
     });
   });
 
-  it("argumento que no es identificador simple no liga", () => {
-    const { edges } = interOf(
+  it("argumento compuesto liga por la raíz del identificador", () => {
+    const { mod, edges } = interOf(
       `function sink(q){ db.query(q); } function h(name){ sink(name + 1); }`,
+    );
+    const argName = nodeByName(mod.nodes, "Parameter", "name");
+    const paramQ = nodeByName(mod.nodes, "Parameter", "q");
+    expect(edges).toContainEqual({
+      kind: "BINDS_TO",
+      from: argName.id,
+      to: paramQ.id,
+    });
+  });
+
+  it("argumento sin identificadores no liga", () => {
+    const { edges } = interOf(
+      `function sink(q){ db.query(q); } function h(){ sink("a" + "b"); }`,
     );
     expect(edges.filter((e) => e.kind === "BINDS_TO")).toHaveLength(0);
   });

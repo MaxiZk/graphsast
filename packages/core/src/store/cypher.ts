@@ -73,7 +73,7 @@ export const TAINT_PATH_CYPHER = `
 MATCH (s:GSNode {taintRole: 'source'})
 MATCH (k:GSNode {taintRole: 'sink'})
 MATCH p = (s)-[:FLOWS_TO|CALLS|BINDS_TO|RETURNS*1..15]->(k)
-WHERE NONE(n IN nodes(p) WHERE n.taintRole = 'sanitizer')
+WHERE NONE(n IN nodes(p)[1..-1] WHERE n.taintRole = 'sanitizer')
 RETURN s.id AS sourceId, k.id AS sinkId, [n IN nodes(p) | n.id] AS path
 `.trim();
 

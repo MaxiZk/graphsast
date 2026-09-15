@@ -24,13 +24,18 @@ function buildAdjacency(
 
 /**
  * BFS dirigido acotado. Devuelve un camino `from → to` o `null` si no hay
- * alcanzabilidad dentro de `maxDepth` (mismo oráculo que la validación temprana).
+ * alcanzabilidad dentro de `maxDepth`.
+ *
+ * `blocked` excluye nodos del recorrido. El analizador de taint lo usa para
+ * sacar los sanitizers del grafo: así "existe camino" equivale a "existe
+ * camino sin sanitizar", en vez de inspeccionar un único camino más corto.
  */
 export function findPath(
   graph: IRGraph,
   fromId: string,
   toId: string,
   config: Pick<TaintConfig, "maxDepth" | "propagateEdges"> = {},
+  blocked: ReadonlySet<string> = new Set(),
 ): string[] | null {
   const maxDepth = config.maxDepth ?? 15;
   const propagate = new Set(
@@ -48,6 +53,7 @@ export function findPath(
     const next: string[] = [];
     for (const id of frontier) {
       for (const to of adj.get(id) ?? []) {
+        if (blocked.has(to)) continue;
         if (to === toId) {
           parent.set(to, id);
           const path = [toId];
@@ -76,6 +82,7 @@ export function reaches(
   fromId: string,
   toId: string,
   config: Pick<TaintConfig, "maxDepth" | "propagateEdges"> = {},
+  blocked: ReadonlySet<string> = new Set(),
 ): boolean {
-  return findPath(graph, fromId, toId, config) !== null;
+  return findPath(graph, fromId, toId, config, blocked) !== null;
 }

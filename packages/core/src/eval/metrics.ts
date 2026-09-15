@@ -5,18 +5,26 @@ import type {
   Classification,
 } from "./types.js";
 
-export function predictLabel(
+/**
+ * Predicción del analizador: vulnerable ⟺ reportó al menos un hallazgo.
+ *
+ * NO recibe la etiqueta real. La versión anterior sí la recibía y ramificaba
+ * sobre ella, lo que constituye fuga de etiqueta (label leakage): las métricas
+ * dejaban de medir al analizador. El chequeo de `minFindings`/`maxFindings`
+ * se reporta aparte, en `countWithinRange`, sin contaminar la matriz de
+ * confusión.
+ */
+export function predictLabel(findings: number): BenchmarkLabel {
+  return findings > 0 ? "vulnerable" : "safe";
+}
+
+/** ¿La cantidad de hallazgos cae en el rango esperado del caso? */
+export function countWithinRange(
   findings: number,
-  groundTruth: BenchmarkLabel,
   minFindings = 1,
   maxFindings = Number.POSITIVE_INFINITY,
-): BenchmarkLabel {
-  if (groundTruth === "vulnerable") {
-    return findings >= minFindings && findings <= maxFindings
-      ? "vulnerable"
-      : "safe";
-  }
-  return findings === 0 ? "safe" : "vulnerable";
+): boolean {
+  return findings >= minFindings && findings <= maxFindings;
 }
 
 export function classify(
@@ -48,8 +56,9 @@ export function computeMetrics(results: BenchmarkCaseResult[]): BenchmarkMetrics
     totalLines += r.lineCount;
   }
 
-  const precision = tp + fp === 0 ? 1 : tp / (tp + fp);
-  const recall = tp + fn === 0 ? 1 : tp / (tp + fn);
+  // Sin predicciones positivas la precisión es indefinida, no perfecta.
+  const precision = tp + fp === 0 ? 0 : tp / (tp + fp);
+  const recall = tp + fn === 0 ? 0 : tp / (tp + fn);
   const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
   const accuracy = results.length === 0 ? 0 : (tp + tn) / results.length;
 

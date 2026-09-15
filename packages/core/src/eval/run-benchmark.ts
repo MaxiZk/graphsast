@@ -1,7 +1,7 @@
 import { analyzeGraph, analyzeTaint } from "../index.js";
 import type { BenchmarkCase, BenchmarkCaseResult, BenchmarkReport } from "./types.js";
 import { BENCHMARK_CORPUS } from "./benchmark/corpus.js";
-import { classify, computeMetrics, predictLabel } from "./metrics.js";
+import { classify, computeMetrics, countWithinRange, predictLabel } from "./metrics.js";
 
 function lineCount(code: string): number {
   return code.split("\n").length;
@@ -16,8 +16,11 @@ export function runCase(testCase: BenchmarkCase): BenchmarkCaseResult {
 
   const min = testCase.minFindings ?? 1;
   const max = testCase.maxFindings ?? Number.POSITIVE_INFINITY;
-  const predicted = predictLabel(findings.length, testCase.label, min, max);
+  const predicted = predictLabel(findings.length);
   const classification = classify(testCase.label, predicted);
+  const countOk = testCase.label === "safe"
+    ? findings.length === 0
+    : countWithinRange(findings.length, min, max);
 
   return {
     id: testCase.id,
@@ -27,6 +30,7 @@ export function runCase(testCase: BenchmarkCase): BenchmarkCaseResult {
     predicted,
     classification,
     correct: classification === "TP" || classification === "TN",
+    countOk,
     elapsedMs,
     lineCount: lineCount(testCase.code),
     cwe: testCase.cwe,

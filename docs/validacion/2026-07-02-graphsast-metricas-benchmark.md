@@ -1,7 +1,7 @@
 # Validación cuantitativa — benchmark sintético
 
-**Fecha:** 2026-07-02  
-**Estado del core:** Hitos 1–4 (parser, IR, call graph, DFG intra/inter, taint, scoping, arrow callbacks).  
+**Fecha:** 2026-09-01 (revisión del corpus y de la metodología)  
+**Estado del core:** Hitos 1–5 + extracción de flujo basada en AST.  
 **Objetivo:** medir precisión, recall y tiempo de análisis sobre un banco de pruebas etiquetado, reproducible desde la línea de comandos.
 
 ## Cómo reproducir
@@ -27,8 +27,16 @@ Cada **caso** es un snippet JavaScript/TypeScript autocontenido (un “archivo l
 
 | Etiqueta | Criterio de acierto |
 |----------|-------------------|
-| `vulnerable` | Al menos `minFindings` hallazgos de taint (default 1) |
-| `safe` | Cero hallazgos |
+| `vulnerable` | El analizador reporta al menos un hallazgo |
+| `safe` | El analizador reporta cero hallazgos |
+
+> **Corrección metodológica (2026-09-01).** La versión anterior de
+> `predictLabel()` recibía la etiqueta real como parámetro y ramificaba sobre
+> ella. Eso es fuga de etiqueta (*label leakage*): la "predicción" conocía la
+> respuesta, de modo que las métricas no medían al analizador. Ahora el
+> predictor recibe **solo** la cantidad de hallazgos. El rango esperado
+> (`minFindings`/`maxFindings`) se verifica aparte, en el campo `countOk`, y no
+> interviene en la matriz de confusión.
 
 La clasificación binaria por snippet produce la matriz de confusión estándar:
 
@@ -47,7 +55,7 @@ La clasificación binaria por snippet produce la matriz de confusión estándar:
 
 ### Corpus
 
-14 casos en `packages/core/src/eval/benchmark/corpus.ts`:
+33 casos en `packages/core/src/eval/benchmark/corpus.ts`:
 
 | ID | Título | CWE | Etiqueta |
 |----|--------|-----|----------|
@@ -65,23 +73,63 @@ La clasificación binaria por snippet produce la matriz de confusión estándar:
 | J | Parámetro `res` no es source | — | seguro |
 | K | Dos funciones sin cruce espurio | — | seguro |
 | L | req.params.id directo al sink | CWE-89 | vulnerable |
+| M1 | SQLi por template literal | CWE-89 | vulnerable |
+| M2 | SQLi por concatenación de strings | CWE-89 | vulnerable |
+| M3 | Asignación posterior a la declaración | CWE-89 | vulnerable |
+| M4 | Taint dentro de object literal | CWE-89 | vulnerable |
+| M5 | Taint dentro de array literal | CWE-89 | vulnerable |
+| M6 | Flujo a través de `await` | CWE-89 | vulnerable |
+| M7 | Destructuring de `req.params` | CWE-89 | vulnerable |
+| M8 | Llamada anidada como argumento | CWE-89 | vulnerable |
+| M9 | Query con dos argumentos | CWE-89 | vulnerable |
+| M10 | Source `req.headers` | CWE-89 | vulnerable |
+| M11 | Source `req.cookies` | CWE-89 | vulnerable |
+| M12 | Handler como método de clase | CWE-89 | vulnerable |
+| M13 | Sanitizer en rama paralela no protege | CWE-89 | vulnerable |
+| M14 | Nombre con "escape" que no sanitiza | CWE-89 | vulnerable |
+| N1 | `evaluatePrice` no es el sink `eval` | — | seguro |
+| N2 | `myExecutor` no es el sink `exec` | — | seguro |
+| N3 | `spawnConfetti` no es el sink `spawn` | — | seguro |
+| N4 | Concatenación solo de literales | — | seguro |
+| N5 | Sanitizado con `validator.escape` | CWE-89 | seguro |
 
-Cobertura: SQLi, command injection, XSS, Mongoose/Express, sanitizers, scoping intra-archivo, callbacks arrow.
+Cobertura: SQLi, command injection, XSS, Mongoose/Express, sanitizers, scoping
+intra-archivo, callbacks arrow, template literals, concatenación, asignaciones,
+destructuring, object/array literals, `await`, métodos de clase y negativos por
+similitud de nombre.
+
+Los casos **M** y **N** se incorporaron el 2026-09-01: los M eran falsos
+negativos y los N falsos positivos de la implementación anterior. Se agregaron
+*antes* de corregir el motor, como criterio de aceptación de la corrección.
 
 ## Resultados (2026-07-02)
 
 | Métrica | Valor |
 |---------|-------|
-| Casos | 14 (10 vulnerables, 4 seguros) |
-| TP / FP / TN / FN | 10 / 0 / 4 / 0 |
+| Casos | 33 (24 vulnerables, 9 seguros) |
+| TP / FP / TN / FN | 24 / 0 / 9 / 0 |
 | Precisión | **100%** |
 | Recall | **100%** |
 | F1 | **100%** |
 | Accuracy | **100%** |
-| Tiempo total | ~43 ms |
-| ms/línea | ~0,68 |
+| Tiempo total | ~212 ms |
+| ms/línea | ~1,55 |
 
-Todos los casos clasifican correctamente en la corrida reproducible del benchmark.
+### Antes y después de la extracción por AST
+
+Medición sobre los 19 casos M/N (patrones realistas), con el motor anterior
+—basado en coincidencia de texto— y con el actual:
+
+| Motor | Detectados (de 14 M) | Falsos positivos (de 5 N) |
+|-------|----------------------|---------------------------|
+| Textual / regex (previo) | 1 | 2 |
+| Extracción por AST (actual) | 14 | 0 |
+
+El motor previo declaraba 100% sobre su propio corpus de 14 casos, pero perdía
+12 de 13 patrones realistas de inyección —incluidos template literal y
+concatenación, que son la forma habitual de una SQLi—. La métrica no era falsa:
+medía un corpus que no contenía esos patrones. De ahí que el corpus se haya
+ampliado antes de tocar el motor.
 
 ## Límites y trabajo pendiente
 
@@ -93,17 +141,30 @@ Este benchmark es **sintético y de un solo archivo**. Sirve para:
 
 **No sustituye** la validación sobre proyectos reales de código abierto (sección 8 de `GraphSAST_Proyecto.md`), que queda como extensión futura:
 
-- Multi-archivo (`require` / `import` entre módulos).
+- Multi-archivo (`require` / `import` entre módulos) — **no implementado**.
 - Proyectos con vulnerabilidades documentadas (CVE/advisories).
 - Comparación con baseline regex o herramientas existentes.
+- Métricas **por hallazgo**, no por snippet: hoy un caso con 1 hallazgo correcto
+  y 5 espurios puntúa como TP limpio, lo que infla la precisión. Es la métrica
+  que realmente sostiene H2.
+- Resolución de símbolos con el type checker de TypeScript. La propagación
+  actual indexa por **nombre** dentro del ámbito de función: no distingue dos
+  variables homónimas en bloques distintos.
 
 ### Honestidad académica
 
 Las métricas al 100% reflejan un corpus **diseñado para el alcance actual** del analizador, no la seguridad general de aplicaciones Express en producción. En la defensa conviene presentar:
 
 - Este benchmark como **validación interna del motor** (H1/H2).
-- Las limitaciones documentadas (single-file, resolución por nombre, catálogo de sinks acotado).
+- Las limitaciones documentadas (single-file, resolución por nombre, catálogo de sinks acotado, métricas por snippet).
+- La tabla "antes y después" como evidencia de que el corpus **puede** exponer
+  fallas del motor: es el argumento más fuerte contra la objeción "el corpus
+  está hecho para aprobar".
 - Un roadmap hacia validación externa cuando se incorporen proyectos reales.
+
+El test de regresión ya **no exige 100%**: verifica umbrales (precisión y recall
+≥ 0,85). Exigir perfección obligaba a que el corpus solo contuviera casos que ya
+pasaban, es decir, lo volvía estructuralmente incapaz de detectar un retroceso.
 
 ## Artefactos
 
