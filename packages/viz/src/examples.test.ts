@@ -30,6 +30,15 @@ describe("ejemplos de la demo", () => {
   });
 });
 
+describe("G+ · asignación masiva Mongoose", () => {
+  const { findings } = analyze(getExample("finance-full").code);
+
+  it("clasifica los tres sinks como CWE-943, no CWE-89", () => {
+    expect(findings).toHaveLength(3);
+    expect(findings.every((f) => f.cwe === 943)).toBe(true);
+  });
+});
+
 describe("B+ · dos caminos al mismo sink", () => {
   const { graph, findings } = analyze(getExample("two-paths").code);
 

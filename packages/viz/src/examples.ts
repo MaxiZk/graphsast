@@ -136,8 +136,12 @@ function putFinance(req, res) {
   },
   {
     id: "finance-full",
-    title: "G+ · Finance App completa",
-    description: "Tres handlers Mongoose con scoping por función.",
+    title: "G+ · Asignación masiva (Mongoose)",
+    description:
+      "Los tres handlers de la demo. No hay inyección clásica acá: el problema "
+      + "es que se entrega req.body entero a una operación de escritura sin "
+      + "acotar qué campos puede tocar el usuario. Se clasifica como CWE-943, "
+      + "no CWE-89: Mongoose no es SQL.",
     expectFinding: true,
     code: `function postFinances(req, res) {
   const data = req.body;

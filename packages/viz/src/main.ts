@@ -255,6 +255,25 @@ function renderCodeHighlight() {
   renderCodeLines(codeLinesEl, codeInput.value, lines);
 }
 
+/**
+ * Zoom por debajo del cual las etiquetas dejan de leerse proyectadas.
+ * Medido sobre el ejemplo G+, que son tres componentes desconectadas en fila:
+ * encuadrar todo daba 0.35 y no se leía ni un nodo.
+ */
+const MIN_READABLE_ZOOM = 0.6;
+
+/**
+ * Encuadra el grafo entero; si para entrar hay que achicarlo más de lo
+ * legible, encuadra el camino de riesgo con sus vecinos inmediatos —que es lo
+ * que hay que mirar— y deja el resto a un paso de rueda.
+ */
+function fitGraph(instance: Core, hasHighlight: boolean) {
+  instance.fit(undefined, 36);
+  if (instance.zoom() >= MIN_READABLE_ZOOM || !hasHighlight) return;
+  const path = instance.$(".risk-path");
+  if (path.nonempty()) instance.fit(path.closedNeighborhood(), 48);
+}
+
 function renderGraph() {
   if (!graph) return;
   const finding = currentHighlight();
@@ -280,7 +299,7 @@ function renderGraph() {
       spacingFactor: 1.3,
     })
     .run();
-  instance.fit(undefined, 36);
+  fitGraph(instance, !!finding);
   renderCodeHighlight();
 }
 
