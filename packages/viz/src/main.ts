@@ -6,7 +6,7 @@ import {
   DEMO_EXAMPLES,
   getExample,
 } from "./examples.js";
-import { findingTitle, formatFindingPath } from "./labels.js";
+import { describeFinding, findingTitle, formatFindingPath } from "./labels.js";
 import { downloadHtmlReport, printHtmlReport } from "./report-export.js";
 import type { VizAnalysisReport } from "./report-html.js";
 
@@ -70,6 +70,7 @@ const engineBadge = document.querySelector<HTMLSpanElement>("#engine-badge")!;
 const rulesList = document.querySelector<HTMLUListElement>("#rules-list")!;
 const rulesSummary = document.querySelector<HTMLElement>("#rules-summary")!;
 const verdictEl = document.querySelector<HTMLDivElement>("#verdict")!;
+const readingEl = document.querySelector<HTMLParagraphElement>("#reading")!;
 const nodeDetail = document.querySelector<HTMLPreElement>("#node-detail")!;
 const edgeFilters = document.querySelector<HTMLFieldSetElement>("#edge-filters")!;
 const dimToggle = document.querySelector<HTMLInputElement>("#dim-toggle")!;
@@ -93,7 +94,13 @@ let highlightIndex = 0;
 let analyzedCode: string | null = null;
 let lastVerdict: Verdict | null = null;
 
-const ALL_EDGE_KINDS = ["FLOWS_TO", "CALLS", "BINDS_TO", "RETURNS"] as const;
+const ALL_EDGE_KINDS = [
+  "FLOWS_TO",
+  "CALLS",
+  "BINDS_TO",
+  "RETURNS",
+  "SANITIZED_BY",
+] as const;
 type IREdgeKind = (typeof ALL_EDGE_KINDS)[number];
 
 function cytoscapeStyle(): cytoscape.Stylesheet[] {
@@ -188,6 +195,14 @@ function cytoscapeStyle(): cytoscape.Stylesheet[] {
       style: { "line-color": "#a78bfa", "target-arrow-color": "#a78bfa" },
     },
     {
+      selector: "edge.sanitized-by",
+      style: {
+        "line-color": "#22c55e",
+        "target-arrow-color": "#22c55e",
+        "line-style": "dashed",
+      },
+    },
+    {
       selector: "edge.risk-edge",
       style: {
         width: 5,
@@ -279,6 +294,7 @@ function clearAnalysisView() {
 
   cy?.elements().remove();
   verdictEl.hidden = true;
+  readingEl.textContent = "";
   findingsList.innerHTML = "";
   statsEl.hidden = true;
   codeLinesEl.innerHTML = "";
@@ -411,9 +427,34 @@ function renderVerdict() {
   verdictEl.append(title, detail);
 }
 
+/**
+ * Lectura del hallazgo resaltado en lenguaje natural. Sin hallazgos la frase
+ * dice por qué no lo hay, en vez de quedar en blanco.
+ */
+function renderReading() {
+  const finding = currentHighlight();
+  if (graph && finding) {
+    readingEl.textContent = describeFinding(graph, finding);
+    return;
+  }
+  if (!graph) {
+    readingEl.textContent = "";
+    return;
+  }
+  const sources = lastRoles.sourceIds.length;
+  const sinks = lastRoles.sinkIds.length;
+  readingEl.textContent =
+    sources === 0 || sinks === 0
+      ? `No hay camino que describir: el código tiene ${sources} entrada(s) `
+        + `y ${sinks} operación(es) sensible(s).`
+      : `Ningún dato de las ${sources} entrada(s) llega a las ${sinks} `
+        + "operación(es) sensible(s) sin pasar por una función de saneamiento.";
+}
+
 function renderFindings() {
   findingsList.innerHTML = "";
   renderVerdict();
+  renderReading();
 
   if (!graph || findings.length === 0) {
     const li = document.createElement("li");

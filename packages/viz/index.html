@@ -57,6 +57,7 @@
           <label><input type="checkbox" value="CALLS" checked /> CALLS</label>
           <label><input type="checkbox" value="BINDS_TO" checked /> BINDS_TO</label>
           <label><input type="checkbox" value="RETURNS" checked /> RETURNS</label>
+          <label><input type="checkbox" value="SANITIZED_BY" checked /> SANITIZED_BY</label>
           <label><input type="checkbox" id="dim-toggle" checked /> Atenuar resto</label>
         </fieldset>
 
@@ -69,7 +70,66 @@
         <div id="verdict" class="verdict" hidden></div>
         <ul id="findings-list" class="findings-list"></ul>
 
+        <h3 class="subhead">Qué estás viendo</h3>
+        <p id="reading" class="reading"></p>
+        <p class="explain-text">
+          El grafo de la izquierda es el flujo de datos del código: cada nodo es
+          un punto por donde pasa un valor y cada arista, cómo llega de uno al
+          siguiente. El camino naranja es el que va de una entrada no confiable
+          a una operación peligrosa.
+        </p>
+
+        <h4 class="explainer-head">Nodos</h4>
+        <dl class="glossary">
+          <div>
+            <dt><span class="node-swatch parameter"></span>Parameter</dt>
+            <dd>Parámetro de función. Punto de entrada de datos no confiables (source).</dd>
+          </div>
+          <div>
+            <dt><span class="node-swatch variable"></span>Variable</dt>
+            <dd>Variable donde el dato se guarda o transforma.</dd>
+          </div>
+          <div>
+            <dt><span class="node-swatch call"></span>Call</dt>
+            <dd>Llamada a función. Si es una operación sensible, es un sink.</dd>
+          </div>
+          <div>
+            <dt><span class="node-swatch function"></span>Function</dt>
+            <dd>Declaración de función. Se atenúa cuando no está en el camino de riesgo.</dd>
+          </div>
+        </dl>
+
+        <h4 class="explainer-head">Aristas</h4>
+        <dl class="glossary">
+          <div>
+            <dt><span class="edge-swatch flows-to"></span>FLOWS_TO</dt>
+            <dd>El dato se propaga de un nodo a otro.</dd>
+          </div>
+          <div>
+            <dt><span class="edge-swatch calls"></span>CALLS</dt>
+            <dd>Una función invoca a otra.</dd>
+          </div>
+          <div>
+            <dt><span class="edge-swatch binds-to"></span>BINDS_TO</dt>
+            <dd>Una variable se asocia al valor que recibe.</dd>
+          </div>
+          <div>
+            <dt><span class="edge-swatch returns"></span>RETURNS</dt>
+            <dd>Una función devuelve una expresión.</dd>
+          </div>
+          <div>
+            <dt><span class="edge-swatch sanitized-by"></span>SANITIZED_BY</dt>
+            <dd>El dato atraviesa una operación de saneamiento.</dd>
+          </div>
+        </dl>
+
         <h3 class="subhead">Catálogo CWE</h3>
+        <p class="explain-text">
+          CWE (Common Weakness Enumeration) es la clasificación estándar de
+          debilidades de software que mantiene MITRE. Cada familia agrupa un
+          tipo de falla. Los números indican cuántos puntos críticos (sinks) y
+          cuántas funciones de saneamiento reconoce el motor.
+        </p>
         <ul id="catalog-list" class="catalog-list"></ul>
 
         <details class="rules-details">

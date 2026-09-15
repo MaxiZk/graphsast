@@ -73,6 +73,88 @@ body {
   color: var(--muted);
 }
 
+/* Bloques explicativos del panel derecho: para quien abre la app sin saber
+   qué mira. Los colores de las muestras replican los del grafo (cytoscapeStyle
+   en main.ts); si cambian allá, cambiar acá. */
+.reading {
+  margin: 0 0 0.55rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text);
+  border-left: 3px solid var(--risk);
+  padding-left: 0.6rem;
+}
+
+.reading:empty {
+  display: none;
+}
+
+.explain-text {
+  margin: 0 0 0.6rem;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.explainer-head {
+  margin: 0.55rem 0 0.35rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.glossary {
+  margin: 0 0 0.6rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.glossary > div {
+  margin-bottom: 0.4rem;
+}
+
+.glossary dt {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: var(--text);
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 0.72rem;
+}
+
+.glossary dd {
+  margin: 0.1rem 0 0 1.35rem;
+  color: var(--muted);
+}
+
+.node-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  border: 2px solid;
+}
+
+.node-swatch.parameter { background: #0f766e; border-color: #5eead4; }
+.node-swatch.variable { background: #334155; border-color: #94a3b8; }
+.node-swatch.call { background: #4c1d95; border-color: #c4b5fd; }
+.node-swatch.function { background: #475569; border-color: #64748b; opacity: 0.45; }
+
+.edge-swatch {
+  width: 18px;
+  height: 0;
+  flex-shrink: 0;
+  border-top: 3px solid #64748b;
+}
+
+.edge-swatch.flows-to { border-top-color: #38bdf8; }
+.edge-swatch.calls { border-top-color: #64748b; }
+.edge-swatch.binds-to { border-top-color: #a78bfa; }
+.edge-swatch.returns { border-top-color: #64748b; }
+.edge-swatch.sanitized-by { border-top-color: #22c55e; border-top-style: dashed; }
+
 .catalog-list {
   list-style: none;
   margin: 0 0 0.5rem;
