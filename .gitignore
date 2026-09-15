@@ -6,6 +6,10 @@ coverage/
 *.txt
 .DS_Store
 *.stackdump
+<<<<<<< HEAD
+=======
+*.stackdump
+>>>>>>> origin/main
 *.tsbuildinfo
 .obsidian/
 .claude/
