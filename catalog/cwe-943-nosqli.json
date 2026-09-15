@@ -1,0 +1,19 @@
+{
+  "cwe": 943,
+  "name": "NoSQL Injection / Manipulación de la lógica de consulta de datos",
+  "sources": ["req.query", "req.body", "req.params"],
+  "sinks": [
+    ".save",
+    ".create",
+    "findByIdAndUpdate",
+    "findByIdAndDelete",
+    "insertOne",
+    "updateOne"
+  ],
+  "sanitizers": [
+    "mongoSanitize",
+    "sanitize",
+    "validate",
+    "escape"
+  ]
+}

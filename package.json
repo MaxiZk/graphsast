@@ -1,0 +1,19 @@
+{
+  "name": "graphsast",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "build": "tsc -b",
+    "prestart": "npm run build -w @graphsast/core",
+    "start": "npm run dev -w @graphsast/viz",
+    "viz:dev": "npm run dev -w @graphsast/viz",
+    "viz:build": "npm run build -w @graphsast/viz",
+    "viz:preview": "npm run preview -w @graphsast/viz",
+    "benchmark": "npm run benchmark -w @graphsast/core",
+    "neo4j:up": "docker compose up -d",
+    "neo4j:down": "docker compose down",
+    "neo4j:probe": "npm run build -w @graphsast/core && node packages/core/dist/eval/neo4j-probe.js"
+  }
+}

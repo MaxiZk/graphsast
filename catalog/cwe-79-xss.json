@@ -1,0 +1,24 @@
+{
+  "cwe": 79,
+  "name": "Cross-Site Scripting (XSS)",
+  "sources": [
+    "req.query",
+    "req.body",
+    "req.params"
+  ],
+  "sinks": [
+    "document.write",
+    "innerHTML",
+    "outerHTML",
+    "insertAdjacentHTML",
+    "dangerouslySetInnerHTML",
+    "res.send"
+  ],
+  "sanitizers": [
+    "sanitize",
+    "escape",
+    "validate",
+    "DOMPurify.sanitize",
+    "xss"
+  ]
+}

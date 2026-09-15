@@ -1,0 +1,14 @@
+{
+  "cwe": 78,
+  "name": "OS Command Injection",
+  "sources": ["req.query", "req.body", "req.params"],
+  "sinks": [
+    "eval",
+    "exec",
+    "child_process.exec",
+    "child_process.execSync",
+    "spawn",
+    "execSync"
+  ],
+  "sanitizers": ["sanitize", "escape", "validate", "shellEscape"]
+}

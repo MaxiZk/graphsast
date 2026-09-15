@@ -1,0 +1,10 @@
+{
+  "enabledMcpjsonServers": [
+    "github"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python -c ' *)"
+    ]
+  }
+}

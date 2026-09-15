@@ -1,0 +1,19 @@
+{
+  "cwe": 89,
+  "name": "SQL Injection",
+  "sources": ["req.query", "req.body", "req.params"],
+  "sinks": [
+    "db.query",
+    "connection.execute",
+    "sequelize.query",
+    "pool.query",
+    "mysql.query"
+  ],
+  "sanitizers": [
+    "mysql.escape",
+    "parameterized",
+    "validator.escape",
+    "sanitize",
+    "escape"
+  ]
+}
