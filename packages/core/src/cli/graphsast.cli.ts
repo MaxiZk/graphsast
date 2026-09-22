@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 import { scanPaths } from "../scan/scan.js";
 import { assertReadableTarget, ScanInputError } from "../scan/files.js";
 import { reportToText } from "../scan/reporters/text.js";
-import { reportToSarif } from "../scan/reporters/sarif.js";
+import { reportToSarif, type SarifFamily } from "../scan/reporters/sarif.js";
 import { getCatalogBundle } from "../taint/rules.js";
 import { EXIT, exitCodeFor, parseCweFamily } from "./exit-code.js";
 import {
@@ -25,6 +25,10 @@ USO
 
 OPCIONES
   --format <text|json|sarif>  Formato de salida (default: text)
+                              text: legible, agrupado por archivo
+                              json: el resultado completo
+                              sarif: SARIF 2.1.0 (GitHub Code Scanning); las
+                              rutas quedan relativas al directorio actual
   --output, --out <archivo>   Escribir la salida a un archivo
   --ext <.ts,.js>             Extensiones a analizar
                               (default: ${DEFAULT_EXTENSIONS.join(",")})
@@ -39,6 +43,8 @@ OPCIONES
   --fail-on <cwe-89,cwe-78>   Solo estas familias CWE provocan el código 1
                               (el reporte las muestra todas igual)
   --no-path                   En texto, mostrar solo source y sink
+  --verbose                   En texto, un bloque por hallazgo con la línea
+                              y el código de cada paso
   --color                     Forzar color ANSI
   --exit-zero                 Salir con 0 aunque haya hallazgos
                               (los errores siguen dando 2)
@@ -67,6 +73,7 @@ interface Cli {
   out?: string;
   color: boolean;
   showPath: boolean;
+  verbose: boolean;
   exitZero: boolean;
   failOn: number[];
   quiet: boolean;
@@ -93,6 +100,7 @@ function parseArgs(argv: string[]): Cli {
     format: "text",
     color: process.stdout.isTTY === true && !process.env.NO_COLOR,
     showPath: true,
+    verbose: false,
     exitZero: false,
     failOn: [],
     quiet: false,
@@ -163,6 +171,9 @@ function parseArgs(argv: string[]): Cli {
       case "--no-path":
         cli.showPath = false;
         break;
+      case "--verbose":
+        cli.verbose = true;
+        break;
       case "--color":
         cli.color = true;
         break;
@@ -188,10 +199,20 @@ function parseArgs(argv: string[]): Cli {
   return cli;
 }
 
-function render(cli: Cli, result: ReturnType<typeof scanPaths>): string {
+function render(
+  cli: Cli,
+  result: ReturnType<typeof scanPaths>,
+  families: SarifFamily[],
+): string {
   if (cli.format === "json") return JSON.stringify(result, null, 2);
-  if (cli.format === "sarif") return reportToSarif(result, { toolVersion: VERSION });
-  return reportToText(result, { color: cli.color && !cli.out, showPath: cli.showPath });
+  if (cli.format === "sarif") {
+    return reportToSarif(result, { toolVersion: VERSION, families });
+  }
+  return reportToText(result, {
+    color: cli.color && !cli.out,
+    showPath: cli.showPath,
+    verbose: cli.verbose,
+  });
 }
 
 function main(argv: string[]): number {
@@ -229,7 +250,7 @@ function main(argv: string[]): number {
 
   for (const target of cli.paths) assertReadableTarget(target);
   const result = scanPaths(cli.paths, cli.scan);
-  const output = render(cli, result);
+  const output = render(cli, result, catalog.entries);
 
   if (cli.out) {
     writeFileSync(cli.out, `${output}\n`, "utf8");

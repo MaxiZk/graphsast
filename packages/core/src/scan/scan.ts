@@ -20,10 +20,13 @@ function stepOf(node: IRNode | undefined): ScanStep {
   }
   return {
     kind: node.kind,
-    name: node.name,
+    // Un callee encadenado en varias líneas (`lines\n  .map`) queda en una.
+    name: node.name.replace(/\s*\.\s*/g, ".").replace(/\s+/g, " ").trim(),
     code: node.code.replace(/\s+/g, " ").trim(),
     line: node.loc.line,
     col: node.loc.col,
+    endLine: node.loc.endLine,
+    endCol: node.loc.endCol,
   };
 }
 

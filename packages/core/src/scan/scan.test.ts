@@ -188,6 +188,15 @@ describe("scanSource", () => {
     expect(f.steps.map((s) => s.line)).toEqual([1, 2, 3]);
   });
 
+  it("normaliza a una linea los nombres de callees encadenados", () => {
+    const r = scanSource(
+      "function h(code){\n  el.innerHTML = code\n    .split(\",\")\n    .join(\"\");\n}",
+      "a.js",
+    );
+    expect(r.findings).toHaveLength(1);
+    for (const s of r.findings[0]!.steps) expect(s.name).not.toMatch(/\s/);
+  });
+
   it("filtra por CWE", () => {
     const code = "function h(req){ execSync(req.body); }";
     expect(scanSource(code, "a.js", { cwe: [78] }).findings).toHaveLength(1);

@@ -7,6 +7,8 @@ export interface ScanStep {
   code: string;
   line: number;
   col: number;
+  endLine?: number;
+  endCol?: number;
 }
 
 /** Hallazgo listo para reportar: sin ids internos, con ubicaciones. */

@@ -21,7 +21,8 @@ import { flowSourcesOf } from "./expressions.js";
 function locOf(node: Node, file: string): Loc {
   const sf = node.getSourceFile();
   const { line, column } = sf.getLineAndColumnAtPos(node.getStart());
-  return { file, line, col: column };
+  const end = sf.getLineAndColumnAtPos(node.getEnd());
+  return { file, line, col: column, endLine: end.line, endCol: end.column };
 }
 
 function idOf(kind: string, loc: Loc): string {

@@ -9,6 +9,9 @@ export interface Loc {
   file: string;
   line: number;
   col: number;
+  /** Fin del nodo (exclusivo, 1-based), para resaltar el rango en SARIF. */
+  endLine?: number;
+  endCol?: number;
 }
 
 /**

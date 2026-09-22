@@ -4,6 +4,8 @@ interface TextOptions {
   color?: boolean;
   /** Mostrar el camino completo, no solo source y sink. */
   showPath?: boolean;
+  /** Un bloque por hallazgo, con línea y código de cada paso. */
+  verbose?: boolean;
 }
 
 const CODES = {
@@ -27,7 +29,7 @@ function findingBlock(
   c: ReturnType<typeof painter>,
   showPath: boolean,
 ): string[] {
-  const cwe = f.cwe ? `CWE-${f.cwe}` : "sin CWE";
+  const cwe = cweLabel(f);
   const title = f.cweName ?? "Flujo no sanitizado";
   const lines: string[] = [];
 
@@ -52,12 +54,39 @@ function findingBlock(
   return lines;
 }
 
+/** `req → data → Finance.create`, sin repetir pasos consecutivos iguales. */
+function pathLabel(f: ScanFinding, showPath: boolean): string {
+  const steps = showPath ? f.steps : [f.source, f.sink];
+  const names = steps.map((s) => s.name || s.code);
+  return names.filter((n, i) => i === 0 || n !== names[i - 1]).join(" → ");
+}
+
+/** Una línea por hallazgo: `  L12  CWE-943  req.body → data → Finance.create`. */
+function findingLines(
+  findings: ScanFinding[],
+  c: ReturnType<typeof painter>,
+  showPath: boolean,
+): string[] {
+  const lineWidth = Math.max(...findings.map((f) => `L${f.sink.line}`.length));
+  const cweWidth = Math.max(...findings.map((f) => cweLabel(f).length));
+  return findings.map((f) => {
+    const line = c("cyan", `L${f.sink.line}`.padEnd(lineWidth));
+    const cwe = c("red", cweLabel(f).padEnd(cweWidth));
+    return `  ${line}  ${cwe}  ${pathLabel(f, showPath)}`;
+  });
+}
+
+function cweLabel(f: ScanFinding): string {
+  return f.cwe ? `CWE-${f.cwe}` : "sin CWE";
+}
+
 export function reportToText(
   result: ScanResult,
   options: TextOptions = {},
 ): string {
   const c = painter(options.color ?? false);
   const showPath = options.showPath ?? true;
+  const verbose = options.verbose ?? false;
   const out: string[] = [];
 
   out.push(c("bold", "GraphSAST — análisis estático de flujo de datos"));
@@ -76,9 +105,13 @@ export function reportToText(
     let index = 1;
     for (const [file, findings] of byFile) {
       out.push(c("bold", file));
-      for (const f of findings) {
-        out.push(...findingBlock(f, index++, c, showPath));
-        out.push("");
+      if (verbose) {
+        for (const f of findings) {
+          out.push(...findingBlock(f, index++, c, showPath));
+          out.push("");
+        }
+      } else {
+        out.push(...findingLines(findings, c, showPath), "");
       }
     }
   }
