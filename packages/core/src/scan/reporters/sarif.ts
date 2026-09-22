@@ -109,7 +109,8 @@ export function reportToSarif(
     level: "error",
     message: {
       text: `${f.cweName ?? "Flujo no sanitizado"}: `
-        + `\`${f.source.name || f.source.code}\` (línea ${f.source.line}) alcanza `
+        + `\`${f.source.name || f.source.code}\` (`
+        + `${f.source.file === f.file ? "" : `${f.source.file}, `}línea ${f.source.line}) alcanza `
         + `\`${f.sink.name || f.sink.code}\` (línea ${f.sink.line}) sin sanitizar.`,
     },
     locations: [
@@ -121,7 +122,7 @@ export function reportToSarif(
           {
             locations: f.steps.map((s) => ({
               location: {
-                physicalLocation: { artifactLocation: where(f.file), region: regionOf(s) },
+                physicalLocation: { artifactLocation: where(s.file), region: regionOf(s) },
                 message: { text: `${s.kind}: ${s.name || s.code}` },
               },
             })),

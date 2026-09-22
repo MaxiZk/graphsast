@@ -45,7 +45,8 @@ function findingBlock(
     const s = steps[i]!;
     const arrow = i === 0 ? "source" : i === steps.length - 1 ? "sink  " : "      ";
     const label = c("dim", arrow);
-    const loc = c("dim", `L${String(s.line).padStart(3)}`);
+    // Un paso en otro archivo que el del sink lleva su ruta.
+    const loc = c("dim", s.file === f.file ? `L${String(s.line).padStart(3)}` : `${s.file}:${s.line}`);
     const code = s.code.length > 88 ? `${s.code.slice(0, 85)}...` : s.code;
     lines.push(`   ${label} ${loc}  ${code}`);
   }
@@ -54,11 +55,23 @@ function findingBlock(
   return lines;
 }
 
-/** `req → data → Finance.create`, sin repetir pasos consecutivos iguales. */
+/**
+ * `req → data → Finance.create`, sin repetir pasos consecutivos iguales.
+ * Cuando el camino cambia de archivo, el paso lleva `(archivo:línea)`:
+ * `req (src/controller.ts:3) → findUser → id (src/service.ts:1) → db.query`.
+ */
 function pathLabel(f: ScanFinding, showPath: boolean): string {
   const steps = showPath ? f.steps : [f.source, f.sink];
-  const names = steps.map((s) => s.name || s.code);
-  return names.filter((n, i) => i === 0 || n !== names[i - 1]).join(" → ");
+  const parts: string[] = [];
+  let prevName: string | null = null;
+  steps.forEach((s, i) => {
+    const name = s.name || s.code;
+    const moved = s.file !== (i === 0 ? f.file : steps[i - 1]!.file);
+    if (!moved && name === prevName) return;
+    parts.push(moved ? `${name} (${s.file}:${s.line})` : name);
+    prevName = name;
+  });
+  return parts.join(" → ");
 }
 
 /** Una línea por hallazgo: `  L12  CWE-943  req.body → data → Finance.create`. */
@@ -121,7 +134,8 @@ export function reportToText(
   out.push(c("dim", "─".repeat(60)));
   out.push(
     `${t.findings} hallazgo(s) en ${t.filesWithFindings}/${t.files} archivo(s) · `
-    + `${t.lines} líneas · ${t.elapsedMs.toFixed(0)} ms (${msPerLine.toFixed(2)} ms/línea)`,
+    + `${t.lines} líneas · ${t.elapsedMs.toFixed(0)} ms (${msPerLine.toFixed(2)} ms/línea)`
+    + ((t.crossFileCalls ?? 0) > 0 ? ` · ${t.crossFileCalls} llamada(s) entre archivos` : ""),
   );
   if (t.errors > 0) {
     out.push(c("yellow", `${t.errors} archivo(s) no pudieron analizarse.`));

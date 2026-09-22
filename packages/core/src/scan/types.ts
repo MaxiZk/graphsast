@@ -2,6 +2,8 @@ import type { IRNodeKind } from "../ir/types.js";
 
 /** Un paso del camino de taint, ya resuelto a ubicación y código fuente. */
 export interface ScanStep {
+  /** Archivo del paso: con análisis entre archivos, un camino cruza varios. */
+  file: string;
   kind: IRNodeKind;
   name: string;
   code: string;
@@ -13,6 +15,7 @@ export interface ScanStep {
 
 /** Hallazgo listo para reportar: sin ids internos, con ubicaciones. */
 export interface ScanFinding {
+  /** Archivo del sink. */
   file: string;
   cwe?: number;
   cweName?: string;
@@ -41,6 +44,8 @@ export interface ScanTotals {
   lines: number;
   elapsedMs: number;
   errors: number;
+  /** Llamadas resueltas a funciones de otro archivo del escaneo. */
+  crossFileCalls: number;
 }
 
 export interface ScanResult {
@@ -62,6 +67,8 @@ export interface ScanOptions {
   gitignore?: boolean;
   /** Omitir archivos mayores a este tamaño (bytes). */
   maxFileBytes?: number;
+  /** Seguir llamadas a funciones importadas de otros archivos (default: true). */
+  crossFile?: boolean;
   /** Profundidad máxima del BFS de taint. */
   maxDepth?: number;
   /** Filtrar por CWE (vacío = todos). */

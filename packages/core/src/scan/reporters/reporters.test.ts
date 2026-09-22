@@ -23,6 +23,7 @@ function resultOf(code: string, file = "a.js"): ScanResult {
       lines: fileResult.lineCount,
       elapsedMs: fileResult.elapsedMs,
       errors: 0,
+      crossFileCalls: 0,
     },
   };
 }

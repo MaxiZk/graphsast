@@ -41,7 +41,7 @@ function flowRefOf(expr: Node | undefined, file: string): FlowRef {
   return { names, callIds: calls.map((c) => callIdOf(c, file)) };
 }
 
-type FunctionLike =
+export type FunctionLike =
   | FunctionDeclaration
   | ArrowFunction
   | FunctionExpression
@@ -54,6 +54,11 @@ function isFunctionLike(node: Node): node is FunctionLike {
     || TsNode.isFunctionExpression(node)
     || TsNode.isMethodDeclaration(node)
   );
+}
+
+/** Id del nodo Function que el IR le asigna a una declaración. */
+export function functionIdOf(fn: FunctionLike, file: string): string {
+  return idOf("Function", locOf(fn, file));
 }
 
 function ownerFnIdOf(node: Node, file: string): string | null {

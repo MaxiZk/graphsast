@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { EXIT, exitCodeFor, parseCweFamily } from "./exit-code.js";
 import type { ScanFinding, ScanResult } from "../scan/types.js";
 
-const step = { kind: "Call" as const, name: "x", code: "x", line: 1, col: 1 };
+const step = { file: "a.ts", kind: "Call" as const, name: "x", code: "x", line: 1, col: 1 };
 
 function finding(cwe?: number): ScanFinding {
   return { file: "a.ts", cwe, source: step, sink: step, steps: [step, step] };
@@ -22,6 +22,7 @@ function result(opts: { files?: number; errors?: number; cwes?: (number | undefi
       lines: 1,
       elapsedMs: 0,
       errors: opts.errors ?? 0,
+      crossFileCalls: 0,
     },
   };
 }

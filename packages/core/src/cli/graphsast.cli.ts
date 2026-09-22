@@ -30,7 +30,9 @@ USO
   graphsast serve [--port <n>] [--root <carpeta>]
 
   Cada ruta puede ser un archivo o una carpeta; las carpetas se recorren
-  en forma recursiva respetando los .gitignore del proyecto.
+  en forma recursiva respetando los .gitignore del proyecto. Las llamadas a
+  funciones importadas de otro archivo del escaneo se siguen (imports ES con
+  rutas relativas hacia \`function\` declaradas).
 
 OPCIONES
   --format <text|json|sarif>  Formato de salida (default: text)
@@ -47,6 +49,7 @@ OPCIONES
                               (default: ${DEFAULT_IGNORE.join(",")})
                               Siempre excluidas: ${ALWAYS_IGNORE.join(",")}
   --cwe <89,79>               Reportar solo estos CWE
+  --no-cross-file             Analizar cada archivo por separado
   --max-depth <n>             Profundidad máxima del camino (default: 15)
   --max-file-bytes <n>        Omitir archivos más grandes (default: 1000000)
   --fail-on <cwe-89,cwe-78>   Solo estas familias CWE provocan el código 1
@@ -187,6 +190,9 @@ function parseArgs(argv: string[]): Cli {
         cli.scan.maxFileBytes = n;
         break;
       }
+      case "--no-cross-file":
+        cli.scan.crossFile = false;
+        break;
       case "--no-path":
         cli.showPath = false;
         break;
