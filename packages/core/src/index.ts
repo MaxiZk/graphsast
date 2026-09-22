@@ -59,6 +59,18 @@ export {
 export { reportToText } from "./scan/reporters/text.js";
 export { reportToSarif } from "./scan/reporters/sarif.js";
 export {
+  API_HOST,
+  DEFAULT_API_PORT,
+  MAX_BODY_BYTES,
+  createApiHandler,
+  isLoopbackUri,
+  resolveLocalNeo4j,
+  startApiServer,
+} from "./server/server.js";
+export { analyzeCode } from "./server/analyze-code.js";
+export { resolveInsideRoot, PathRejectedError } from "./server/paths.js";
+export { VERSION } from "./version.js";
+export {
   ALWAYS_IGNORE,
   DEFAULT_EXTENSIONS,
   DEFAULT_IGNORE,

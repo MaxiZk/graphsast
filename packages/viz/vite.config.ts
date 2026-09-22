@@ -1,188 +1,90 @@
+import type { Server } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig, type Connect, type Plugin } from "vite";
-import type { Driver } from "neo4j-driver";
+import { defineConfig, type HttpServer, type Logger, type Plugin } from "vite";
 import {
-  buildVerdict,
-  graphFromSourceFile,
-  parseSource,
-  analyzeWithEngine,
-  buildAnalysisReport,
-  createNeo4jDriver,
-  getCatalogBundle,
-  getRuleLabels,
-  getTaintRoles,
-  verifyNeo4j,
+  API_HOST,
+  DEFAULT_API_PORT,
+  resolveLocalNeo4j,
+  startApiServer,
 } from "@graphsast/core";
-import type { IRGraph, TaintRoles } from "@graphsast/core";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
+const API_PORT = Number(process.env.GRAPHSAST_API_PORT ?? DEFAULT_API_PORT);
+const API_URL = `http://${API_HOST}:${API_PORT}`;
+const LOOPBACK = new Set(["127.0.0.1", "localhost", "::1"]);
 
-let neo4jDriver: Driver | null | undefined;
-
-async function resolveNeo4j(): Promise<Driver | null> {
-  if (neo4jDriver !== undefined) return neo4jDriver;
-  if (!process.env.NEO4J_URI) {
-    neo4jDriver = null;
-    return null;
-  }
+/** ¿Lo que responde en API_URL es una API de GraphSAST? */
+async function isGraphsastApi(): Promise<boolean> {
   try {
-    const driver = await createNeo4jDriver();
-    if (await verifyNeo4j(driver)) {
-      neo4jDriver = driver;
-      return driver;
-    }
-    await driver.close();
+    const res = await fetch(`${API_URL}/api/health`);
+    const body = (await res.json()) as { service?: string };
+    return body.service === "graphsast";
   } catch {
-    /* Neo4j opcional en dev */
+    return false;
   }
-  neo4jDriver = null;
-  return null;
 }
 
-/** Fallback si el bundle no exporta getTaintRoles (caché vieja). */
-function rolesForGraph(graph: IRGraph): TaintRoles {
-  return getTaintRoles(graph);
-}
+/**
+ * La interfaz consume la API local de `graphsast serve` a través del proxy
+ * de Vite. Si ya hay una levantada en el puerto se reutiliza; si no, se
+ * levanta una en este mismo proceso.
+ */
+function graphsastApi(): Plugin {
+  let api: Server | null = null;
 
-function readBody(req: Connect.IncomingMessage): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    req.on("data", (chunk) => chunks.push(chunk as Buffer));
-    req.on("end", () => resolve(Buffer.concat(chunks).toString()));
-    req.on("error", reject);
-  });
-}
-
-function countEdges(edges: { kind: string }[]): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const e of edges) {
-    out[e.kind] = (out[e.kind] ?? 0) + 1;
-  }
-  return out;
-}
-
-function analyzeMiddleware(): Connect.NextHandleFunction {
-  return async (req, res, next) => {
-    if (req.url !== "/api/analyze" || req.method !== "POST") {
-      next();
-      return;
-    }
-
-    const started = performance.now();
+  async function ensureApi(logger: Logger): Promise<void> {
+    const neo4j = await resolveLocalNeo4j();
+    if (neo4j.warning) logger.warn(`GraphSAST: ${neo4j.warning}`);
     try {
-      const body = JSON.parse(await readBody(req)) as {
-        code?: string;
-        file?: string;
-      };
-      const code = body.code ?? "";
-      const file = body.file ?? "input.ts";
-      const parsed = parseSource(code, file);
-
-      // Si el parser no entendió el texto no hay grafo que mostrar, y un
-      // panel vacío se leería como «sin vulnerabilidades». Se responde el
-      // veredicto explícito en su lugar.
-      if (parsed.syntaxErrors > 0) {
-        const verdict = buildVerdict({
-          graph: { file, nodes: [], edges: [] },
-          roles: { sourceIds: [], sinkIds: [], sanitizerIds: [] },
-          findings: [],
-          parse: parsed,
-        });
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({
-          graph: { file, nodes: [], edges: [] },
-          findings: [],
-          roles: { sourceIds: [], sinkIds: [], sanitizerIds: [] },
-          engine: "memory",
-          verdict,
-          report: null,
-          stats: {
-            elapsedMs: Math.round(performance.now() - started),
-            lineCount: code.split("\n").length,
-            nodeCount: 0,
-            edgeCount: 0,
-            edgeKinds: {},
-            findingCount: 0,
-          },
-          rules: getRuleLabels(),
-          catalog: [],
-        }));
+      api = await startApiServer({
+        port: API_PORT,
+        root: process.env.INIT_CWD ?? process.cwd(),
+        driver: neo4j.driver,
+      });
+      logger.info(`  GraphSAST API: ${API_URL}`);
+    } catch (err) {
+      await neo4j.driver?.close();
+      if ((err as NodeJS.ErrnoException).code === "EADDRINUSE" && await isGraphsastApi()) {
+        logger.info(`  GraphSAST API: reutilizando ${API_URL}`);
         return;
       }
-
-      const graph = graphFromSourceFile(parsed.sourceFile, file);
-      const driver = await resolveNeo4j();
-      const { engine, findings } = await analyzeWithEngine(graph, { driver: driver ?? undefined });
-      const roles = rolesForGraph(graph);
-      const elapsedMs = Math.round(performance.now() - started);
-      const lineCount = code.split("\n").length;
-      const rules = getRuleLabels();
-      const catalog = getCatalogBundle();
-
-      const report = buildAnalysisReport({
-        code,
-        file,
-        engine,
-        findings,
-        graph,
-        elapsedMs,
-        rules,
-        catalog,
-      });
-
-      const verdict = buildVerdict({ graph, roles, findings, parse: parsed });
-
-      res.setHeader("Content-Type", "application/json");
-      res.end(
-        JSON.stringify({
-          graph,
-          findings,
-          roles,
-          engine,
-          verdict,
-          report,
-          stats: {
-            elapsedMs,
-            lineCount,
-            nodeCount: graph.nodes.length,
-            edgeCount: graph.edges.length,
-            edgeKinds: countEdges(graph.edges),
-            findingCount: findings.length,
-          },
-          rules,
-          catalog: catalog.entries.map((e) => ({
-            cwe: e.cwe,
-            name: e.name,
-            description: e.description ?? "",
-            sinks: e.sinks.length,
-            sanitizers: e.sanitizers.length,
-          })),
-        }),
-      );
-    } catch (err) {
-      res.statusCode = 500;
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ error: String(err) }));
+      throw err;
     }
-  };
-}
+  }
 
-function graphsastApi(): Plugin {
-  const attach = (server: { middlewares: Connect.Server }) => {
-    server.middlewares.use(analyzeMiddleware());
+  const attach = async (server: { httpServer: HttpServer | null; config: { logger: Logger } }) => {
+    await ensureApi(server.config.logger);
+    server.httpServer?.once("close", () => api?.close());
   };
+
   return {
-    name: "graphsast-analyze-api",
+    name: "graphsast-api",
+    // El proxy reenvía a la API todo lo que llega a Vite: si Vite escuchara en
+    // la red (`--host`), la API quedaría expuesta a través de él.
+    configResolved(config) {
+      if (config.command !== "serve") return;
+      for (const host of [config.server.host, config.preview.host]) {
+        if (host !== undefined && !(typeof host === "string" && LOOPBACK.has(host))) {
+          throw new Error(
+            `GraphSAST: la interfaz solo puede escuchar en ${API_HOST} `
+            + `(se pidió host=${String(host)}). El código analizado no sale de la máquina.`,
+          );
+        }
+      }
+    },
     configureServer: attach,
     configurePreviewServer: attach,
   };
 }
 
+const proxy = { "/api": { target: API_URL, changeOrigin: true } };
+
 export default defineConfig({
   root: dir,
   plugins: [graphsastApi()],
-  server: { port: 5173 },
+  server: { host: API_HOST, port: 5173, proxy },
+  preview: { host: API_HOST, proxy },
   ssr: {
     noExternal: ["@graphsast/core", "neo4j-driver"],
   },

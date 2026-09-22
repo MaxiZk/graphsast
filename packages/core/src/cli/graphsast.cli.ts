@@ -1,11 +1,20 @@
 #!/usr/bin/env node
-import { writeFileSync } from "node:fs";
+import { statSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { scanPaths } from "../scan/scan.js";
 import { assertReadableTarget, ScanInputError } from "../scan/files.js";
 import { reportToText } from "../scan/reporters/text.js";
 import { reportToSarif, type SarifFamily } from "../scan/reporters/sarif.js";
 import { getCatalogBundle } from "../taint/rules.js";
 import { EXIT, exitCodeFor, parseCweFamily } from "./exit-code.js";
+import { VERSION } from "../version.js";
+import {
+  API_HOST,
+  DEFAULT_API_PORT,
+  MAX_BODY_BYTES,
+  resolveLocalNeo4j,
+  startApiServer,
+} from "../server/server.js";
 import {
   ALWAYS_IGNORE,
   DEFAULT_EXTENSIONS,
@@ -13,12 +22,12 @@ import {
   type ScanOptions,
 } from "../scan/types.js";
 
-const VERSION = "0.1.0";
 
 const USAGE = `GraphSAST v${VERSION} — análisis estático de flujo de datos
 
 USO
   graphsast scan <ruta...> [opciones]
+  graphsast serve [--port <n>] [--root <carpeta>]
 
   Cada ruta puede ser un archivo o una carpeta; las carpetas se recorren
   en forma recursiva respetando los .gitignore del proyecto.
@@ -58,6 +67,15 @@ CÓDIGOS DE SALIDA
   2  error: uso incorrecto, ruta inexistente o ilegible, catálogo CWE ausente,
      ningún archivo analizable, o algún archivo que no se pudo analizar
 
+SERVE (API local)
+  Levanta la API HTTP que consume la interfaz de visualización. Escucha
+  únicamente en ${API_HOST}; no hay opción para cambiarlo.
+  --port <n>                  Puerto (default: ${DEFAULT_API_PORT})
+  --root <carpeta>            Única carpeta que se puede analizar por ruta
+                              (default: el directorio actual)
+  Endpoints: GET /api/health, GET /api/catalog, POST /api/analyze
+  (cuerpo JSON {"code": "..."} o {"path": "..."}, hasta ${MAX_BODY_BYTES} bytes)
+
 EJEMPLOS
   graphsast scan ./src
   graphsast scan src/controllers/finance.ts
@@ -65,6 +83,7 @@ EJEMPLOS
   graphsast scan ./src --format sarif --out graphsast.sarif
   graphsast scan app.js --cwe 89 --format json
   graphsast scan ./src --fail-on cwe-89,cwe-78
+  graphsast serve --port 5174
 `;
 
 interface Cli {
@@ -215,6 +234,70 @@ function render(
   });
 }
 
+/** `graphsast serve`: devuelve un código si termina, o null si queda escuchando. */
+async function serve(argv: string[]): Promise<number | null> {
+  let port = DEFAULT_API_PORT;
+  let root = process.cwd();
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i]!;
+    switch (arg) {
+      case "-h":
+      case "--help":
+        process.stdout.write(USAGE);
+        return EXIT.CLEAN;
+      case "--port": {
+        const n = Number(nextValue(argv, i++, arg));
+        if (!Number.isInteger(n) || n < 1 || n > 65535) {
+          throw new UsageError("--port debe ser un entero entre 1 y 65535.");
+        }
+        port = n;
+        break;
+      }
+      case "--root":
+        root = nextValue(argv, i++, arg);
+        break;
+      default:
+        throw new UsageError(`Opción desconocida para serve: ${arg}`);
+    }
+  }
+
+  assertReadableTarget(root);
+  if (!statSync(root).isDirectory()) {
+    throw new ScanInputError(`--root debe ser una carpeta: ${root}`);
+  }
+  root = path.resolve(root);
+
+  const catalog = getCatalogBundle();
+  if (catalog.entries.length === 0) {
+    process.stderr.write(`Error: no se encontró el catálogo CWE en ${catalog.dir}\n`);
+    return EXIT.ERROR;
+  }
+
+  const neo4j = await resolveLocalNeo4j();
+  if (neo4j.warning) process.stderr.write(`Aviso: ${neo4j.warning}\n`);
+
+  try {
+    await startApiServer({ port, root, driver: neo4j.driver });
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    process.stderr.write(
+      code === "EADDRINUSE"
+        ? `Error: el puerto ${port} ya está en uso.\n`
+        : `Error: no se pudo levantar la API: ${(err as Error).message}\n`,
+    );
+    await neo4j.driver?.close();
+    return EXIT.ERROR;
+  }
+
+  process.stdout.write(
+    `GraphSAST API v${VERSION} escuchando en http://${API_HOST}:${port}\n`
+    + `  raíz permitida: ${root}\n`
+    + `  motor: ${neo4j.driver ? "neo4j (local)" : "memoria"}\n`
+    + `  Ctrl+C para detener.\n`,
+  );
+  return null;
+}
+
 function main(argv: string[]): number {
   if (argv.includes("-h") || argv.includes("--help")) {
     process.stdout.write(USAGE);
@@ -279,9 +362,7 @@ function main(argv: string[]): number {
   return exitCodeFor(result, { exitZero: cli.exitZero, failOn: cli.failOn });
 }
 
-try {
-  process.exitCode = main(process.argv.slice(2));
-} catch (err) {
+function fail(err: unknown): void {
   if (err instanceof ScanInputError) {
     process.stderr.write(`Error: ${err.message}\n`);
     process.exitCode = 2;
@@ -293,5 +374,18 @@ try {
       `Error inesperado: ${err instanceof Error ? err.message : String(err)}\n`,
     );
     process.exitCode = 2;
+  }
+}
+
+const argv = process.argv.slice(2);
+if (argv[0] === "serve") {
+  serve(argv.slice(1)).then((code) => {
+    if (code !== null) process.exitCode = code;
+  }, fail);
+} else {
+  try {
+    process.exitCode = main(argv);
+  } catch (err) {
+    fail(err);
   }
 }
