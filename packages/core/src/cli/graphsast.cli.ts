@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { writeFileSync } from "node:fs";
 import { scanPaths } from "../scan/scan.js";
+import { assertReadableTarget, ScanInputError } from "../scan/files.js";
 import { reportToText } from "../scan/reporters/text.js";
 import { reportToSarif } from "../scan/reporters/sarif.js";
 import {
+  ALWAYS_IGNORE,
   DEFAULT_EXTENSIONS,
   DEFAULT_IGNORE,
   type ScanOptions,
@@ -16,13 +18,19 @@ const USAGE = `GraphSAST v${VERSION} — análisis estático de flujo de datos
 USO
   graphsast scan <ruta...> [opciones]
 
+  Cada ruta puede ser un archivo o una carpeta; las carpetas se recorren
+  en forma recursiva respetando los .gitignore del proyecto.
+
 OPCIONES
   --format <text|json|sarif>  Formato de salida (default: text)
-  --out <archivo>             Escribir la salida a un archivo
+  --output, --out <archivo>   Escribir la salida a un archivo
   --ext <.ts,.js>             Extensiones a analizar
                               (default: ${DEFAULT_EXTENSIONS.join(",")})
-  --ignore <a,b>              Carpetas a excluir
+  --exclude <patrón>          Excluir rutas (sintaxis .gitignore, relativa a
+                              la carpeta escaneada). Repetible o separado por comas
+  --ignore <a,b>              Nombres de carpeta a excluir
                               (default: ${DEFAULT_IGNORE.join(",")})
+                              Siempre excluidas: ${ALWAYS_IGNORE.join(",")}
   --cwe <89,79>               Reportar solo estos CWE
   --max-depth <n>             Profundidad máxima del camino (default: 15)
   --max-file-bytes <n>        Omitir archivos más grandes (default: 1000000)
@@ -36,10 +44,12 @@ OPCIONES
 CÓDIGOS DE SALIDA
   0  sin hallazgos (o --exit-zero)
   1  se encontraron hallazgos
-  2  error de uso o de ejecución
+  2  error de uso o de ejecución (p. ej., ruta inexistente o ilegible)
 
 EJEMPLOS
   graphsast scan ./src
+  graphsast scan src/controllers/finance.ts
+  graphsast scan . --exclude "**/*.test.ts" --exclude fixtures/
   graphsast scan ./src --format sarif --out graphsast.sarif
   graphsast scan app.js --cwe 89 --format json
 `;
@@ -92,7 +102,14 @@ function parseArgs(argv: string[]): Cli {
         break;
       }
       case "--out":
+      case "--output":
         cli.out = nextValue(argv, i++, arg);
+        break;
+      case "--exclude":
+        cli.scan.exclude = [
+          ...(cli.scan.exclude ?? []),
+          ...splitList(nextValue(argv, i++, arg)),
+        ];
         break;
       case "--ext":
         cli.scan.extensions = splitList(nextValue(argv, i++, arg)).map((e) =>
@@ -176,6 +193,7 @@ function main(argv: string[]): number {
   }
 
   const cli = parseArgs(rest);
+  for (const target of cli.paths) assertReadableTarget(target);
   const result = scanPaths(cli.paths, cli.scan);
   const output = render(cli, result);
 
@@ -199,7 +217,10 @@ function main(argv: string[]): number {
 try {
   process.exitCode = main(process.argv.slice(2));
 } catch (err) {
-  if (err instanceof UsageError) {
+  if (err instanceof ScanInputError) {
+    process.stderr.write(`Error: ${err.message}\n`);
+    process.exitCode = 2;
+  } else if (err instanceof UsageError) {
     process.stderr.write(`Error: ${err.message}\n\n${USAGE}`);
     process.exitCode = 2;
   } else {

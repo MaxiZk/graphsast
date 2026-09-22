@@ -1,8 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { chmodSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { discoverFiles, commonRoot } from "./files.js";
+import {
+  assertReadableTarget,
+  commonRoot,
+  discoverFiles,
+  ScanInputError,
+} from "./files.js";
 import { scanPaths, scanSource } from "./scan.js";
 
 let root: string;
@@ -76,6 +81,95 @@ describe("discoverFiles", () => {
 
   it("devuelve vacio si la ruta no existe", () => {
     expect(discoverFiles(path.join(root, "no-existe"))).toEqual([]);
+  });
+
+  it("una lista de ignore explicita no reincluye node_modules ni dist", () => {
+    const files = discoverFiles(root, { ignore: ["routes"] })
+      .map((f) => path.relative(root, f));
+    expect(files.some((f) => f.includes("node_modules"))).toBe(false);
+    expect(files.some((f) => f.startsWith("dist"))).toBe(false);
+  });
+
+  it("--exclude acepta patrones con sintaxis .gitignore", () => {
+    const rel = (opts: { exclude: string[] }) =>
+      discoverFiles(root, opts).map((f) => path.relative(root, f));
+    expect(rel({ exclude: ["routes/"] })).toEqual([path.join("src", "cmd.ts")]);
+    expect(rel({ exclude: ["**/*.ts"] })).not.toContain(path.join("src", "cmd.ts"));
+    expect(rel({ exclude: ["/src/cmd.ts"] })).toHaveLength(2);
+  });
+});
+
+describe("discoverFiles con .gitignore", () => {
+  let repo: string;
+  const rel = (files: string[]) => files.map((f) => path.relative(repo, f)).sort();
+
+  beforeAll(() => {
+    repo = mkdtempSync(path.join(tmpdir(), "graphsast-gitignore-"));
+    mkdirSync(path.join(repo, ".git"));
+    mkdirSync(path.join(repo, "src", "generated"), { recursive: true });
+    mkdirSync(path.join(repo, "src", "lib"), { recursive: true });
+    writeFileSync(path.join(repo, ".gitignore"), "generated/\n*.gen.ts\n");
+    writeFileSync(path.join(repo, "src", "lib", ".gitignore"), "!keep.gen.ts\n");
+    for (const f of [
+      "src/app.ts",
+      "src/generated/api.ts",
+      "src/schema.gen.ts",
+      "src/lib/keep.gen.ts",
+      "src/lib/util.ts",
+    ]) {
+      writeFileSync(path.join(repo, f), "export const x = 1;\n");
+    }
+  });
+
+  afterAll(() => rmSync(repo, { recursive: true, force: true }));
+
+  it("excluye lo que el .gitignore excluye y respeta la negacion anidada", () => {
+    expect(rel(discoverFiles(repo))).toEqual([
+      path.join("src", "app.ts"),
+      path.join("src", "lib", "keep.gen.ts"),
+      path.join("src", "lib", "util.ts"),
+    ]);
+  });
+
+  it("aplica el .gitignore de la raiz del repo al escanear una subcarpeta", () => {
+    const files = rel(discoverFiles(path.join(repo, "src")));
+    expect(files).not.toContain(path.join("src", "generated", "api.ts"));
+    expect(files).not.toContain(path.join("src", "schema.gen.ts"));
+  });
+
+  it("gitignore: false vuelve a incluir todo", () => {
+    expect(discoverFiles(repo, { gitignore: false })).toHaveLength(5);
+  });
+
+  it("un archivo pasado explicitamente se analiza aunque este ignorado", () => {
+    const f = path.join(repo, "src", "schema.gen.ts");
+    expect(discoverFiles(f)).toEqual([f]);
+  });
+});
+
+describe("assertReadableTarget", () => {
+  it("acepta archivos y carpetas existentes", () => {
+    expect(() => assertReadableTarget(root)).not.toThrow();
+    expect(() => assertReadableTarget(path.join(root, "src", "cmd.ts"))).not.toThrow();
+  });
+
+  it("rechaza una ruta inexistente con ScanInputError", () => {
+    expect(() => assertReadableTarget(path.join(root, "no-existe")))
+      .toThrow(ScanInputError);
+    expect(() => assertReadableTarget(path.join(root, "no-existe")))
+      .toThrow(/no existe/);
+  });
+
+  it.skipIf(process.getuid?.() === 0)("rechaza una ruta sin permiso de lectura", () => {
+    const locked = path.join(root, "locked.ts");
+    writeFileSync(locked, "export {};\n");
+    chmodSync(locked, 0o000);
+    try {
+      expect(() => assertReadableTarget(locked)).toThrow(/permiso de lectura/);
+    } finally {
+      chmodSync(locked, 0o644);
+      rmSync(locked);
+    }
   });
 });
 

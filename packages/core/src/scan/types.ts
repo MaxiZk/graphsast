@@ -52,8 +52,12 @@ export interface ScanResult {
 export interface ScanOptions {
   /** Extensiones a incluir (con punto). */
   extensions?: string[];
-  /** Fragmentos de ruta a excluir. */
+  /** Nombres de carpeta a excluir (se suman a ALWAYS_IGNORE). */
   ignore?: string[];
+  /** Patrones con sintaxis .gitignore, relativos a cada carpeta escaneada. */
+  exclude?: string[];
+  /** Respetar los .gitignore del proyecto analizado (default: true). */
+  gitignore?: boolean;
   /** Omitir archivos mayores a este tamaño (bytes). */
   maxFileBytes?: number;
   /** Profundidad máxima del BFS de taint. */
@@ -63,6 +67,9 @@ export interface ScanOptions {
 }
 
 export const DEFAULT_EXTENSIONS = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"];
+
+/** Carpetas excluidas siempre, aunque `ignore` reemplace la lista por defecto. */
+export const ALWAYS_IGNORE = ["node_modules", ".git", "dist", "build", "coverage"];
 
 export const DEFAULT_IGNORE = [
   "node_modules",

@@ -28,6 +28,8 @@ export function scanPackage(dir: string, cwe: number): PackageScanSummary {
   const files = discoverFiles(dir, {
     ignore: CVE_IGNORE,
     maxFileBytes: MAX_FILE_BYTES,
+    // El benchmark no depende de un .gitignore que pueda rodear al corpus.
+    gitignore: false,
   }).slice(0, MAX_FILES_PER_PACKAGE);
 
   let findings = 0;

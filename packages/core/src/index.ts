@@ -50,10 +50,16 @@ export { reportToHtml } from "./report/html.js";
 export type { AnalysisReport } from "./report/json.js";
 
 export { scanPaths, scanSource, toScanFindings } from "./scan/scan.js";
-export { discoverFiles, commonRoot } from "./scan/files.js";
+export {
+  discoverFiles,
+  commonRoot,
+  assertReadableTarget,
+  ScanInputError,
+} from "./scan/files.js";
 export { reportToText } from "./scan/reporters/text.js";
 export { reportToSarif } from "./scan/reporters/sarif.js";
 export {
+  ALWAYS_IGNORE,
   DEFAULT_EXTENSIONS,
   DEFAULT_IGNORE,
   DEFAULT_MAX_FILE_BYTES,
