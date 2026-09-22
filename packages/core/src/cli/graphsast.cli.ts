@@ -4,6 +4,8 @@ import { scanPaths } from "../scan/scan.js";
 import { assertReadableTarget, ScanInputError } from "../scan/files.js";
 import { reportToText } from "../scan/reporters/text.js";
 import { reportToSarif } from "../scan/reporters/sarif.js";
+import { getCatalogBundle } from "../taint/rules.js";
+import { EXIT, exitCodeFor, parseCweFamily } from "./exit-code.js";
 import {
   ALWAYS_IGNORE,
   DEFAULT_EXTENSIONS,
@@ -34,17 +36,21 @@ OPCIONES
   --cwe <89,79>               Reportar solo estos CWE
   --max-depth <n>             Profundidad máxima del camino (default: 15)
   --max-file-bytes <n>        Omitir archivos más grandes (default: 1000000)
+  --fail-on <cwe-89,cwe-78>   Solo estas familias CWE provocan el código 1
+                              (el reporte las muestra todas igual)
   --no-path                   En texto, mostrar solo source y sink
   --color                     Forzar color ANSI
   --exit-zero                 Salir con 0 aunque haya hallazgos
+                              (los errores siguen dando 2)
   -q, --quiet                 Solo la salida del reporte
   -h, --help                  Esta ayuda
   -v, --version               Versión
 
 CÓDIGOS DE SALIDA
-  0  sin hallazgos (o --exit-zero)
-  1  se encontraron hallazgos
-  2  error de uso o de ejecución (p. ej., ruta inexistente o ilegible)
+  0  análisis completo, sin hallazgos (o con --exit-zero)
+  1  análisis completo, con hallazgos (de las familias de --fail-on, si se indica)
+  2  error: uso incorrecto, ruta inexistente o ilegible, catálogo CWE ausente,
+     ningún archivo analizable, o algún archivo que no se pudo analizar
 
 EJEMPLOS
   graphsast scan ./src
@@ -52,6 +58,7 @@ EJEMPLOS
   graphsast scan . --exclude "**/*.test.ts" --exclude fixtures/
   graphsast scan ./src --format sarif --out graphsast.sarif
   graphsast scan app.js --cwe 89 --format json
+  graphsast scan ./src --fail-on cwe-89,cwe-78
 `;
 
 interface Cli {
@@ -61,6 +68,7 @@ interface Cli {
   color: boolean;
   showPath: boolean;
   exitZero: boolean;
+  failOn: number[];
   quiet: boolean;
   scan: ScanOptions;
 }
@@ -86,6 +94,7 @@ function parseArgs(argv: string[]): Cli {
     color: process.stdout.isTTY === true && !process.env.NO_COLOR,
     showPath: true,
     exitZero: false,
+    failOn: [],
     quiet: false,
     scan: {},
   };
@@ -125,6 +134,15 @@ function parseArgs(argv: string[]): Cli {
           if (!Number.isFinite(parsed)) throw new UsageError(`CWE inválido: ${n}`);
           return parsed;
         });
+        break;
+      case "--fail-on":
+        for (const raw of splitList(nextValue(argv, i++, arg))) {
+          const cwe = parseCweFamily(raw);
+          if (cwe === null) {
+            throw new UsageError(`Familia CWE inválida: ${raw} (formato: cwe-89)`);
+          }
+          cli.failOn.push(cwe);
+        }
         break;
       case "--max-depth": {
         const n = Number(nextValue(argv, i++, arg));
@@ -193,6 +211,22 @@ function main(argv: string[]): number {
   }
 
   const cli = parseArgs(rest);
+
+  // Sin catálogo no hay sinks, y todo escaneo daría «Sin hallazgos».
+  const catalog = getCatalogBundle();
+  if (catalog.entries.length === 0) {
+    process.stderr.write(`Error: no se encontró el catálogo CWE en ${catalog.dir}\n`);
+    return EXIT.ERROR;
+  }
+  const active = catalog.entries.map((e) => e.cwe);
+  const unknown = cli.failOn.filter((cwe) => !active.includes(cwe));
+  if (unknown.length > 0) {
+    throw new UsageError(
+      `--fail-on: familia(s) no activa(s): ${unknown.map((c) => `cwe-${c}`).join(", ")}`
+      + ` (activas: ${active.map((c) => `cwe-${c}`).join(", ")})`,
+    );
+  }
+
   for (const target of cli.paths) assertReadableTarget(target);
   const result = scanPaths(cli.paths, cli.scan);
   const output = render(cli, result);
@@ -209,9 +243,19 @@ function main(argv: string[]): number {
     process.stdout.write(`${output}\n`);
   }
 
-  if (cli.exitZero) return 0;
-  if (result.totals.errors > 0 && result.totals.files === result.totals.errors) return 2;
-  return result.totals.findings > 0 ? 1 : 0;
+  if (result.totals.files === 0) {
+    process.stderr.write(
+      `Error: no se encontraron archivos analizables en: ${cli.paths.join(", ")}\n`,
+    );
+  } else if (result.totals.errors > 0 && (cli.out || cli.format !== "text")) {
+    // En texto a stdout el reporte ya los lista.
+    process.stderr.write(
+      `Error: ${result.totals.errors} archivo(s) no pudieron analizarse; `
+      + `el análisis está incompleto.\n`,
+    );
+  }
+
+  return exitCodeFor(result, { exitZero: cli.exitZero, failOn: cli.failOn });
 }
 
 try {
