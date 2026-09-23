@@ -71,7 +71,7 @@ CÓDIGOS DE SALIDA
      ningún archivo analizable, o algún archivo que no se pudo analizar
 
 SERVE (API local)
-  Levanta la API HTTP que consume la interfaz de visualización. Escucha
+  Levanta la API HTTP local (análisis por HTTP para otras herramientas). Escucha
   únicamente en ${API_HOST}; no hay opción para cambiarlo.
   --port <n>                  Puerto (default: ${DEFAULT_API_PORT})
   --root <carpeta>            Única carpeta que se puede analizar por ruta

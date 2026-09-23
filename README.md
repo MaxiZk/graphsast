@@ -11,12 +11,12 @@ de ejecutar la aplicación.
 
 ## El código no sale de la máquina
 
-GraphSAST se usa como **CLI** (terminal y CI/CD) o como **API local** que
-consume la interfaz de visualización. En ningún caso envía código a un
-servidor externo:
+GraphSAST se usa como **página web**, como **CLI** (terminal y CI/CD) o como
+**API local**. En ningún caso envía código a un servidor externo:
 
-- La API escucha únicamente en `127.0.0.1`. No hay opción para cambiarlo, y la
-  interfaz se niega a arrancar si Vite se configura para escuchar en la red.
+- La página web analiza en el navegador: los archivos que el usuario sube se
+  leen y se analizan en su equipo, y el servidor solo entrega la página.
+- La API escucha únicamente en `127.0.0.1`. No hay opción para cambiarlo.
 - Neo4j, que es opcional, solo se usa si `NEO4J_URI` apunta a esta máquina. Si
   apunta a otra, se ignora y se usa el motor en memoria.
 - El único archivo que puede salir del equipo es el reporte SARIF que el
@@ -200,17 +200,33 @@ Protecciones:
 - **Host:** el header `Host` tiene que ser `127.0.0.1`, `localhost` o `[::1]`
   (`403`), como defensa contra DNS rebinding.
 
-## Visualización web
+## Versión web
 
 ```bash
-npm start          # http://127.0.0.1:5173
+npm start          # http://localhost:5173
 ```
 
-Pegar código, analizar, y ver el grafo con el camino de riesgo resaltado.
-Incluye ejemplos precargados y exportación del informe a HTML/PDF. La
-interfaz consume la API local a través del proxy de Vite: si ya hay un
-`graphsast serve` en el puerto 5174 lo reutiliza, y si no lo levanta. El
-puerto se cambia con `GRAPHSAST_API_PORT`.
+El usuario elige o arrastra una carpeta (o archivos sueltos) de su proyecto y,
+al terminar el análisis, ve las vulnerabilidades encontradas: cada hallazgo con
+su familia CWE, el archivo y la línea del sink, el camino completo del dato
+(aunque cruce archivos), el código con las líneas del camino resaltadas y el
+grafo. El resultado se exporta a JSON, HTML o PDF. La pestaña «Ejemplos» tiene
+los casos precargados de la demo y permite pegar código.
+
+El análisis corre en el navegador, en un Web Worker, con el mismo motor que el
+CLI (`@graphsast/core/browser`, sin Neo4j): se analizan los mismos archivos
+(`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx` de hasta 1 MB, fuera de
+`node_modules`, `dist`, `build` y demás carpetas excluidas) y se siguen las
+llamadas entre archivos igual que en `scan`. Los `.gitignore` del proyecto no se
+leen.
+
+Como el sitio es estático, se despliega en Vercel sin funciones de servidor:
+`vercel.json` compila el core y la página (`npm run build && npm run viz:build`)
+y publica `packages/viz/dist`. Para probar el build de producción en local:
+
+```bash
+npm run viz:preview   # compila core y página, y sirve el resultado
+```
 
 ## GitHub Actions
 
@@ -290,10 +306,9 @@ npm run neo4j:up      # docker compose
 NEO4J_URI=bolt://localhost:7687 npm start
 ```
 
-Con `NEO4J_URI` definida y apuntando a esta máquina, la interfaz y
-`graphsast serve` persisten el grafo y ejecutan la detección como consulta
-Cypher en vez del motor en memoria. El CLI `scan` usa siempre el motor en
-memoria.
+Con `NEO4J_URI` definida y apuntando a esta máquina, `graphsast serve`
+persiste el grafo y ejecuta la detección como consulta Cypher en vez del motor
+en memoria. El CLI `scan` y la versión web usan siempre el motor en memoria.
 
 ## Desarrollo
 
@@ -318,7 +333,7 @@ packages/core/src/
   server/      API local (graphsast serve)
   cli/         binario graphsast
   eval/        corpus y métricas
-packages/viz/  aplicación web (Vite + Cytoscape.js)
+packages/viz/  versión web (Vite + Cytoscape.js); el análisis corre en un Web Worker
 ```
 
 ## Limitaciones

@@ -588,6 +588,199 @@ body {
   padding: 0.25rem 0;
 }
 
+/* Pestañas «Tu proyecto» / «Ejemplos». */
+.mode-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+/* Pestañas y exportación no entran en una fila con la columna angosta. */
+.editor-panel .panel-head {
+  flex-wrap: wrap;
+}
+
+.mode-tab {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  padding: 0.38rem 0.75rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mode-tab[aria-selected="true"] {
+  border-color: var(--accent);
+  color: var(--text);
+  background: rgba(59, 130, 246, 0.14);
+}
+
+/* `display: flex` le gana a `[hidden]`, igual que en .stats. */
+.examples-mode[hidden],
+#project-mode[hidden],
+#project-files[hidden] {
+  display: none;
+}
+
+.examples-mode {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Altura natural: si se estira como .examples-mode, el visor de código se
+   desborda sobre las estadísticas. La columna scrollea sola. */
+#project-mode {
+  display: flex;
+  flex-direction: column;
+}
+
+.analyze-row {
+  align-items: center;
+  margin: 0.55rem 0 0.65rem;
+}
+
+.analyze-row .hint {
+  margin: 0;
+}
+
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 1.1rem 1rem;
+  text-align: center;
+  background: #0a0e13;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.drop-zone.dragging {
+  border-color: var(--accent);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.drop-zone.busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.drop-title {
+  margin: 0 0 0.7rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.drop-actions {
+  justify-content: center;
+}
+
+.file-btn {
+  display: inline-block;
+}
+
+.privacy {
+  margin: 0.75rem 0 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.selection-summary {
+  margin: 0.6rem 0 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.scan-progress {
+  width: 100%;
+  margin-top: 0.5rem;
+  accent-color: var(--accent);
+}
+
+#project-files {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.8rem;
+}
+
+.file-list {
+  flex: none;
+  list-style: none;
+  margin: 0 0 0.65rem;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0a0e13;
+}
+
+.file-list button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  color: var(--text);
+  padding: 0.3rem 0.55rem;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 0.74rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.file-list button.active {
+  border-left-color: var(--accent);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.file-list button.vulnerable .file-badge {
+  color: #fdba74;
+  font-weight: 700;
+}
+
+.file-list button.failed {
+  color: #5f6f86;
+  cursor: default;
+}
+
+.file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-badge {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+/* El archivo entero, no solo un fragmento: necesita más alto que el de ejemplos. */
+.code-view {
+  min-height: 200px;
+  max-height: 55vh;
+}
+
+.findings-list .finding-location,
+.findings-list .finding-path {
+  display: block;
+  word-break: break-word;
+}
+
+.findings-list .finding-location {
+  font-family: "Cascadia Code", "Consolas", monospace;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.findings-list .finding-path {
+  margin-top: 0.2rem;
+}
+
 @media (max-width: 1100px) {
   body {
     height: auto;

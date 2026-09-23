@@ -1,4 +1,12 @@
 import cytoscape, { type Core } from "cytoscape";
+import type {
+  AnalysisPayload,
+  IRGraph,
+  TaintFinding,
+  TaintRoles,
+  Verdict,
+} from "@graphsast/core/browser";
+import { analyzeProject, analyzeSnippet } from "./analysis-client.js";
 import { renderCodeLines } from "./code-lines.js";
 import { linesOnPath, toCytoscapeElements } from "./cytoscape.js";
 import {
@@ -13,51 +21,36 @@ import {
   formatFindingPath,
   plural,
 } from "./labels.js";
-import { downloadHtmlReport, printHtmlReport } from "./report-export.js";
+import {
+  findingHeading,
+  findingLocation,
+  findingPath,
+  graphIndexOfFile,
+  linesInFile,
+  projectFindings,
+  projectVerdict,
+  type ProjectFinding,
+} from "./project-view.js";
+import type { CatalogSummary, ProjectAnalysis, UploadedFile } from "./protocol.js";
+import {
+  downloadHtmlReport,
+  downloadProjectReport,
+  downloadText,
+  printHtmlReport,
+  printProjectReport,
+} from "./report-export.js";
 import type { VizAnalysisReport } from "./report-html.js";
+import {
+  describeSelection,
+  filesFromDrop,
+  filesFromInput,
+  selectUploads,
+} from "./upload.js";
 
-/** Tipos alineados con la respuesta de /api/analyze (solo en el cliente). */
-interface IRGraph {
-  file: string;
-  nodes: { id: string; kind: string; name: string; code: string; loc: { line: number }; callee?: string }[];
-  edges: { kind: string; from: string; to: string }[];
-}
+type AnalysisStats = AnalysisPayload["stats"];
 
-interface TaintFinding {
-  sourceId: string;
-  sinkId: string;
-  path: string[];
-  sanitized: boolean;
-  cwe?: number;
-  cweName?: string;
-  ruleId?: string;
-}
-
-interface TaintRoles {
-  sourceIds: string[];
-  sinkIds: string[];
-  sanitizerIds: string[];
-}
-
-interface Verdict {
-  kind: "not-analyzable" | "no-coverage" | "clean" | "vulnerable";
-  title: string;
-  detail: string;
-  conclusive: boolean;
-  sources: number;
-  sinks: number;
-  findings: number;
-  syntaxErrors: number;
-}
-
-interface AnalysisStats {
-  elapsedMs: number;
-  lineCount: number;
-  nodeCount: number;
-  edgeCount: number;
-  edgeKinds: Record<string, number>;
-  findingCount: number;
-}
+/** Qué se está mirando: el proyecto subido o los ejemplos de la demo. */
+type Mode = "project" | "examples";
 
 const codeInput = document.querySelector<HTMLTextAreaElement>("#code-input")!;
 const codeLinesEl = document.querySelector<HTMLDivElement>("#code-lines")!;
@@ -80,6 +73,19 @@ const readingEl = document.querySelector<HTMLParagraphElement>("#reading")!;
 const nodeDetail = document.querySelector<HTMLPreElement>("#node-detail")!;
 const edgeFilters = document.querySelector<HTMLFieldSetElement>("#edge-filters")!;
 const dimToggle = document.querySelector<HTMLInputElement>("#dim-toggle")!;
+const tabProject = document.querySelector<HTMLButtonElement>("#tab-project")!;
+const tabExamples = document.querySelector<HTMLButtonElement>("#tab-examples")!;
+const projectModeEl = document.querySelector<HTMLDivElement>("#project-mode")!;
+const examplesModeEl = document.querySelector<HTMLDivElement>("#examples-mode")!;
+const dropZone = document.querySelector<HTMLDivElement>("#drop-zone")!;
+const folderInput = document.querySelector<HTMLInputElement>("#folder-input")!;
+const filesInput = document.querySelector<HTMLInputElement>("#files-input")!;
+const selectionSummary = document.querySelector<HTMLParagraphElement>("#selection-summary")!;
+const scanProgress = document.querySelector<HTMLProgressElement>("#scan-progress")!;
+const projectFilesEl = document.querySelector<HTMLDivElement>("#project-files")!;
+const fileList = document.querySelector<HTMLUListElement>("#file-list")!;
+const fileViewLabel = document.querySelector<HTMLParagraphElement>("#file-view-label")!;
+const projectCode = document.querySelector<HTMLDivElement>("#project-code")!;
 
 let cy: Core | null = null;
 let graph: IRGraph | null = null;
@@ -88,13 +94,7 @@ let lastStats: AnalysisStats | null = null;
 let lastRules: Record<string, string> = {};
 let lastRoles: TaintRoles = { sourceIds: [], sinkIds: [], sanitizerIds: [] };
 let lastReport: VizAnalysisReport | null = null;
-let lastCatalog: {
-  cwe: number;
-  name: string;
-  description?: string;
-  sinks: number;
-  sanitizers: number;
-}[] = [];
+let lastCatalog: CatalogSummary[] = [];
 let lastEngine = "memory";
 let highlightIndex = 0;
 /**
@@ -106,6 +106,16 @@ let highlightIndex = 0;
 let analyzedCode: string | null = null;
 let lastVerdict: Verdict | null = null;
 
+let mode: Mode = "project";
+/** Último análisis de ejemplo, para restaurarlo al volver a la pestaña. */
+let snippet: AnalysisPayload | null = null;
+let examplesLoaded = false;
+let project: ProjectAnalysis | null = null;
+let projectItems: ProjectFinding[] = [];
+/** Archivo del proyecto que se muestra, y hallazgo resaltado (-1: ninguno). */
+let selectedFile: string | null = null;
+let selectedItem = -1;
+
 const ALL_EDGE_KINDS = [
   "FLOWS_TO",
   "CALLS",
@@ -115,7 +125,7 @@ const ALL_EDGE_KINDS = [
 ] as const;
 type IREdgeKind = (typeof ALL_EDGE_KINDS)[number];
 
-function cytoscapeStyle(): cytoscape.Stylesheet[] {
+function cytoscapeStyle(): cytoscape.StylesheetJson {
   return [
     {
       selector: "node",
@@ -123,7 +133,7 @@ function cytoscapeStyle(): cytoscape.Stylesheet[] {
         label: "data(label)",
         "font-size": 12,
         "text-wrap": "wrap",
-        "text-max-width": 110,
+        "text-max-width": "110px",
         "background-color": "#475569",
         color: "#f8fafc",
         "text-valign": "center",
@@ -262,9 +272,33 @@ function currentHighlight(): TaintFinding | undefined {
 }
 
 function renderCodeHighlight() {
+  if (mode === "project") {
+    renderProjectCode();
+    return;
+  }
   const finding = currentHighlight();
   const lines = new Set(linesOnPath(graph ?? { file: "", nodes: [], edges: [] }, finding));
   renderCodeLines(codeLinesEl, codeInput.value, lines);
+}
+
+/** Archivo elegido del proyecto, con las líneas del camino resaltado. */
+function renderProjectCode() {
+  const code = selectedFile ? project?.contents[selectedFile] : undefined;
+  if (!selectedFile || code === undefined) {
+    fileViewLabel.textContent = "Archivo";
+    projectCode.innerHTML = "";
+    return;
+  }
+  const item = projectItems[selectedItem];
+  const lines = item ? linesInFile(item.finding, selectedFile) : new Set<number>();
+  fileViewLabel.textContent = selectedFile;
+  renderCodeLines(projectCode, code, lines);
+  // Solo el visor: scrollIntoView movería también la columna y taparía las pestañas.
+  const risk = projectCode.querySelector<HTMLElement>(".code-line.risk");
+  projectCode.scrollTop = risk
+    ? projectCode.scrollTop + risk.getBoundingClientRect().top
+      - projectCode.getBoundingClientRect().top - projectCode.clientHeight / 3
+    : 0;
 }
 
 /**
@@ -334,10 +368,15 @@ function clearAnalysisView() {
   findingsList.innerHTML = "";
   statsEl.hidden = true;
   codeLinesEl.innerHTML = "";
+  projectCode.innerHTML = "";
   nodeDetail.textContent = "";
 }
 
 function renderStats() {
+  if (mode === "project") {
+    renderProjectStats();
+    return;
+  }
   if (!lastStats) {
     statsEl.hidden = true;
     return;
@@ -352,6 +391,22 @@ function renderStats() {
     <dt>Nodos</dt><dd>${lastStats.nodeCount}</dd>
     <dt>Aristas</dt><dd>${lastStats.edgeCount}</dd>
     <dt>Tipos</dt><dd>${kinds}</dd>
+  `;
+}
+
+function renderProjectStats() {
+  if (!project) {
+    statsEl.hidden = true;
+    return;
+  }
+  const { totals } = project.output.result;
+  statsEl.hidden = false;
+  statsEl.innerHTML = `
+    <dt>Tiempo</dt><dd>${Math.round(totals.elapsedMs)} ms</dd>
+    <dt>Archivos</dt><dd>${totals.files}</dd>
+    <dt>Líneas</dt><dd>${totals.lines}</dd>
+    <dt>Llamadas entre archivos</dt><dd>${totals.crossFileCalls}</dd>
+    <dt>No analizados</dt><dd>${totals.errors}</dd>
   `;
 }
 
@@ -394,7 +449,7 @@ function renderEngineBadge() {
   engineBadge.title =
     lastEngine === "neo4j"
       ? "Análisis vía Cypher sobre grafo persistido"
-      : "Análisis BFS en memoria (sin Neo4j)";
+      : "Análisis BFS en memoria, en tu navegador";
 }
 
 function renderRules() {
@@ -416,64 +471,15 @@ const VERDICT_CLASS: Record<Verdict["kind"], string> = {
   vulnerable: "verdict warn",
 };
 
-/**
- * Veredicto derivado en el cliente cuando la respuesta no trae uno: pasa con
- * un servidor de dev viejo, levantado antes de que el endpoint lo incluyera.
- * Sin esto el panel decía «Sin analizar todavía» justo después de analizar.
- * No puede detectar `not-analyzable` —eso lo sabe solo el parser—, así que se
- * limita a lo que el cliente sí puede ver: hallazgos, sources y sinks.
- */
-function fallbackVerdict(): Verdict {
-  const sources = lastRoles.sourceIds.length;
-  const sinks = lastRoles.sinkIds.length;
-  const base = { sources, sinks, findings: findings.length, syntaxErrors: 0 };
-
-  if (findings.length > 0) {
-    return {
-      ...base,
-      kind: "vulnerable",
-      conclusive: true,
-      title: plural(
-        findings.length,
-        "vulnerabilidad detectada",
-        "vulnerabilidades detectadas",
-      ),
-      detail:
-        "Hay caminos de datos desde una entrada no confiable hasta una "
-        + "operación peligrosa, sin sanitizador en el medio.",
-    };
-  }
-  if (sources === 0 || sinks === 0) {
-    return {
-      ...base,
-      kind: "no-coverage",
-      conclusive: false,
-      title: "Sin vulnerabilidades, pero no hay nada que evaluar",
-      detail:
-        `Se analizó el código, pero hay ${plural(sources, "source", "sources")} `
-        + `y ${plural(sinks, "sink", "sinks")}. `
-        + "El resultado no afirma que el código sea seguro.",
-    };
-  }
-  return {
-    ...base,
-    kind: "clean",
-    conclusive: true,
-    title: "Sin caminos source → sink sin sanitizar",
-    detail:
-      `Se recorrieron los caminos entre ${plural(sources, "source", "sources")} `
-      + `y ${plural(sinks, "sink", "sinks")} `
-      + "y ninguno llega sin sanitizar. Alcance: este archivo.",
-  };
-}
-
 function renderVerdict() {
   verdictEl.hidden = false;
   const verdict = lastVerdict;
   if (!verdict) {
     // Solo se llega acá sin analizar; tras un análisis hay fallback.
     verdictEl.className = "verdict unknown";
-    verdictEl.textContent = "Sin analizar todavía.";
+    verdictEl.textContent = mode === "project"
+      ? "Subí una carpeta o archivos para analizarlos."
+      : "Sin analizar todavía.";
     return;
   }
   verdictEl.className = VERDICT_CLASS[verdict.kind];
@@ -511,15 +517,19 @@ function renderFindings() {
   renderVerdict();
   renderReading();
 
+  if (mode === "project") {
+    renderProjectFindings();
+    return;
+  }
+
   if (!graph || findings.length === 0) {
     const li = document.createElement("li");
     li.className = "empty";
     const sinks = lastRoles.sinkIds.length;
     const sources = lastRoles.sourceIds.length;
-    li.textContent =
-      sinks === 0
-        ? "Sin sinks detectados. Reiniciá npm start si actualizaste el proyecto."
-        : `Sin camino source→sink (${sources} source(s), ${sinks} sink(s) en el grafo).`;
+    li.textContent = graph
+      ? `Sin camino source→sink (${plural(sources, "source", "sources")}, ${plural(sinks, "sink", "sinks")} en el grafo).`
+      : "Todavía no hay resultados.";
     findingsList.appendChild(li);
     return;
   }
@@ -538,6 +548,192 @@ function renderFindings() {
     li.appendChild(btn);
     findingsList.appendChild(li);
   });
+}
+
+function renderProjectFindings() {
+  if (projectItems.length === 0) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = project ? "Sin hallazgos en el proyecto." : "Todavía no hay resultados.";
+    findingsList.appendChild(li);
+    return;
+  }
+  projectItems.forEach((item, i) => {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = i === selectedItem ? "active" : "";
+    const title = document.createElement("strong");
+    title.textContent = findingHeading(item.finding);
+    const where = document.createElement("span");
+    where.className = "finding-location";
+    where.textContent = findingLocation(item.finding);
+    const path = document.createElement("span");
+    path.className = "finding-path";
+    path.textContent = findingPath(item.finding);
+    btn.append(title, where, path);
+    btn.addEventListener("click", () => selectProjectItem(i));
+    li.appendChild(btn);
+    findingsList.appendChild(li);
+  });
+}
+
+/** Archivos subidos con su cantidad de hallazgos o el motivo por el que no se analizaron. */
+function renderFileList() {
+  fileList.innerHTML = "";
+  if (!project) return;
+  for (const file of project.output.result.files) {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = [
+      file.file === selectedFile ? "active" : "",
+      file.error ? "failed" : file.findings.length > 0 ? "vulnerable" : "",
+    ].filter(Boolean).join(" ");
+    btn.title = file.error ?? "";
+    const name = document.createElement("span");
+    name.className = "file-name";
+    name.textContent = file.file;
+    const badge = document.createElement("span");
+    badge.className = "file-badge";
+    badge.textContent = file.error ? "no analizado" : String(file.findings.length);
+    btn.append(name, badge);
+    btn.disabled = !!file.error;
+    btn.addEventListener("click", () => selectProjectFile(file.file));
+    li.appendChild(btn);
+    fileList.appendChild(li);
+  }
+}
+
+/** Muestra el grafo `graphIndex` del proyecto con el hallazgo `findingIndex` resaltado. */
+function showProjectGraph(graphIndex: number, findingIndex: number) {
+  const scanGraph = project?.output.graphs[graphIndex];
+  graph = scanGraph?.graph ?? null;
+  findings = scanGraph?.findings ?? [];
+  lastRoles = project?.roles[graphIndex] ?? { sourceIds: [], sinkIds: [], sanitizerIds: [] };
+  highlightIndex = findingIndex;
+  nodeDetail.textContent = "";
+  renderFileList();
+  renderFindings();
+  if (graph) renderGraph();
+  else {
+    cy?.elements().remove();
+    renderCodeHighlight();
+  }
+}
+
+function selectProjectItem(i: number) {
+  const item = projectItems[i];
+  if (!item) return;
+  selectedItem = i;
+  selectedFile = item.finding.file;
+  showProjectGraph(item.graphIndex, item.findingIndex);
+}
+
+/** Elige un archivo: su primer hallazgo si tiene, o su grafo sin resaltar. */
+function selectProjectFile(file: string) {
+  const first = projectItems.findIndex((item) => item.finding.file === file);
+  if (first >= 0) {
+    selectProjectItem(first);
+    return;
+  }
+  selectedItem = -1;
+  selectedFile = file;
+  showProjectGraph(graphIndexOfFile(project!.output, file), -1);
+}
+
+function showProject() {
+  if (!project) return;
+  projectItems = projectFindings(project.output);
+  lastRules = project.rules;
+  lastCatalog = project.catalog;
+  lastEngine = "memory";
+  lastVerdict = projectVerdict(project.output, project);
+  projectFilesEl.hidden = project.output.result.files.length === 0;
+  renderEngineBadge();
+  renderCatalog();
+  renderRules();
+  renderStats();
+  const firstFile = project.output.result.files.find((f) => !f.error)?.file;
+  if (projectItems.length > 0) selectProjectItem(0);
+  else if (firstFile) selectProjectFile(firstFile);
+  else {
+    clearAnalysisView();
+    renderFileList();
+    renderFindings();
+  }
+}
+
+async function scanUploads(uploads: UploadedFile[]) {
+  const selection = selectUploads(uploads);
+  selectionSummary.hidden = false;
+  selectionSummary.textContent = describeSelection(selection);
+  if (selection.accepted.length === 0) {
+    statusEl.textContent = "No hay archivos JavaScript o TypeScript para analizar.";
+    return;
+  }
+
+  folderInput.disabled = true;
+  filesInput.disabled = true;
+  dropZone.classList.add("busy");
+  scanProgress.hidden = false;
+  scanProgress.max = selection.accepted.length;
+  scanProgress.value = 0;
+  statusEl.textContent = "Preparando el analizador…";
+  const started = performance.now();
+  try {
+    project = await analyzeProject(selection.accepted, (done, total, file) => {
+      scanProgress.value = done;
+      statusEl.textContent = `Analizando ${done + 1} de ${total}: ${file}`;
+    });
+    if (mode !== "project") return;
+    showProject();
+    const { totals } = project.output.result;
+    statusEl.textContent =
+      `Listo en ${Math.round(performance.now() - started)} ms · `
+      + `${plural(totals.files, "archivo", "archivos")} · `
+      + `${plural(totals.findings, "hallazgo", "hallazgos")}`;
+  } catch (err) {
+    project = null;
+    projectItems = [];
+    selectedFile = null;
+    selectedItem = -1;
+    clearAnalysisView();
+    renderFileList();
+    statusEl.textContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
+  } finally {
+    folderInput.disabled = false;
+    filesInput.disabled = false;
+    dropZone.classList.remove("busy");
+    scanProgress.hidden = true;
+  }
+}
+
+/** Cambia de pestaña y vuelve a dibujar lo que corresponde a cada una. */
+function setMode(next: Mode) {
+  mode = next;
+  tabProject.setAttribute("aria-selected", String(next === "project"));
+  tabExamples.setAttribute("aria-selected", String(next === "examples"));
+  projectModeEl.hidden = next !== "project";
+  examplesModeEl.hidden = next !== "examples";
+  clearAnalysisView();
+  if (next === "project") {
+    if (project) showProject();
+    else {
+      renderStats();
+      renderFindings();
+    }
+    return;
+  }
+  if (!examplesLoaded) {
+    examplesLoaded = true;
+    populateExamples();
+    void runAnalysis();
+  } else if (snippet) {
+    showSnippet(snippet);
+  } else {
+    renderFindings();
+  }
 }
 
 /** Entrada del desplegable que representa el código propio del usuario. */
@@ -579,64 +775,50 @@ function loadExample(id: string) {
   codeInput.value = ex.code;
 }
 
+/** Vuelca un análisis de ejemplo en pantalla. */
+function showSnippet(data: AnalysisPayload) {
+  graph = data.graph;
+  findings = data.findings;
+  lastStats = data.stats;
+  lastRules = data.rules;
+  lastRoles = data.roles;
+  lastReport = data.report;
+  lastCatalog = data.catalog;
+  lastEngine = data.engine;
+  lastVerdict = data.verdict;
+  highlightIndex = 0;
+
+  renderEngineBadge();
+  renderCatalog();
+  renderRules();
+  renderStats();
+  renderFindings();
+  renderGraph();
+}
+
 async function runAnalysis() {
   const submittedCode = codeInput.value;
   statusEl.textContent = "Analizando…";
   analyzeBtn.disabled = true;
   nodeDetail.textContent = "";
   try {
-    const res = await fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: submittedCode, file: "demo.ts" }),
-    });
-    const data = (await res.json()) as {
-      graph?: IRGraph;
-      findings?: TaintFinding[];
-      roles?: TaintRoles;
-      stats?: AnalysisStats;
-      rules?: Record<string, string>;
-      engine?: string;
-      verdict?: Verdict;
-      report?: VizAnalysisReport;
-      catalog?: {
-        cwe: number;
-        name: string;
-        description?: string;
-        sinks: number;
-        sanitizers: number;
-      }[];
-      error?: string;
-    };
-    if (!res.ok || data.error) {
-      throw new Error(data.error ?? `HTTP ${res.status}`);
-    }
-
-    graph = data.graph!;
-    findings = data.findings ?? [];
-    lastStats = data.stats ?? null;
-    lastRules = data.rules ?? {};
-    lastRoles = data.roles ?? { sourceIds: [], sinkIds: [], sanitizerIds: [] };
-    lastReport = data.report ?? null;
-    lastCatalog = data.catalog ?? [];
-    lastEngine = data.engine ?? "memory";
-    lastVerdict = data.verdict ?? fallbackVerdict();
-    highlightIndex = 0;
+    const data = await analyzeSnippet(submittedCode, "demo.ts");
+    // Si el usuario cambió de pestaña mientras tanto, el resultado queda
+    // guardado para cuando vuelva, pero no pisa lo que está mirando.
+    snippet = data;
     analyzedCode = submittedCode;
+    if (mode !== "examples") return;
+    showSnippet(data);
 
     const roleHint = `${lastRoles.sourceIds.length} source(s) · ${lastRoles.sinkIds.length} sink(s)`;
     statusEl.textContent = lastVerdict && !lastVerdict.conclusive
       ? `${lastVerdict.title} · ${lastStats?.elapsedMs ?? "?"} ms`
       : `Análisis en ${lastStats?.elapsedMs ?? "?"} ms · ${findings.length} hallazgo(s) · ${roleHint}`;
-    renderEngineBadge();
-    renderCatalog();
-    renderRules();
-    renderStats();
-    renderFindings();
-    renderGraph();
   } catch (err) {
-    clearAnalysisView();
+    snippet = null;
     analyzedCode = null;
+    if (mode !== "examples") return;
+    clearAnalysisView();
     statusEl.textContent = `Error: ${err}`;
   } finally {
     analyzeBtn.disabled = false;
@@ -644,6 +826,19 @@ async function runAnalysis() {
 }
 
 async function copyReport() {
+  if (mode === "project") {
+    if (!project) {
+      statusEl.textContent = "Subí una carpeta o archivos primero.";
+      return;
+    }
+    downloadText(
+      `graphsast-${Date.now()}.json`,
+      JSON.stringify(project.output.result, null, 2),
+      "application/json",
+    );
+    statusEl.textContent = "Resultado JSON descargado.";
+    return;
+  }
   try {
     const report: VizAnalysisReport = lastReport ?? {
       analyzedAt: new Date().toISOString(),
@@ -667,6 +862,15 @@ async function copyReport() {
 }
 
 function exportHtml() {
+  if (mode === "project") {
+    if (!project) {
+      statusEl.textContent = "Subí una carpeta o archivos primero.";
+      return;
+    }
+    downloadProjectReport(project.output.result);
+    statusEl.textContent = "Informe HTML descargado.";
+    return;
+  }
   if (!lastReport) {
     statusEl.textContent = "Analizá primero para generar el informe.";
     return;
@@ -680,6 +884,19 @@ function exportHtml() {
 }
 
 function exportPdf() {
+  if (mode === "project") {
+    if (!project) {
+      statusEl.textContent = "Subí una carpeta o archivos primero.";
+      return;
+    }
+    try {
+      printProjectReport(project.output.result);
+      statusEl.textContent = "Usá «Guardar como PDF» en el diálogo de impresión.";
+    } catch (err) {
+      statusEl.textContent = `Error al exportar PDF: ${err}`;
+    }
+    return;
+  }
   if (!lastReport) {
     statusEl.textContent = "Analizá primero para generar el informe.";
     return;
@@ -692,7 +909,6 @@ function exportPdf() {
   }
 }
 
-populateExamples();
 exampleSelect.addEventListener("change", () => {
   if (exampleSelect.value === CUSTOM_EXAMPLE_ID) {
     loadCustom();
@@ -725,7 +941,39 @@ codeInput.addEventListener("keydown", (e) => {
   }
 });
 
-void runAnalysis().catch((err) => {
-  statusEl.textContent = `Error al iniciar: ${err}`;
-  console.error(err);
+tabProject.addEventListener("click", () => setMode("project"));
+tabExamples.addEventListener("click", () => setMode("examples"));
+
+folderInput.addEventListener("change", () => {
+  const uploads = filesFromInput(folderInput.files!);
+  folderInput.value = "";
+  void scanUploads(uploads);
 });
+filesInput.addEventListener("change", () => {
+  const uploads = filesFromInput(filesInput.files!);
+  filesInput.value = "";
+  void scanUploads(uploads);
+});
+
+// Sin esto, soltar un archivo fuera de la zona hace que el navegador lo abra
+// y se pierda la página.
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => e.preventDefault());
+dropZone.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  dropZone.classList.add("dragging");
+});
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragging"));
+dropZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropZone.classList.remove("dragging");
+  if (!e.dataTransfer || folderInput.disabled) return;
+  void filesFromDrop(e.dataTransfer)
+    .then(scanUploads)
+    .catch((err) => {
+      statusEl.textContent = `No se pudieron leer los archivos: ${err}`;
+    });
+});
+
+setMode("project");
+statusEl.textContent = "Elegí una carpeta o archivos de tu proyecto para empezar.";

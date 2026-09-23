@@ -1,14 +1,11 @@
-import type { SourceFile } from "ts-morph";
 import { loadSource } from "./parser/parser.js";
 import { buildIR } from "./ir/builder.js";
-import { buildCallGraph } from "./cfg/callgraph.js";
-import { buildDataFlow } from "./dfg/dataflow.js";
-import { buildInterproc } from "./dfg/interproc.js";
+import { analyzeGraph } from "./ir/graph.js";
 import { analyzeTaint } from "./taint/analyzer.js";
-import { markSanitizedEdges } from "./taint/sanitized.js";
-import type { IRModule, IRGraph } from "./ir/types.js";
+import type { IRModule } from "./ir/types.js";
 
 export * from "./ir/types.js";
+export { analyzeGraph, graphFromSourceFile } from "./ir/graph.js";
 export { buildCallGraph } from "./cfg/callgraph.js";
 export { buildDataFlow } from "./dfg/dataflow.js";
 export { buildInterproc } from "./dfg/interproc.js";
@@ -50,6 +47,8 @@ export { reportToHtml } from "./report/html.js";
 export type { AnalysisReport } from "./report/json.js";
 
 export { scanPaths, scanSource, toScanFindings } from "./scan/scan.js";
+export { scanFiles, scanFilesWithGraphs } from "./scan/scan-files.js";
+export type { ScanInput, ScanGraph, ScanFilesOutput } from "./scan/scan-files.js";
 export {
   discoverFiles,
   commonRoot,
@@ -68,6 +67,8 @@ export {
   startApiServer,
 } from "./server/server.js";
 export { analyzeCode } from "./server/analyze-code.js";
+export { analyzeSource } from "./engine/payload.js";
+export type { AnalysisPayload } from "./engine/payload.js";
 export { resolveInsideRoot, PathRejectedError } from "./server/paths.js";
 export { VERSION } from "./version.js";
 export {
@@ -97,29 +98,6 @@ export type {
 /** Punto de entrada del core: texto fuente -> IRModule. */
 export function analyze(code: string, file = "input.ts"): IRModule {
   return buildIR(loadSource(code, file), file);
-}
-
-/**
- * Texto fuente -> IRGraph: nodos + aristas CALLS (call graph), FLOWS_TO
- * (def-use intra-procedural), BINDS_TO/RETURNS (cruce inter-procedural) y
- * SANITIZED_BY (salida de una llamada de saneamiento).
- */
-export function analyzeGraph(code: string, file = "input.ts"): IRGraph {
-  return graphFromSourceFile(loadSource(code, file), file);
-}
-
-/** Igual que `analyzeGraph` pero sobre un SourceFile ya parseado. */
-export function graphFromSourceFile(
-  sourceFile: SourceFile,
-  file = "input.ts",
-): IRGraph {
-  const mod = buildIR(sourceFile, file);
-  const edges = markSanitizedEdges(mod.nodes, [
-    ...buildCallGraph(mod),
-    ...buildDataFlow(mod),
-    ...buildInterproc(mod),
-  ]);
-  return { file: mod.file, nodes: mod.nodes, edges };
 }
 
 /** Texto fuente → findings de taint sobre el grafo completo. */

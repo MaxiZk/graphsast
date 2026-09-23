@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "../util/posix-path.js";
 import { Node, type SourceFile } from "ts-morph";
 import { functionIdOf } from "../ir/builder.js";
 
