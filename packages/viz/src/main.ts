@@ -33,14 +33,6 @@ import {
 } from "./project-view.js";
 import type { CatalogSummary, ProjectAnalysis, UploadedFile } from "./protocol.js";
 import {
-  downloadHtmlReport,
-  downloadProjectReport,
-  downloadText,
-  printHtmlReport,
-  printProjectReport,
-} from "./report-export.js";
-import type { VizAnalysisReport } from "./report-html.js";
-import {
   describeSelection,
   filesFromDrop,
   filesFromInput,
@@ -57,9 +49,6 @@ const codeLinesEl = document.querySelector<HTMLDivElement>("#code-lines")!;
 const exampleSelect = document.querySelector<HTMLSelectElement>("#example-select")!;
 const exampleDesc = document.querySelector<HTMLParagraphElement>("#example-desc")!;
 const analyzeBtn = document.querySelector<HTMLButtonElement>("#analyze-btn")!;
-const copyBtn = document.querySelector<HTMLButtonElement>("#copy-btn")!;
-const htmlBtn = document.querySelector<HTMLButtonElement>("#html-btn")!;
-const pdfBtn = document.querySelector<HTMLButtonElement>("#pdf-btn")!;
 const fitBtn = document.querySelector<HTMLButtonElement>("#fit-btn")!;
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
 const statsEl = document.querySelector<HTMLDListElement>("#stats")!;
@@ -93,7 +82,6 @@ let findings: TaintFinding[] = [];
 let lastStats: AnalysisStats | null = null;
 let lastRules: Record<string, string> = {};
 let lastRoles: TaintRoles = { sourceIds: [], sinkIds: [], sanitizerIds: [] };
-let lastReport: VizAnalysisReport | null = null;
 let lastCatalog: CatalogSummary[] = [];
 let lastEngine = "memory";
 let highlightIndex = 0;
@@ -358,7 +346,6 @@ function clearAnalysisView() {
   findings = [];
   lastStats = null;
   lastRoles = { sourceIds: [], sinkIds: [], sanitizerIds: [] };
-  lastReport = null;
   lastVerdict = null;
   highlightIndex = 0;
 
@@ -782,7 +769,6 @@ function showSnippet(data: AnalysisPayload) {
   lastStats = data.stats;
   lastRules = data.rules;
   lastRoles = data.roles;
-  lastReport = data.report;
   lastCatalog = data.catalog;
   lastEngine = data.engine;
   lastVerdict = data.verdict;
@@ -825,90 +811,6 @@ async function runAnalysis() {
   }
 }
 
-async function copyReport() {
-  if (mode === "project") {
-    if (!project) {
-      statusEl.textContent = "Subí una carpeta o archivos primero.";
-      return;
-    }
-    downloadText(
-      `graphsast-${Date.now()}.json`,
-      JSON.stringify(project.output.result, null, 2),
-      "application/json",
-    );
-    statusEl.textContent = "Resultado JSON descargado.";
-    return;
-  }
-  try {
-    const report: VizAnalysisReport = lastReport ?? {
-      analyzedAt: new Date().toISOString(),
-      engine: lastEngine,
-      code: codeInput.value,
-      file: "demo.ts",
-      findings,
-      stats: {
-        elapsedMs: lastStats?.elapsedMs ?? 0,
-        lineCount: codeInput.value.split("\n").length,
-        nodeCount: graph?.nodes.length ?? 0,
-        edgeCount: graph?.edges.length ?? 0,
-        findingCount: findings.length,
-      },
-    };
-    await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
-    statusEl.textContent = "Informe JSON copiado al portapapeles.";
-  } catch (err) {
-    statusEl.textContent = `No se pudo copiar: ${err}`;
-  }
-}
-
-function exportHtml() {
-  if (mode === "project") {
-    if (!project) {
-      statusEl.textContent = "Subí una carpeta o archivos primero.";
-      return;
-    }
-    downloadProjectReport(project.output.result);
-    statusEl.textContent = "Informe HTML descargado.";
-    return;
-  }
-  if (!lastReport) {
-    statusEl.textContent = "Analizá primero para generar el informe.";
-    return;
-  }
-  try {
-    downloadHtmlReport(lastReport);
-    statusEl.textContent = "Informe HTML descargado.";
-  } catch (err) {
-    statusEl.textContent = `Error al exportar HTML: ${err}`;
-  }
-}
-
-function exportPdf() {
-  if (mode === "project") {
-    if (!project) {
-      statusEl.textContent = "Subí una carpeta o archivos primero.";
-      return;
-    }
-    try {
-      printProjectReport(project.output.result);
-      statusEl.textContent = "Usá «Guardar como PDF» en el diálogo de impresión.";
-    } catch (err) {
-      statusEl.textContent = `Error al exportar PDF: ${err}`;
-    }
-    return;
-  }
-  if (!lastReport) {
-    statusEl.textContent = "Analizá primero para generar el informe.";
-    return;
-  }
-  try {
-    printHtmlReport(lastReport);
-    statusEl.textContent = "Usá «Guardar como PDF» en el diálogo de impresión.";
-  } catch (err) {
-    statusEl.textContent = `Error al exportar PDF: ${err}`;
-  }
-}
-
 exampleSelect.addEventListener("change", () => {
   if (exampleSelect.value === CUSTOM_EXAMPLE_ID) {
     loadCustom();
@@ -918,9 +820,6 @@ exampleSelect.addEventListener("change", () => {
   void runAnalysis();
 });
 analyzeBtn.addEventListener("click", () => void runAnalysis());
-copyBtn.addEventListener("click", () => void copyReport());
-htmlBtn.addEventListener("click", () => exportHtml());
-pdfBtn.addEventListener("click", () => exportPdf());
 fitBtn.addEventListener("click", () => cy?.fit(undefined, 36));
 edgeFilters.addEventListener("change", () => renderGraph());
 codeInput.addEventListener("input", () => {

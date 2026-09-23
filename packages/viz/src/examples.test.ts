@@ -30,39 +30,17 @@ describe("ejemplos de la demo", () => {
   });
 });
 
-describe("G+ · asignación masiva Mongoose", () => {
-  const { findings } = analyze(getExample("finance-full").code);
-
-  it("clasifica los tres sinks como CWE-943, no CWE-89", () => {
-    expect(findings).toHaveLength(3);
-    expect(findings.every((f) => f.cwe === 943)).toBe(true);
-  });
-});
-
-describe("B+ · dos caminos al mismo sink", () => {
-  const { graph, findings } = analyze(getExample("two-paths").code);
-
-  it("reporta solo el camino sin sanear", () => {
-    expect(findings).toHaveLength(1);
-    const names = findings[0]!.path.map(
-      (id) => graph.nodes.find((n) => n.id === id)!.name,
-    );
-    expect(names).toContain("rawTerm");
-    expect(names).not.toContain("safeTerm");
+describe("par vulnerable / sanitizado", () => {
+  it("difieren en una sola línea", () => {
+    const a = getExample("vulnerable").code.split("\n");
+    const b = getExample("sanitized").code.split("\n");
+    expect(a).toHaveLength(b.length);
+    expect(a.filter((line, i) => line !== b[i])).toHaveLength(1);
   });
 
-  it("las dos ramas convergen en el mismo parámetro del sink", () => {
-    const sqlParam = graph.nodes.find((n) => n.name === "sql")!;
-    const incoming = graph.edges.filter(
-      (e) => e.to === sqlParam.id && e.kind === "BINDS_TO",
-    );
-    expect(incoming).toHaveLength(2);
-  });
-
-  it("la rama saneada pasa por una arista SANITIZED_BY", () => {
-    const safeTerm = graph.nodes.find((n) => n.name === "safeTerm")!;
-    expect(
-      graph.edges.some((e) => e.kind === "SANITIZED_BY" && e.to === safeTerm.id),
-    ).toBe(true);
+  it("la versión sanitizada corta el camino con una arista SANITIZED_BY", () => {
+    const { graph, findings } = analyze(getExample("sanitized").code);
+    expect(findings).toHaveLength(0);
+    expect(graph.edges.some((e) => e.kind === "SANITIZED_BY")).toBe(true);
   });
 });

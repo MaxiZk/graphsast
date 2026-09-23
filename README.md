@@ -210,8 +210,8 @@ El usuario elige o arrastra una carpeta (o archivos sueltos) de su proyecto y,
 al terminar el análisis, ve las vulnerabilidades encontradas: cada hallazgo con
 su familia CWE, el archivo y la línea del sink, el camino completo del dato
 (aunque cruce archivos), el código con las líneas del camino resaltadas y el
-grafo. El resultado se exporta a JSON, HTML o PDF. La pestaña «Ejemplos» tiene
-los casos precargados de la demo y permite pegar código.
+grafo. La pestaña «Ejemplos» permite pegar código y trae dos casos que difieren
+en una línea: una consulta SQL vulnerable y la misma consulta con `sanitize()`.
 
 El análisis corre en el navegador, en un Web Worker, con el mismo motor que el
 CLI (`@graphsast/core/browser`, sin Neo4j): se analizan los mismos archivos

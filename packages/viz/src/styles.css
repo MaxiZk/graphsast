@@ -306,8 +306,11 @@ body {
   flex-wrap: wrap;
 }
 
+/* 200px: entran las 8 líneas de los ejemplos sin scroll. Sin flex: none, el
+   editor de la columna (flex: 1) lo achica por debajo de ese alto. */
 .code-lines {
-  max-height: 140px;
+  flex: none;
+  max-height: 200px;
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -623,11 +626,13 @@ body {
   display: none;
 }
 
+/* Crece para que el editor ocupe el alto libre, pero nunca por debajo de su
+   contenido: con min-height: 0 las líneas del camino se desbordaban sobre las
+   estadísticas. Si no entra, la columna scrollea. */
 .examples-mode {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 auto;
 }
 
 /* Altura natural: si se estira como .examples-mode, el visor de código se
