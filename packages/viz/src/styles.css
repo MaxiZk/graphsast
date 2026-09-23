@@ -1,10 +1,16 @@
 :root {
-  --bg: #0b0f14;
-  --surface: #121820;
-  --border: #243044;
-  --text: #e8edf4;
-  --muted: #8b9cb3;
-  --accent: #3b82f6;
+  --bg: #070a10;
+  /* Paneles translúcidos sobre el fondo con degradado; --inset para lo que va
+     hundido dentro de un panel (editor, código, grafo, listas). */
+  --surface: rgba(15, 21, 32, 0.72);
+  --inset: rgba(4, 7, 12, 0.7);
+  --border: rgba(148, 163, 184, 0.14);
+  --border-strong: rgba(148, 163, 184, 0.28);
+  --text: #e6ebf3;
+  --muted: #8a9ab2;
+  --accent: #4f8cff;
+  --accent-2: #8b5cf6;
+  --radius: 14px;
   --source: #14b8a6;
   --sink: #ef4444;
   --risk: #f97316;
@@ -13,6 +19,13 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* Alto fijo de viewport con scroll por panel: el panel derecho creció con los
@@ -20,8 +33,12 @@
    pliegue. Ahora cada columna scrollea sola y el grafo siempre se ve entero. */
 body {
   margin: 0;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  background: var(--bg);
+  font-family: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(1100px 600px at 0% -10%, rgba(79, 140, 255, 0.16), transparent 60%),
+    radial-gradient(900px 520px at 100% -5%, rgba(139, 92, 246, 0.14), transparent 60%),
+    radial-gradient(800px 500px at 50% 120%, rgba(20, 184, 166, 0.08), transparent 60%),
+    var(--bg);
   color: var(--text);
   height: 100vh;
   display: flex;
@@ -35,15 +52,40 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.9rem 1.25rem;
+  padding: 0.85rem 1.4rem;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: rgba(7, 10, 16, 0.55);
+  backdrop-filter: blur(14px);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  padding: 7px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(79, 140, 255, 0.22), rgba(139, 92, 246, 0.22));
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.22);
+}
+
+.brand-name {
+  background: linear-gradient(90deg, #ffffff, #b8c6ff 60%, #d3bdff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: 650;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -212,7 +254,7 @@ body {
    y en color pleno, no en gris de anotación. */
 .legend {
   display: flex;
-  gap: 1.6rem;
+  gap: 0.6rem;
   margin: 0;
   flex-wrap: wrap;
 }
@@ -221,6 +263,10 @@ body {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  padding: 0.3rem 0.85rem 0.3rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .legend dd {
@@ -245,18 +291,23 @@ body {
 .layout {
   display: grid;
   grid-template-columns: minmax(300px, 1fr) 2.2fr minmax(260px, 0.9fr);
+  gap: 14px;
+  padding: 14px;
   flex: 1;
   min-height: 0;
 }
 
 .panel {
-  border-right: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 1rem;
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
   background: var(--surface);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .panel h2 {
@@ -277,16 +328,24 @@ body {
 
 .btn-primary,
 .btn-ghost {
-  border-radius: 6px;
-  padding: 0.42rem 0.85rem;
+  border-radius: 9px;
+  padding: 0.48rem 0.95rem;
   font-size: 0.82rem;
+  font-weight: 550;
   cursor: pointer;
+  transition: transform 0.12s, filter 0.12s, background 0.12s, border-color 0.12s, color 0.12s;
 }
 
 .btn-primary {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #fff;
   border: none;
+  box-shadow: 0 6px 18px rgba(79, 140, 255, 0.28);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
 .btn-primary:disabled {
@@ -295,9 +354,14 @@ body {
 }
 
 .btn-ghost {
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+
+.btn-ghost:hover {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.4);
 }
 
 .btn-row {
@@ -314,7 +378,7 @@ body {
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #0a0e13;
+  background: var(--inset);
   margin-bottom: 0.65rem;
   font-family: "Cascadia Code", "Consolas", monospace;
   font-size: 0.75rem;
@@ -441,11 +505,11 @@ body {
 
 .select {
   width: 100%;
-  background: #0a0e13;
+  background: var(--inset);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.45rem 0.55rem;
+  border-radius: 9px;
+  padding: 0.5rem 0.6rem;
   font-size: 0.82rem;
   margin-bottom: 0.45rem;
 }
@@ -464,10 +528,10 @@ body {
   font-family: "Cascadia Code", "Consolas", monospace;
   font-size: 0.8rem;
   line-height: 1.45;
-  background: #0a0e13;
+  background: var(--inset);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0.75rem;
 }
 
@@ -483,12 +547,15 @@ body {
   color: #5f6f86;
 }
 
+/* Grilla de puntos: da referencia de escala al mover y hacer zoom. */
 .cy {
   flex: 1;
   min-height: 420px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #0a0e13;
+  border-radius: 12px;
+  background:
+    radial-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1.3px) 0 0 / 22px 22px,
+    var(--inset);
 }
 
 .node-detail {
@@ -564,7 +631,7 @@ body {
 .findings-list button {
   width: 100%;
   text-align: left;
-  background: #0a0e13;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
@@ -578,6 +645,10 @@ body {
   display: block;
   margin-bottom: 0.25rem;
   font-size: 0.8rem;
+}
+
+.findings-list button:hover {
+  border-color: var(--border-strong);
 }
 
 .findings-list button.active {
@@ -594,7 +665,11 @@ body {
 /* Pestañas «Tu proyecto» / «Ejemplos». */
 .mode-tabs {
   display: flex;
-  gap: 0.25rem;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--inset);
 }
 
 /* Pestañas y exportación no entran en una fila con la columna angosta. */
@@ -604,19 +679,24 @@ body {
 
 .mode-tab {
   background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: none;
+  border-radius: 8px;
   color: var(--muted);
-  padding: 0.38rem 0.75rem;
+  padding: 0.42rem 0.9rem;
+  transition: background 0.12s, color 0.12s;
   font-size: 0.8rem;
   white-space: nowrap;
   cursor: pointer;
 }
 
-.mode-tab[aria-selected="true"] {
-  border-color: var(--accent);
+.mode-tab:hover {
   color: var(--text);
-  background: rgba(59, 130, 246, 0.14);
+}
+
+.mode-tab[aria-selected="true"] {
+  color: var(--text);
+  background: linear-gradient(135deg, rgba(79, 140, 255, 0.3), rgba(139, 92, 246, 0.26));
+  box-shadow: inset 0 0 0 1px rgba(79, 140, 255, 0.45);
 }
 
 /* `display: flex` le gana a `[hidden]`, igual que en .stats. */
@@ -652,17 +732,28 @@ body {
 }
 
 .drop-zone {
-  border: 2px dashed var(--border);
-  border-radius: 10px;
-  padding: 1.1rem 1rem;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 1.4rem 1rem;
   text-align: center;
-  background: #0a0e13;
+  background: linear-gradient(180deg, rgba(79, 140, 255, 0.07), rgba(139, 92, 246, 0.04));
   transition: border-color 0.15s, background 0.15s;
 }
 
+.drop-zone:hover,
 .drop-zone.dragging {
   border-color: var(--accent);
-  background: rgba(59, 130, 246, 0.08);
+  background: linear-gradient(180deg, rgba(79, 140, 255, 0.12), rgba(139, 92, 246, 0.08));
+}
+
+.drop-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 0.6rem;
+  padding: 10px;
+  border-radius: 12px;
+  color: #cdd8ff;
+  background: linear-gradient(135deg, rgba(79, 140, 255, 0.3), rgba(139, 92, 246, 0.3));
 }
 
 .drop-zone.busy {
@@ -719,7 +810,7 @@ body {
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #0a0e13;
+  background: var(--inset);
 }
 
 .file-list button {
