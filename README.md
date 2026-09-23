@@ -221,8 +221,11 @@ llamadas entre archivos igual que en `scan`. Los `.gitignore` del proyecto no se
 leen.
 
 Como el sitio es estático, se despliega en Vercel sin funciones de servidor:
-`vercel.json` compila el core y la página (`npm run build && npm run viz:build`)
-y publica `packages/viz/dist`. Para probar el build de producción en local:
+`vercel.json` compila el core y la página (`npm run viz:build`) y publica
+`packages/viz/dist`. En Vercel, el **Root Directory** del proyecto tiene que ser
+la raíz del repositorio: si apunta a `packages/viz`, el build no ve el core.
+
+Para probar el build de producción en local:
 
 ```bash
 npm run viz:preview   # compila core y página, y sirve el resultado

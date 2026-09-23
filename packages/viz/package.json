@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "predev": "npm run build -w @graphsast/core",
-    "prepreview": "npm run build -w @graphsast/core && npm run build",
+    "prepreview": "npm run build",
     "dev": "vite",
+    "prebuild": "npm run build -w @graphsast/core",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run"
