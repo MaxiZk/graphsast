@@ -5,6 +5,9 @@ JavaScript/TypeScript como un grafo y rastrea el recorrido de las entradas no
 confiables hasta los puntos críticos, para detectar vulnerabilidades **antes**
 de ejecutar la aplicación.
 
+**Versión web:** https://graph-sast.vercel.app/ (el análisis corre en el navegador;
+el código no se sube a ningún servidor).
+
 > Proyecto Final de Ingeniería en Informática, Universidad del Salvador (USAL).
 > Autor: Maximo Zuidwijk. Ver [`GraphSAST_Proyecto.md`](GraphSAST_Proyecto.md)
 > para el contexto académico completo.
@@ -201,6 +204,8 @@ Protecciones:
   (`403`), como defensa contra DNS rebinding.
 
 ## Versión web
+
+Publicada en https://graph-sast.vercel.app/. Para correrla en local:
 
 ```bash
 npm start          # http://localhost:5173
