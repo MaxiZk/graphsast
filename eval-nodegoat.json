@@ -1,0 +1,96 @@
+{
+  "project": "OWASP NodeGoat",
+  "repository": "https://github.com/OWASP/NodeGoat",
+  "commit": "c5cb68a7084e4ae7dcc60e6a98768720a81841e8",
+  "license": "Apache-2.0",
+  "labeledAt": "2026-09-24",
+  "status": "cerrado el 2026-09-24 antes de ejecutar el analizador: NG-05 y NG-06 se mantienen y eval se cuenta dentro de CWE-78, decisiones del autor",
+  "scan": {
+    "exclude": ["test/", "app/assets/vendor/"],
+    "reason": "Se analiza el repositorio como lo haría un usuario, sin las pruebas end-to-end ni las bibliotecas de terceros copiadas en app/assets/vendor."
+  },
+  "sources": [
+    "Comentarios del código que marcan cada vulnerabilidad y su corrección (\"Insecure ...\", \"Fix for A...\")",
+    "Tutorial incluido en la aplicación: app/views/tutorial/a1.html y a3.html"
+  ],
+  "scope": "Vulnerabilidades documentadas por NodeGoat cuya familia está en el catálogo: CWE-89, CWE-79, CWE-78 (incluye eval) y CWE-943.",
+  "matching": "Un hallazgo cuenta para una vulnerabilidad si está en el archivo del destino y su línea cae dentro de sinkLines. Cada vulnerabilidad cuenta una sola vez. Los hallazgos que no coinciden con ninguna etiqueta se revisan a mano y se informan aparte; no se suman como verdaderos positivos.",
+  "vulnerabilities": [
+    {
+      "id": "NG-01",
+      "owasp": "A1-1 Server-Side JavaScript Injection",
+      "cwe": 95,
+      "catalogFamily": 78,
+      "description": "eval() sobre req.body.preTax en handleContributionsUpdate",
+      "source": "app/routes/contributions.js:32",
+      "sinkFile": "app/routes/contributions.js",
+      "sinkLines": [32, 32],
+      "sinkInCatalog": true
+    },
+    {
+      "id": "NG-02",
+      "owasp": "A1-1 Server-Side JavaScript Injection",
+      "cwe": 95,
+      "catalogFamily": 78,
+      "description": "eval() sobre req.body.afterTax en handleContributionsUpdate",
+      "source": "app/routes/contributions.js:33",
+      "sinkFile": "app/routes/contributions.js",
+      "sinkLines": [33, 33],
+      "sinkInCatalog": true
+    },
+    {
+      "id": "NG-03",
+      "owasp": "A1-1 Server-Side JavaScript Injection",
+      "cwe": 95,
+      "catalogFamily": 78,
+      "description": "eval() sobre req.body.roth en handleContributionsUpdate",
+      "source": "app/routes/contributions.js:34",
+      "sinkFile": "app/routes/contributions.js",
+      "sinkLines": [34, 34],
+      "sinkInCatalog": true
+    },
+    {
+      "id": "NG-04",
+      "owasp": "A1-2 NoSQL Injection",
+      "cwe": 943,
+      "catalogFamily": 943,
+      "description": "req.query.threshold interpolado en una condición $where de MongoDB, ejecutada con find()",
+      "source": "app/routes/allocations.js:21",
+      "sinkFile": "app/data/allocations-dao.js",
+      "sinkLines": [78, 86],
+      "sinkInCatalog": false,
+      "note": "La operación find() no figura entre los destinos del catálogo CWE-943."
+    },
+    {
+      "id": "NG-05",
+      "owasp": "A3 Cross-Site Scripting (almacenado)",
+      "cwe": 79,
+      "catalogFamily": 79,
+      "description": "firstName y lastName del formulario de perfil se guardan y se muestran con autoescape desactivado",
+      "source": "app/routes/profile.js:50",
+      "sinkFile": "app/routes/profile.js",
+      "sinkLines": [33, 33],
+      "sinkInCatalog": false,
+      "note": "El dato pasa por la base de datos y se emite en la plantilla profile.html mediante res.render(), que no figura en el catálogo."
+    },
+    {
+      "id": "NG-06",
+      "owasp": "A3 Cross-Site Scripting (codificación en contexto incorrecto)",
+      "cwe": 79,
+      "catalogFamily": 79,
+      "description": "website se codifica para HTML pero se usa en el contexto de un enlace",
+      "source": "doc.website leído de la base de datos, app/routes/profile.js:28",
+      "sinkFile": "app/routes/profile.js",
+      "sinkLines": [28, 33],
+      "sinkInCatalog": false,
+      "note": "La falla está en la elección del codificador (encodeForHTML en lugar de encodeForURL) y el destino es la plantilla."
+    }
+  ],
+  "excluded": [
+    { "owasp": "A1-3 Log Injection", "cwe": 117, "location": "app/routes/session.js", "reason": "Familia fuera del catálogo" },
+    { "owasp": "A10 Unvalidated Redirects", "cwe": 601, "location": "app/routes/index.js:72", "reason": "Familia fuera del catálogo" },
+    { "owasp": "ReDoS", "cwe": 1333, "location": "app/routes/profile.js:59", "reason": "Familia fuera del catálogo" },
+    { "owasp": "SSRF", "cwe": 918, "location": "app/routes/research.js", "reason": "Familia fuera del catálogo" },
+    { "owasp": "A2, A4 a A9", "cwe": null, "location": "varios", "reason": "Autenticación, control de acceso, configuración, exposición de datos, CSRF y dependencias: no son recorridos de un origen a un destino" }
+  ]
+}
