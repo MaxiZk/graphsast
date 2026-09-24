@@ -1,0 +1,105 @@
+%!TEX root = ../main.tex
+% GLOSARIO: términos que necesitan definición dentro del documento.
+%
+% Definir:   \newglossaryentry{clave}{name={Término}, description={Definición}}
+% Usar:      \gls{clave}      -> Término (con enlace al glosario)
+% main.tex usa \glsaddall, por lo que se imprimen todas las entradas.
+
+\newglossaryentry{accesibilidad}{
+    name={accesibilidad (reachability)},
+    description={Propiedad de un grafo dirigido que indica si existe una
+    secuencia de aristas que conecte un nodo de origen con un nodo de
+    destino}
+}
+
+\newglossaryentry{taint}{
+    name={análisis de contaminación (taint analysis)},
+    description={Método que verifica si datos provenientes de fuentes no
+    confiables pueden alcanzar operaciones sensibles sin una sanitización
+    intermedia}
+}
+
+\newglossaryentry{deuda}{
+    name={deuda técnica de seguridad},
+    description={Costo diferido y riesgo acumulado en un sistema por
+    decisiones de diseño o deficiencias de seguridad no resueltas en el
+    código fuente}
+}
+
+\newglossaryentry{exhaustividad}{
+    name={exhaustividad (recall)},
+    description={Proporción de vulnerabilidades reales detectadas sobre el
+    total de vulnerabilidades existentes}
+}
+
+\newglossaryentry{exposicion}{
+    name={exposición al riesgo},
+    description={Producto de la probabilidad de ocurrencia de un riesgo por
+    su impacto. Se usa para ordenar la matriz de riesgos y decidir cuáles
+    se tratan primero}
+}
+
+\newglossaryentry{fn}{
+    name={falso negativo},
+    description={Vulnerabilidad real presente en el código fuente que el
+    analizador no detecta}
+}
+
+\newglossaryentry{fp}{
+    name={falso positivo},
+    description={Alerta emitida por el analizador sobre un fragmento de
+    código seguro o correctamente sanitizado}
+}
+
+\newglossaryentry{dfgterm}{
+    name={grafo de flujo de datos},
+    description={Grafo dirigido cuyos vértices representan variables,
+    operaciones e identificadores, y cuyas aristas modelan la propagación
+    de los valores}
+}
+
+\newglossaryentry{precision}{
+    name={precisión (precision)},
+    description={Proporción de vulnerabilidades reales sobre el total de
+    alertas emitidas por el analizador}
+}
+
+\newglossaryentry{prototipo}{
+    name={prototipo},
+    description={Versión preliminar de un sistema construida para validar
+    una idea, un flujo o una interfaz. Puede simular partes del
+    comportamiento y no está pensada para operar en producción}
+}
+
+\newglossaryentry{sanitizer}{
+    name={sanitizer},
+    description={Operación que valida, filtra o codifica un dato y le quita
+    la condición de contaminado}
+}
+
+\newglossaryentry{sink}{
+    name={sink},
+    description={Operación sensible en la que el uso de un dato no confiable
+    produce una vulnerabilidad, como una consulta a una base de datos o la
+    ejecución de un comando}
+}
+
+\newglossaryentry{source}{
+    name={source},
+    description={Punto por el que ingresa al programa información externa
+    no controlada, como los parámetros de una petición HTTP}
+}
+
+\newglossaryentry{vulnarq}{
+    name={vulnerabilidad de arquitectura},
+    description={Defecto de seguridad que no se manifiesta en una sentencia
+    aislada sino en la forma en que los componentes se vinculan y en el
+    recorrido de la información entre ellos}
+}
+
+\newglossaryentry{g:mvp}{
+    name={producto mínimo viable},
+    description={Versión funcional de un producto con el conjunto mínimo
+    de características que entrega valor real a los usuarios y permite
+    aprender de su uso. A diferencia de un prototipo, no simula: funciona}
+}

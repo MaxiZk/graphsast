@@ -1,0 +1,18 @@
+%!TEX root = ./main.tex
+% Macros, teoremas y atajos propios del trabajo.
+
+% entornos tipo teorema, numerados por capítulo
+\newtheorem{definicion}{Definición}[chapter]
+\newtheorem{proposicion}{Proposición}[chapter]
+\newtheorem{teorema}{Teorema}[chapter]
+
+% nombre del sistema o producto, para no repetirlo a mano
+\newcommand{\sistema}{\textsc{NombreDelSistema}}
+
+% atajos matemáticos de ejemplo
+\newcommand{\vect}[1]{\mathbf{#1}}
+\DeclareMathOperator{\argmax}{arg\,max}
+\DeclareMathOperator{\argmin}{arg\,min}
+
+% moneda: \usd{77200} -> USD 77.200
+\newcommand{\usd}[1]{USD~#1}

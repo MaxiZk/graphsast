@@ -1,0 +1,291 @@
+% =============================================================
+%  BIBLIOGRAFÍA
+%  Estilo: APA (biblatex-apa). Citas en el texto:
+%    \citep{clave}   -> (Breiman, 2001)
+%    \citet{clave}   -> Breiman (2001)
+%    \citep[p.~12]{clave}
+%
+%  Regla de la cátedra: toda referencia con datos completos
+%  (autor, título, año, revista/editorial, volumen y páginas o DOI/URL).
+%  Para recursos en línea, siempre urldate (fecha de consulta).
+%  Wikipedia y blogs restan puntos; preferir papers, libros y tesis.
+%  Verificar cada entrada en la fuente original (una cita inventada por
+%  una IA es una falta grave).
+%
+%  Gestor recomendado: Zotero o JabRef exportando a BibLaTeX.
+% =============================================================
+
+
+% ---- artículo de revista (con DOI) ----
+% ---- referencias de la cátedra citadas en las cajas de guía ----
+@book{pmi2021,
+  author    = {{Project Management Institute}},
+  title     = {A Guide to the Project Management Body of Knowledge ({PMBOK} Guide)},
+  edition   = {7},
+  year      = {2021},
+  publisher = {Project Management Institute},
+  address   = {Newtown Square, PA},
+  isbn      = {978-1-62825-664-2},
+}
+
+
+% ---- libros ----
+@book{aho2006,
+  author    = {Aho, A. V. and Lam, M. S. and Sethi, R. and Ullman, J. D.},
+  title     = {Compilers: Principles, Techniques, and Tools},
+  edition   = {2},
+  year      = {2006},
+  publisher = {Addison-Wesley},
+}
+
+@book{diehl2007,
+  author    = {Diehl, S.},
+  title     = {Software Visualization: Visualizing the Structure, Behaviour, and Evolution of Software},
+  year      = {2007},
+  publisher = {Springer},
+}
+
+@book{mcgraw2006,
+  author    = {McGraw, G.},
+  title     = {Software Security: Building Security In},
+  year      = {2006},
+  publisher = {Addison-Wesley Professional},
+}
+
+@book{nielson1999,
+  author    = {Nielson, F. and Nielson, H. R. and Hankin, C.},
+  title     = {Principles of Program Analysis},
+  year      = {1999},
+  publisher = {Springer},
+  doi       = {10.1007/978-3-662-03811-6},
+}
+
+@book{robinson2013,
+  author    = {Robinson, I. and Webber, J. and Eifrem, E.},
+  title     = {Graph Databases},
+  year      = {2013},
+  publisher = {O'Reilly Media},
+}
+
+% ---- papers y tesis ----
+@misc{balbi2023,
+  author       = {Balbi, P.},
+  title        = {Defensa de tesis de licenciatura en Ciencias de la Computación},
+  year         = {2023},
+  month        = {9},
+  day          = {20},
+  howpublished = {Comunicación de defensa de tesis. Departamento de Computación, FCEyN, Universidad de Buenos Aires. Director: Dr. Diego Garbervetsky},
+  url          = {https://www.dc.uba.ar/event/defensa-tesis-licenciatura-pablo-balbi/},
+}
+
+@online{brito2023,
+  author     = {Brito, T. and Ferreira, M. and Monteiro, M. and Lopes, P. and Barros, M. and Santos, J. and Santos, N.},
+  title      = {Study of {JavaScript} Static Analysis Tools for Vulnerability Detection in {Node.js} Packages},
+  year       = {2023},
+  eprint     = {2301.05097},
+  eprinttype = {arXiv},
+}
+
+@article{denning1976,
+  author  = {Denning, D. E.},
+  title   = {A lattice model of secure information flow},
+  journal = {Communications of the ACM},
+  year    = {1976},
+  volume  = {19},
+  number  = {5},
+  pages   = {236--243},
+}
+
+@inproceedings{dutta2022,
+  author    = {Dutta, S. and Garbervetsky, D. and Lahiri, S. K. and Schäfer, M.},
+  title     = {{InspectJS}: Leveraging Code Similarity and User-Feedback for Effective Taint Specification Inference for {JavaScript}},
+  booktitle = {Proceedings of the 44th International Conference on Software Engineering: Software Engineering in Practice (ICSE-SEIP '22)},
+  year      = {2022},
+  pages     = {165--174},
+  doi       = {10.1145/3510457.3513048},
+}
+
+@inproceedings{li2022,
+  author    = {Li, S. and Kang, M. and Hou, J. and Cao, Y.},
+  title     = {Mining {Node.js} Vulnerabilities via Object Dependence Graph and Query},
+  booktitle = {31st USENIX Security Symposium},
+  year      = {2022},
+  pages     = {143--160},
+}
+
+@article{sabelfeld2003,
+  author  = {Sabelfeld, A. and Myers, A. C.},
+  title   = {Language-based information-flow security},
+  journal = {IEEE Journal on Selected Areas in Communications},
+  year    = {2003},
+  volume  = {21},
+  number  = {1},
+  pages   = {5--19},
+}
+
+@inproceedings{villan2022,
+  author    = {Villan, M. A. and Melani, M. I.},
+  title     = {Análisis de vulnerabilidades en videojuegos basados en {NFT} y criptomonedas},
+  booktitle = {XXIV Workshop de Investigadores en Ciencias de la Computación (WICC 2022, Mendoza)},
+  year      = {2022},
+  pages     = {589--591},
+  url       = {http://sedici.unlp.edu.ar/handle/10915/144933},
+}
+
+@inproceedings{yamaguchi2014,
+  author    = {Yamaguchi, F. and Golde, N. and Arp, D. and Rieck, K.},
+  title     = {Modeling and Discovering Vulnerabilities with Code Property Graphs},
+  booktitle = {IEEE Symposium on Security and Privacy},
+  year      = {2014},
+  pages     = {590--604},
+}
+
+% ---- sitios web (capítulo 3: consultados el 10/06/2026) ----
+@online{codeql,
+  author  = {{GitHub}},
+  title   = {{CodeQL}: About data flow analysis},
+  url     = {https://codeql.github.com/docs/writing-codeql-queries/about-data-flow-analysis/},
+  urldate = {2026-06-10},
+}
+@online{joern,
+  author  = {{Joern}},
+  title   = {Joern Documentation},
+  url     = {https://docs.joern.io/},
+  urldate = {2026-06-10},
+}
+@online{mitrecwe,
+  author  = {{MITRE}},
+  title   = {{CWE} Top 25 Most Dangerous Software Weaknesses},
+  url     = {https://cwe.mitre.org/top25/},
+  urldate = {2026-06-10},
+}
+@online{nistssdf,
+  author  = {{NIST}},
+  title   = {Secure Software Development Framework ({SSDF}), {SP} 800-218},
+  url     = {https://csrc.nist.gov/pubs/sp/800/218/final},
+  urldate = {2026-06-10},
+}
+@online{nistsard,
+  author  = {{NIST}},
+  title   = {Software Assurance Reference Dataset ({SARD})},
+  url     = {https://samate.nist.gov/SARD/},
+  urldate = {2026-06-10},
+}
+@online{owaspbenchmark,
+  author  = {{OWASP Foundation}},
+  title   = {{OWASP} Benchmark Project},
+  url     = {https://owasp.org/www-project-benchmark/},
+  urldate = {2026-06-10},
+}
+@online{owaspsast,
+  author  = {{OWASP Foundation}},
+  title   = {Source Code Analysis Tools},
+  url     = {https://owasp.org/www-community/Source_Code_Analysis_Tools},
+  urldate = {2026-06-10},
+}
+@online{sadioasse,
+  author  = {{SADIO}},
+  title   = {Simposio Argentino de Ingeniería de Software ({ASSE}), Jornadas Argentinas de Informática ({JAIIO})},
+  url     = {https://jaiio53.clei.org/simposios/asse/},
+  urldate = {2026-06-10},
+}
+@online{semgreptaint,
+  author  = {{Semgrep}},
+  title   = {Taint mode documentation},
+  url     = {https://semgrep.dev/docs/writing-rules/data-flow/taint-mode/},
+  urldate = {2026-06-10},
+}
+@online{tsmorph,
+  author  = {{ts-morph}},
+  title   = {Documentation},
+  url     = {https://ts-morph.com/},
+  urldate = {2026-06-10},
+}
+
+% ---- sitios web (capítulos 5 y 6; fecha de consulta a completar) ----
+@online{bcraa3500,
+  author = {{Banco Central de la República Argentina}},
+  title  = {Tipo de cambio de referencia, Comunicación «A» 3500},
+  url    = {https://www.bcra.gob.ar/},
+}
+@online{cessiopssi,
+  author = {{CESSI}},
+  title  = {Observatorio Permanente de la Industria del Software y Servicios Informáticos ({OPSSI})},
+  url    = {https://www.cessi.org.ar/opssi},
+}
+@online{damodaranwacc,
+  author = {Damodaran, A.},
+  title  = {Damodaran Online: datos de costo de capital},
+  organization = {Stern School of Business, New York University},
+  url    = {https://pages.stern.nyu.edu/~adamodar/},
+}
+@online{damodaranreturns,
+  author = {Damodaran, A.},
+  title  = {Historical Returns for the {US}},
+  url    = {https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html},
+}
+@online{fedinflation,
+  author = {{Federal Reserve}},
+  title  = {Why does the Federal Reserve aim for inflation of 2 percent over the longer run?},
+  url    = {https://www.federalreserve.gov/faqs/economy_14400.htm},
+}
+@online{ghadvisory,
+  author = {{GitHub}},
+  title  = {{GitHub} Advisory Database},
+  url    = {https://github.com/advisories},
+}
+@online{octoverse,
+  author = {{GitHub}},
+  title  = {Octoverse},
+  url    = {https://octoverse.github.com/},
+}
+@online{lemonlicense,
+  author = {{Lemon Squeezy}},
+  title  = {License {API}},
+  url    = {https://docs.lemonsqueezy.com/help/licensing/license-api},
+}
+@online{lemonpricing,
+  author = {{Lemon Squeezy}},
+  title  = {Pricing},
+  url    = {https://www.lemonsqueezy.com/pricing},
+}
+@online{npmregistry,
+  author = {{npm}},
+  title  = {Registro público de paquetes},
+  url    = {https://registry.npmjs.org/},
+}
+@online{openqube,
+  author = {{OpenQube}},
+  title  = {Resultados de la encuesta de sueldos de sysarmy},
+  url    = {https://sueldos.openqube.io/},
+}
+@online{paddlepricing,
+  author = {{Paddle}},
+  title  = {Pricing},
+  url    = {https://www.paddle.com/pricing},
+}
+@online{slashdata,
+  author = {{SlashData}},
+  title  = {Developer Nation},
+  url    = {https://www.slashdata.co/research/developer-nation},
+}
+@online{treasuryrates,
+  author = {{U.S. Department of the Treasury}},
+  title  = {Daily Treasury Rates},
+  url    = {https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?type=daily_treasury_yield_curve},
+}
+@online{vercelfairuse,
+  author = {{Vercel}},
+  title  = {Fair Use Guidelines},
+  url    = {https://vercel.com/docs/limits/fair-use-guidelines},
+}
+@online{vercelpricing,
+  author = {{Vercel}},
+  title  = {Pricing},
+  url    = {https://vercel.com/pricing},
+}
+@online{nodegoat,
+  author = {{OWASP Foundation}},
+  title  = {{OWASP} {NodeGoat}},
+  url    = {https://github.com/OWASP/NodeGoat},
+}

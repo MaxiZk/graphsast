@@ -1,0 +1,36 @@
+%!TEX root = ../main.tex
+% ANEXO I — Repositorios de código y material externo
+
+\chapter{Repositorios de código fuente}\label{anx:repositorios}
+
+\begin{guia}
+Los anexos contienen material que no fue producido por el autor o que
+es externo al documento: repositorios, datasets de terceros, normativa,
+manuales del proveedor. Para cada repositorio: enlace, tecnología,
+contenido y estado (activo, archivado).
+\end{guia}
+
+\section{GraphSAST}
+
+\prettygitlink{MaxiZk/graphsast}
+
+Monorepo en TypeScript con dos paquetes: \texttt{core}, que contiene el
+motor de análisis, la línea de comandos y la API local, y \texttt{viz},
+que contiene la interfaz web. Incluye el catálogo de detección en
+\texttt{catalog/}, el banco sintético, el evaluador de advisories y los
+materiales de la validación con usuarios en
+\texttt{docs/validacion/h3/}. La instalación y la ejecución se describen
+en el archivo \texttt{README.md}. La versión publicada se encuentra en
+\url{https://graph-sast.vercel.app/}.
+
+\completar{Licencia (riesgo R-10) y etiqueta de la versión entregada.}
+Estado: activo.
+
+\section{OWASP NodeGoat}
+
+\prettygitlink{OWASP/NodeGoat}
+
+Aplicación Node.js deliberadamente vulnerable, construida por la
+fundación OWASP con fines didácticos y distribuida con licencia
+Apache-2.0. Se utiliza como corpus de validación sobre código real en el
+capítulo~\ref{cap:resultados}. \completar{Commit analizado.}
