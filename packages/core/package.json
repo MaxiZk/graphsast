@@ -16,7 +16,8 @@
     "neo4j:probe": "npm run build && node dist/eval/neo4j-probe.js",
     "scan": "npm run build && node dist/cli/graphsast.cli.js",
     "cve:fetch": "npm run build && node dist/eval/cve/fetch-corpus.cli.js",
-    "cve:run": "npm run build && node dist/eval/cve/run-cve.cli.js"
+    "cve:run": "npm run build && node dist/eval/cve/run-cve.cli.js",
+    "baseline": "npm run build && node dist/eval/baseline/run-baseline.cli.js"
   },
   "dependencies": {
     "ignore": "^7.0.10",
