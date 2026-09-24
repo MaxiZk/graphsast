@@ -4,7 +4,11 @@
   "commit": "c5cb68a7084e4ae7dcc60e6a98768720a81841e8",
   "license": "Apache-2.0",
   "labeledAt": "2026-09-24",
-  "status": "borrador: NG-05 y NG-06 confirmadas por el autor; falta confirmar eval dentro de CWE-78 antes de ejecutar el analizador",
+  "status": "cerrado el 2026-09-24 antes de ejecutar el analizador: NG-05 y NG-06 se mantienen y eval se cuenta dentro de CWE-78, decisiones del autor",
+  "scan": {
+    "exclude": ["test/", "app/assets/vendor/"],
+    "reason": "Se analiza el repositorio como lo haría un usuario, sin las pruebas end-to-end ni las bibliotecas de terceros copiadas en app/assets/vendor."
+  },
   "sources": [
     "Comentarios del código que marcan cada vulnerabilidad y su corrección (\"Insecure ...\", \"Fix for A...\")",
     "Tutorial incluido en la aplicación: app/views/tutorial/a1.html y a3.html"

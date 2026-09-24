@@ -1,7 +1,7 @@
 # Etiquetado de OWASP NodeGoat
 
 **Fecha:** 2026-09-24
-**Estado:** borrador para revisar **antes** de ejecutar el analizador (riesgo R-02).
+**Estado:** cerrado el 24/09, antes de ejecutar el analizador (riesgo R-02).
 **Manifiesto:** `eval-nodegoat.json` en la raíz del repositorio.
 **Versión analizada:** commit `c5cb68a7084e4ae7dcc60e6a98768720a81841e8` (Apache-2.0).
 
@@ -31,6 +31,10 @@ La columna "sink en el catálogo" es un dato del catálogo, no una predicción d
 
 Inyección en logs (CWE-117), redirección abierta (CWE-601), ReDoS (CWE-1333), SSRF (CWE-918), y A2 y A4 a A9 (autenticación, control de acceso, configuración, exposición de datos, CSRF y dependencias). Ninguna es un recorrido de un origen a un destino de las familias del catálogo.
 
+## Alcance del análisis
+
+Se analiza todo el repositorio salvo `test/` (pruebas end-to-end) y `app/assets/vendor/` (bibliotecas de terceros), como lo haría un usuario. El alcance se fijó antes de ejecutar los detectores.
+
 ## Regla de conteo
 
 - **TP:** un hallazgo en el archivo del destino, con línea dentro del rango etiquetado. Cada vulnerabilidad cuenta una vez.
@@ -40,7 +44,7 @@ Inyección en logs (CWE-117), redirección abierta (CWE-601), ReDoS (CWE-1333), 
 
 ## Decisiones para el autor
 
-- [ ] ¿`eval` se cuenta dentro de CWE-78? NodeGoat lo clasifica como inyección de JavaScript (CWE-95), pero el catálogo lo tiene entre los destinos de CWE-78.
+- [x] `eval` se cuenta dentro de CWE-78 (decisión del autor, 24/09). NodeGoat lo clasifica como inyección de JavaScript (CWE-95); el capítulo 7 lo aclara.
 - [x] NG-05 y NG-06 quedan (decisión del autor, 24/09). Su destino real es la plantilla HTML, que el analizador no procesa, así que mantenerlas mide esa limitación.
 - [ ] ¿Se agrega algún otro caso documentado que falte?
 
