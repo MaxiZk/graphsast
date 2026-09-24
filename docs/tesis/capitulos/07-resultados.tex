@@ -295,35 +295,6 @@ motor mantiene la detección de los casos conocidos (RNF-01). La
 distribución es además desigual: 26 de los 43 casos corresponden a
 inyección SQL y solo uno a inyección de comandos.
 
-\subsection{Comparación con una línea de base}\label{sec:linea-base}
-
-Las hipótesis H1 y H2 comparan el análisis sobre el grafo con la
-detección por coincidencia de patrones. Para medir esa diferencia se
-aplica sobre los mismos casos una línea de base que
-\completar{marca como vulnerable toda llamada cuyo nombre coincide con
-un destino del catálogo y que recibe al menos un argumento no literal,
-sin seguir el flujo del dato ni reconocer saneamientos}.
-
-\begin{table}[H]
-    \centering
-    \caption{Resultados de la línea de base y de GraphSAST sobre los mismos casos}
-    \label{tab:metricas}
-    \small
-    \begin{tabular}{l l r r r r r}
-        \toprule
-        \tb{Corpus} & \tb{Detector} & \tb{FP} & \tb{FN} & \tb{Precisión} & \tb{Exhaustividad} & \tb{$F_1$} \\
-        \midrule
-        Banco sintético & Línea de base & \completar{..} & \completar{..} & \completar{..} & \completar{..} & \completar{..} \\
-        Banco sintético & GraphSAST & 0 & 0 & 1,00 & 1,00 & 1,00 \\
-        NodeGoat & Línea de base & \completar{..} & \completar{..} & \completar{..} & \completar{..} & \completar{..} \\
-        NodeGoat & GraphSAST & \completar{..} & \completar{..} & \completar{..} & \completar{..} & \completar{..} \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\completar{Lectura de la comparación: en qué casos difieren los dos
-detectores y por qué.}
-
 \subsection{Vulnerabilidades documentadas en paquetes de npm}
 
 Para contrastar el sistema con vulnerabilidades reales se analizaron seis
@@ -346,27 +317,120 @@ modelo de amenaza del analizador, y este resultado dio lugar a la
 respuesta al riesgo R-02: sumar una aplicación deliberadamente
 vulnerable.
 
-\subsection{Aplicación deliberadamente vulnerable: OWASP NodeGoat}
+\subsection{Aplicación deliberadamente vulnerable: OWASP NodeGoat}\label{sec:nodegoat}
 
 \paragraph{Diseño.} OWASP NodeGoat es una aplicación Node.js construida
 con fines didácticos para mostrar los riesgos del OWASP Top 10,
-distribuida con licencia Apache-2.0. Antes de ejecutar el analizador se
-etiquetan las vulnerabilidades documentadas que corresponden a las
-familias del catálogo, de modo que la medición no se ajuste a los
-resultados. \completar{Versión o commit analizado y fecha.}
+distribuida con licencia Apache-2.0 \citep{nodegoat}. Se analizó el
+commit \texttt{c5cb68a} del 21 de junio de 2023. El 24 de septiembre de
+2026, antes de ejecutar el analizador, se etiquetaron las
+vulnerabilidades que NodeGoat documenta en los comentarios de su código y
+en el tutorial que incluye la aplicación, restringidas a las familias del
+catálogo. Se registró además si la operación sensible de cada una figura
+en el catálogo, para separar después las omisiones del catálogo de las
+del motor. Las tres invocaciones a \texttt{eval} se cuentan dentro de la
+familia CWE-78, donde el catálogo ubica esa operación, aunque NodeGoat
+las clasifica como inyección de JavaScript en el servidor (CWE-95). Se
+analizó el repositorio completo, salvo las pruebas y las bibliotecas de
+terceros copiadas en \texttt{app/assets/vendor}: 2.032 líneas. Un
+hallazgo cuenta para una vulnerabilidad si está en el archivo del
+destino, dentro del rango de líneas etiquetado; los hallazgos sin
+etiqueta se revisaron a mano. El etiquetado completo se encuentra en el
+archivo \texttt{eval-nodegoat.json} del repositorio.
 
-\paragraph{Resultados.} \completar{Cantidad de vulnerabilidades
-etiquetadas por familia, hallazgos, matriz de confusión y exhaustividad
-desglosada por construcción sintáctica (riesgo R-01).}
+\begin{table}[H]
+    \centering
+    \caption{Vulnerabilidades etiquetadas en NodeGoat y resultado de cada detector}
+    \label{tab:nodegoat}
+    \footnotesize
+    \begin{tabularx}{\textwidth}{l L l c c c}
+        \toprule
+        \tb{ID} & \tb{Vulnerabilidad} & \tb{Familia} & \tb{\makecell{Sink en\\catálogo}} & \tb{\makecell{Línea\\de base}} & \tb{GraphSAST} \\
+        \midrule
+        NG-01 & \texttt{eval(req.body.preTax)} & CWE-78 & Sí & Detectada & Detectada \\
+        NG-02 & \texttt{eval(req.body.afterTax)} & CWE-78 & Sí & Detectada & Detectada \\
+        NG-03 & \texttt{eval(req.body.roth)} & CWE-78 & Sí & Detectada & Detectada \\
+        NG-04 & Inyección NoSQL con \texttt{\$where} & CWE-943 & No & No & No \\
+        NG-05 & XSS almacenado en el perfil & CWE-79 & No & No & No \\
+        NG-06 & XSS por codificación en contexto incorrecto & CWE-79 & No & No & No \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\paragraph{Resultados.} Los dos detectores encontraron las mismas tres
+vulnerabilidades, las de \texttt{eval}, y omitieron las mismas tres, con
+una exhaustividad del 50\,\%. Las tres omisiones corresponden a
+operaciones que el catálogo no registra: la consulta \texttt{find} de
+MongoDB en NG-04 y la plantilla HTML que emite los datos del perfil en
+NG-05 y NG-06, que el analizador no procesa. Ninguna omisión se debe a
+una construcción del lenguaje que el motor no siga, por lo que el
+desglose por construcción que preveía el riesgo R-01 no pudo medirse
+sobre este corpus. En NG-04 el recorrido además cruza archivos mediante
+\texttt{require}, que el motor no sigue (sección~\ref{sec:n4.2.5}), de
+modo que agregar \texttt{find} al catálogo no alcanzaría para detectarla.
+
+Cada detector emitió un hallazgo sin etiqueta, el mismo: en
+\texttt{Gruntfile.js}, la tarea \texttt{db-reset} arma un comando con el
+argumento de la tarea y lo ejecuta con \texttt{exec}. GraphSAST lo
+reporta porque trata todo parámetro de función como origen. El argumento
+lo provee quien ejecuta la tarea de Grunt en su propio equipo y no un
+usuario remoto, por lo que se clasifica como falso positivo respecto del
+modelo de amenaza. La exhaustividad sobre NodeGoat alcanza el umbral de
+RNF-02 ($\geq$ 50\,\%) sin superarlo.
+
+\subsection{Comparación con una línea de base}\label{sec:linea-base}
+
+Las hipótesis H1 y H2 comparan el análisis sobre el grafo con la
+detección por coincidencia de patrones. Para medir esa diferencia se
+implementó una línea de base por expresiones regulares que marca toda
+llamada o escritura de propiedad a un destino del catálogo, salvo que
+todos sus argumentos sean literales. No sigue el recorrido del dato ni
+reconoce saneamientos, lo que equivale a un patrón
+\texttt{db.query(\$X)} sin análisis de contaminación. Usa el mismo
+catálogo y la misma coincidencia de nombres que el motor, de modo que la
+comparación aísla una sola variable: el análisis del flujo sobre el
+grafo. Las llamadas sin argumentos también se marcan, porque el dato
+puede llegar en el objeto receptor, como en \texttt{doc.save()}. Ambos
+detectores se aplicaron sobre los mismos casos y con la misma regla de
+conteo.
+
+\begin{table}[H]
+    \centering
+    \caption{Resultados de la línea de base y de GraphSAST sobre los mismos casos}
+    \label{tab:metricas}
+    \small
+    \begin{tabular}{l l r r r r r}
+        \toprule
+        \tb{Corpus} & \tb{Detector} & \tb{FP} & \tb{FN} & \tb{Precisión} & \tb{Exhaustividad} & \tb{$F_1$} \\
+        \midrule
+        Banco sintético & Línea de base & 5 & 0 & 0,85 & 1,00 & 0,92 \\
+        Banco sintético & GraphSAST & 0 & 0 & 1,00 & 1,00 & 1,00 \\
+        NodeGoat & Línea de base & 1 & 3 & 0,75 & 0,50 & 0,60 \\
+        NodeGoat & GraphSAST & 1 & 3 & 0,75 & 0,50 & 0,60 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Sobre el banco sintético los dos detectores encontraron los 29 casos
+vulnerables y difirieron en cinco casos seguros, todos falsos positivos
+de la línea de base: tres en los que el dato pasa por un saneamiento
+antes del destino y dos en los que dos variables homónimas, declaradas en
+ramas distintas, no tienen un camino real entre sí. Sobre NodeGoat no
+hubo diferencias: los tres aciertos, las tres omisiones y el falso
+positivo coinciden. En esa aplicación los destinos alcanzados reciben el
+dato directamente, sin saneamiento intermedio, y el banco sintético fue
+construido por el autor, por lo que la diferencia observada proviene
+solo de este último.
 
 \subsection{Rendimiento}
 
 Sobre el banco sintético el análisis demandó 0,27\,ms por línea en la
 línea de comandos. En la versión web, el análisis de un proyecto de 78
 archivos y unas 8.500 líneas demandó alrededor de 2,8\,s en el equipo de
-desarrollo.
-\completar{Tiempo de análisis de NodeGoat en la línea de comandos y en
-la versión web.}
+desarrollo. Sobre NodeGoat, con 2.032 líneas, el análisis en la línea de
+comandos demandó 161\,ms (mediana de cinco ejecuciones), unos 0,08\,s
+por cada 1.000 líneas, frente a 8\,ms de la línea de base.
+\completar{Tiempo de análisis de NodeGoat en la versión web.}
 
 % -------------------------------------------------------------
 \section{Validación con usuarios y con un experto}\label{sec:validacion-usuarios}
@@ -436,8 +500,24 @@ hallazgo, y ese hallazgo no discrimina entre la versión vulnerable y la
 corregida. El resultado no confirma ni refuta la efectividad del sistema,
 porque las fallas del corpus no son recorridos de un origen a un
 destino, pero deja sin evidencia sobre código real a la validación
-prevista en el capítulo~\ref{cap:metodologia} hasta contar con los
-resultados de NodeGoat.
+prevista en el capítulo~\ref{cap:metodologia}. La evidencia sobre código
+real proviene, por lo tanto, de NodeGoat (sección~\ref{sec:nodegoat}).
+
+\paragraph{Sin diferencia frente a la línea de base sobre código real.}
+Sobre NodeGoat, GraphSAST y la línea de base obtuvieron los mismos
+aciertos, las mismas omisiones y el mismo falso positivo
+(tabla~\ref{tab:metricas}). La ventaja del análisis sobre el grafo solo
+se observó en el banco sintético, que contiene casos saneados construidos
+por el autor. El corpus de código real tiene seis vulnerabilidades y
+ningún caso en el que un saneamiento proteja un destino, por lo que no
+alcanza para confirmar ni para descartar esa ventaja.
+
+\paragraph{Omisiones por operaciones fuera del catálogo.} Las tres
+vulnerabilidades de NodeGoat que ningún detector encontró llegan a
+operaciones que el catálogo no registra: la consulta \texttt{find} de
+MongoDB y la emisión de datos en plantillas HTML. La cobertura del
+catálogo limitó la exhaustividad sobre código real más que el motor de
+análisis.
 
 \paragraph{Falsos positivos por coincidencia de nombres.} Al analizar el
 código del propio sistema, una llamada a \texttt{RegExp.prototype.exec}
@@ -455,8 +535,10 @@ un mismo archivo, en cambio, el banco sintético incluye casos con
 funciones flecha y con un método de clase que se detectan correctamente.
 La limitación afecta, por lo tanto, a las aplicaciones Express
 organizadas en varios archivos con funciones flecha o con
-\texttt{require}, que es la forma habitual de NodeGoat. \completar{Efecto
-medido sobre NodeGoat.}
+\texttt{require}, que es la forma habitual de NodeGoat. En NodeGoat, las
+tres vulnerabilidades detectadas ocurren dentro de una misma función, y
+la única que cruza archivos (NG-04) llega además a una operación fuera
+del catálogo, por lo que el efecto de esta limitación no pudo aislarse.
 
 % -------------------------------------------------------------
 \section{Síntesis de la evidencia}\label{sec:sintesis-evidencia}
@@ -475,8 +557,8 @@ capítulo~\ref{cap:conclusiones}.
         \toprule
         \tb{Hipótesis} & \tb{Evidencia obtenida} & \tb{Sección} \\
         \midrule
-        H1 & Banco sintético: 29 de 29 casos vulnerables detectados, incluidos recorridos entre funciones y entre archivos. \completar{Comparación con la línea de base y resultados de NodeGoat.} & \ref{sec:pruebas} \\
-        H2 & Banco sintético: 0 falsos positivos en 14 casos seguros, tres de ellos saneados y tres con nombres engañosos; dos casos vulnerables con saneamientos que no protegen el destino se detectan. Un falso positivo por coincidencia de nombres fuera del banco. \completar{Falsos positivos de la línea de base.} & \ref{sec:pruebas}, \ref{sec:resultados-negativos} \\
+        H1 & Banco sintético: 29 de 29 casos vulnerables detectados, incluidos recorridos entre funciones y entre archivos; la línea de base también detecta los 29. NodeGoat: 3 de 6 vulnerabilidades detectadas por ambos detectores; las 3 omisiones llegan a operaciones fuera del catálogo. & \ref{sec:pruebas} \\
+        H2 & Banco sintético: 0 falsos positivos en 14 casos seguros, tres de ellos saneados y tres con nombres engañosos; dos casos vulnerables con saneamientos que no protegen el destino se detectan. La línea de base produce 5 falsos positivos en el banco. En NodeGoat, 1 falso positivo en ambos detectores. Un falso positivo por coincidencia de nombres fuera del banco. & \ref{sec:pruebas}, \ref{sec:resultados-negativos} \\
         H3 & \completar{Resultados de las sesiones y de la entrevista.} & \ref{sec:validacion-usuarios} \\
         \bottomrule
     \end{tabularx}
