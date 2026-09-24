@@ -1,0 +1,103 @@
+%!TEX root = ../main.tex
+% APÉNDICE C — Detalles técnicos e implementación
+
+\chapter{Detalles técnicos e implementación}\label{apx:tecnicos}
+
+\begin{guia}
+Todo lo que alguien necesita para reproducir los resultados:
+hiperparámetros exactos, identificadores y versiones de los datos,
+versiones de librerías, variables de entorno (sin secretos) y esquemas
+de base de datos. Reproducibilidad total es un marcador de excelencia.
+\end{guia}
+
+\section{Versiones}
+
+La tabla~\ref{tab:versiones} registra las versiones instaladas según el
+archivo de bloqueo de dependencias del repositorio al 24 de septiembre de
+2026, con las que se obtuvieron los resultados del
+capítulo~\ref{cap:resultados}.
+
+\begin{table}[H]
+    \centering
+    \caption{Versiones de las dependencias principales}
+    \label{tab:versiones}
+    \small
+    \begin{tabular}{l l l}
+        \toprule
+        \tb{Componente} & \tb{Versión} & \tb{Uso} \\
+        \midrule
+        GraphSAST & 0.1.0 & Versión del motor, del CLI y del SARIF \\
+        Node.js & 26.7.0 & Entorno de ejecución de la línea de comandos \\
+        TypeScript & 5.9.3 & Lenguaje y compilador \\
+        ts-morph & 23.0.0 & Análisis sintáctico \\
+        Cytoscape.js & 3.34.0 & Visualización del grafo \\
+        Vite & 5.4.21 & Empaquetado de la versión web \\
+        Vitest & 2.1.9 & Pruebas automatizadas \\
+        neo4j-driver & 6.2.0 & Cliente de Neo4j \\
+        Neo4j & 5 Community & Base de datos de grafos (imagen \texttt{neo4j:5-community}) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Parámetros del análisis}
+
+\begin{table}[H]
+    \centering
+    \caption{Parámetros del motor con sus valores por defecto}
+    \label{tab:parametros}
+    \small
+    \begin{tabularx}{\textwidth}{l l L}
+        \toprule
+        \tb{Parámetro} & \tb{Valor} & \tb{Efecto} \\
+        \midrule
+        \texttt{-{}-max-depth} & 15 & Longitud máxima del camino entre origen y destino \\
+        \texttt{-{}-max-file-bytes} & 1.000.000 & Tamaño máximo de un archivo analizado \\
+        Análisis entre archivos & Activo & Se desactiva con \texttt{-{}-no-cross-file} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Catálogo de detección}
+
+El catálogo se compone de cuatro archivos JSON, uno por familia, en la
+carpeta \texttt{catalog/} del repositorio. Cada archivo declara los
+orígenes, los destinos sensibles y los saneamientos de la familia; su
+contenido se resume en la tabla de debilidades del
+capítulo~\ref{cap:marco-tecnologico}.
+
+\section{Reproducción de los resultados}
+
+\begin{lstlisting}[caption={Comandos para reproducir las mediciones del capítulo~\ref{cap:resultados}}, label={lst:reproduccion}]
+npm install
+npm test                 # suite automatizada (247 pruebas)
+npm run benchmark        # banco sintetico (43 casos)
+npm run cve:run          # advisories de npm
+npm run scan -- scan docs/validacion/h3/caso-a --verbose
+\end{lstlisting}
+
+\completar{Comando y versión de NodeGoat, y comando de la línea de base.}
+
+\section{Variables de entorno}
+
+El motor sobre Neo4j se habilita desde la API local
+(\texttt{graphsast serve}) cuando está definida \texttt{NEO4J\_URI} y
+apunta a la propia máquina; si apunta a otro equipo, se ignora y se usa
+el recorrido en memoria, para que el código analizado no salga del
+equipo. La instancia local se levanta con \texttt{npm run neo4j:up}.
+
+\begin{table}[H]
+    \centering
+    \caption{Variables de entorno}
+    \label{tab:variables-entorno}
+    \small
+    \begin{tabularx}{\textwidth}{l L l}
+        \toprule
+        \tb{Variable} & \tb{Propósito} & \tb{Valor por defecto} \\
+        \midrule
+        \texttt{NEO4J\_URI} & Dirección de la instancia de Neo4j; su presencia habilita el motor Cypher & Sin definir \\
+        \texttt{NEO4J\_USER} & Usuario de la instancia & \texttt{neo4j} \\
+        \texttt{NEO4J\_PASSWORD} & Contraseña de la instancia & La de desarrollo de \texttt{docker-compose.yml} \\
+        \texttt{CVE\_JSON} & Archivo donde la validación con advisories escribe el informe en JSON & Sin definir \\
+        \bottomrule
+    \end{tabularx}
+\end{table}

@@ -1,0 +1,28 @@
+%!TEX root = ../main.tex
+% Resumen en español (~250 palabras). Las palabras clave se definen
+% en main.tex con \palabrasclave{...}
+%
+% Guía de la cátedra (Entrega 0): el resumen responde, en este orden,
+%   1. Problema: qué situación concreta de TI se aborda y a quién afecta.
+%   2. Enfoque: qué se construye o investiga y con qué método o tecnología.
+%   3. Valor: qué aporte original ofrece frente a lo existente.
+% Impersonal, sin citas ni siglas sin expandir. Se reescribe al final del
+% proyecto para que refleje lo que efectivamente se logró.
+
+\begin{resumen}
+
+GraphSAST es un sistema de análisis estático de código fuente (SAST)
+orientado a la detección temprana de vulnerabilidades de arquitectura de
+software. El sistema compila la lógica de aplicaciones escritas en
+TypeScript/JavaScript en una representación formal mediante un grafo de
+flujo de datos. A partir de técnicas de análisis de contaminación (taint
+analysis), la herramienta rastrea el recorrido de datos no confiables
+(sources) hacia operaciones sensibles (sinks) y verifica la presencia o
+ausencia de mecanismos de sanitización en el trayecto. El proyecto abarca
+el diseño e implementación propios del analizador, la construcción del
+grafo, el motor de consultas y una interfaz web interactiva para la
+visualización de los caminos de riesgo, validando su precisión y su
+capacidad de reducción de falsos positivos frente a repositorios con
+vulnerabilidades documentadas.
+
+\end{resumen}

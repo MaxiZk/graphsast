@@ -1,0 +1,198 @@
+% =============================================================
+%  EXTRAS: cajas de guía, cajas de texto, código fuente,
+%  diagramas de Gantt, tablas y enlaces a repositorios.
+% =============================================================
+
+
+% -- CAJAS DE GUÍA DE LA CÁTEDRA -------------------------------
+% Se usan dentro de los capítulos para indicar qué espera la
+% cátedra en cada sección. Desaparecen del PDF con la opción
+% de clase  guias=false  (recomendado para la entrega final).
+%
+%   \begin{guia}  ... \end{guia}          qué evalúa la cátedra
+%   \begin{ejemplo} ... \end{ejemplo}     ejemplo de cómo escribirlo
+%   \begin{pendiente} ... \end{pendiente} recordatorio para el autor
+%   \completar{texto}                     marcador en línea (siempre visible)
+
+\RequirePackage[most]{tcolorbox}
+\RequirePackage[fixed]{fontawesome5}
+
+% paleta CASSIE para las cajas
+\definecolor{guiaColor}{HTML}{1a7f37}        % verde (tip)
+\definecolor{ejemploColor}{RGB}{90, 90, 90}  % gris
+\definecolor{pendienteColor}{HTML}{000000}   % negro: marcadores \completar{} y caja pendiente
+\definecolor{notaColor}{HTML}{0969da}        % azul (note)
+\definecolor{advertenciaColor}{HTML}{9a6700} % ocre (warning)
+
+\newtcolorbox{guia}[1][\USAL@guia]{
+    enhanced, breakable,
+    colback=guiaColor!5, colframe=guiaColor,
+    fonttitle=\bfseries, title={\faInfoCircle\ #1},
+    arc=1mm, boxrule=0.6pt, left=2mm, right=2mm, top=1mm, bottom=1mm,
+    fontupper=\small,
+}
+\newtcolorbox{ejemplo}[1][\USAL@ejemplo]{
+    enhanced, breakable,
+    colback=ejemploColor!4, colframe=ejemploColor,
+    fonttitle=\bfseries, title={\faLightbulb\ #1},
+    arc=1mm, boxrule=0.6pt, left=2mm, right=2mm, top=1mm, bottom=1mm,
+    fontupper=\small,
+}
+\newtcolorbox{pendiente}[1][\USAL@pendiente]{
+    enhanced, breakable,
+    colback=pendienteColor!6, colframe=pendienteColor,
+    fonttitle=\bfseries, title={\faPencil*\ #1},
+    arc=1mm, boxrule=0.6pt, left=2mm, right=2mm, top=1mm, bottom=1mm,
+    fontupper=\small,
+}
+% (\texorpdfstring evita avisos de hyperref cuando se usa dentro de un título)
+\newcommand{\completar}[1]{\texorpdfstring{\textcolor{pendienteColor}{[\,#1\,]}}{[#1]}}
+
+% con guias=false, las tres cajas se redefinen para descartar su contenido
+\ifusal@guias\else
+    \RequirePackage{environ}
+    \RenewEnviron{guia}[1][]{}
+    \RenewEnviron{ejemplo}[1][]{}
+    \RenewEnviron{pendiente}[1][]{}
+\fi
+
+
+% -- CAJAS DE TEXTO PARA EL CUERPO -----------------------------
+% Estas SÍ quedan en el documento final. Uso:
+%   \begin{nota}[Título opcional] ... \end{nota}
+%   \begin{advertencia} ... \end{advertencia}
+%   \begin{resumenbox}[Síntesis] ... \end{resumenbox}
+
+\newtcolorbox{nota}[1][\USAL@nota]{
+    enhanced, breakable,
+    colback=notaColor!8, colframe=notaColor!8,
+    borderline west={0.8mm}{0pt}{notaColor},
+    sharp corners, boxrule=0pt, left=3mm, right=2mm,
+    fonttitle=\bfseries, coltitle=notaColor, detach title,
+    before upper={\tcbtitle\par\smallskip},
+    title={#1},
+}
+\newtcolorbox{advertencia}[1][\USAL@advertencia]{
+    enhanced, breakable,
+    colback=advertenciaColor!8, colframe=advertenciaColor!8,
+    borderline west={0.8mm}{0pt}{advertenciaColor},
+    sharp corners, boxrule=0pt, left=3mm, right=2mm,
+    fonttitle=\bfseries, coltitle=advertenciaColor, detach title,
+    before upper={\tcbtitle\par\smallskip},
+    title={\faExclamationTriangle\ #1},
+}
+\newtcolorbox{resumenbox}[1][\USAL@resumen]{
+    enhanced, breakable,
+    colback=mainColor!4, colframe=mainColor!4,
+    borderline west={0.8mm}{0pt}{mainColor},
+    sharp corners, boxrule=0pt, left=3mm, right=2mm,
+    fonttitle=\bfseries, coltitle=mainColor, detach title,
+    before upper={\tcbtitle\par\smallskip},
+    title={#1},
+}
+
+
+% -- CÓDIGO FUENTE ---------------------------------------------
+% Se usa el paquete listings (no necesita Python ni shell-escape).
+%   \begin{lstlisting}[language=Python, caption={...}, label={lst:...}]
+%   \lstinputlisting[language=SQL]{ruta/al/archivo.sql}
+\RequirePackage{listings}
+\RequirePackage{algorithm}
+\RequirePackage{algpseudocode}
+
+\definecolor{commentsColor}{RGB}{36, 161, 156}
+\definecolor{numColor}{RGB}{71, 96, 114}
+\definecolor{stringColor}{RGB}{78, 154, 6}
+\definecolor{kwColor}{RGB}{207, 92, 0}
+\definecolor{bgCodeColor}{RGB}{249, 249, 249}
+\definecolor{codeGray}{HTML}{888A85}
+
+\lstdefinestyle{codeSnippet} {
+  backgroundcolor=\color{bgCodeColor},
+  basicstyle=\ttfamily\small\color{black},
+  keywordstyle=\color{kwColor},
+  stringstyle=\color{stringColor},
+  commentstyle=\color{codeGray}\itshape,
+  numberstyle=\tiny\color{black},
+  breakatwhitespace=false,
+  breaklines=true,
+  captionpos=b,
+  keepspaces=true,
+  numbers=left,
+  numbersep=10pt,
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  frame=single,
+  frameround=ttt,
+  tabsize=2,
+  xleftmargin=2em,
+  xrightmargin=1em,
+  extendedchars=true,
+  inputencoding=utf8,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+           {ñ}{{\~n}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1
+           {Ú}{{\'U}}1 {Ñ}{{\~N}}1 {¿}{{?`}}1 {¡}{{!`}}1,
+}
+\lstset{style=codeSnippet}
+\lstdefinelanguage{JavaScript}{
+  keywords={typeof, new, true, false, catch, function, return, null, catch, switch, var, let, const, if, in, while, do, else, case, break, async, await, import, export, from, class, extends, this},
+  sensitive=true,
+  comment=[l]{//}, morecomment=[s]{/*}{*/},
+  morestring=[b]', morestring=[b]", morestring=[b]`,
+}
+\lstalias{TypeScript}{JavaScript}
+\renewcommand{\lstlistingname}{\USAL@listing}
+\renewcommand{\lstlistlistingname}{\USAL@listoflistings}
+
+
+% -- DIAGRAMA DE GANTT (cronograma) ----------------------------
+% Ver el ejemplo en capitulos/02-metodologia.tex
+\RequirePackage{pgfgantt}
+% nombres de mes en español para el calendario del Gantt
+\ifx\usal@language\usal@spanishname
+  \def\pgfcalendarmonthshortname#1{\ifcase#1\or ene\or feb\or mar\or abr\or may\or jun\or jul\or ago\or sep\or oct\or nov\or dic\fi}
+  \def\pgfcalendarmonthname#1{\ifcase#1\or enero\or febrero\or marzo\or abril\or mayo\or junio\or julio\or agosto\or septiembre\or octubre\or noviembre\or diciembre\fi}
+\fi
+
+
+% -- TABLAS ----------------------------------------------------
+% columnas de ancho automático para tabularx / xltabular:
+%   L = izquierda, C = centrada, R = derecha
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}
+\renewcommand{\arraystretch}{1.15}
+
+% celda de encabezado en negrita
+\newcommand{\tb}[1]{\textbf{#1}}
+
+% semáforo para matrices de riesgo (probabilidad x impacto)
+\newcommand{\riesgoAlto}[1]{\cellcolor{red!25}#1}
+\newcommand{\riesgoMedio}[1]{\cellcolor{orange!25}#1}
+\newcommand{\riesgoBajo}[1]{\cellcolor{green!20}#1}
+
+
+% -- FIGURAS DE EJEMPLO ----------------------------------------
+% El paquete mwe provee example-image-a, -b, -c para maquetar
+% antes de tener las figuras reales.
+\RequirePackage{mwe}
+
+
+% -- ENLACE A REPOSITORIO --------------------------------------
+%   \prettygitlink{usuario/repositorio}
+\newcommand{\prettygitlink}[1]{
+    \begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+        \begin{tabular}{cl}
+        \hline
+        {\large\faGithub} & \href{https://github.com/#1}{#1} \\ \hline
+        \end{tabular}
+    \end{table}
+}
+
+
+% -- VARIOS ----------------------------------------------------
+\RequirePackage{afterpage}
+\RequirePackage[export]{adjustbox}

@@ -1,0 +1,483 @@
+%!TEX root = ../main.tex
+% =============================================================
+%  CAPÍTULO 7 — PRESENTACIÓN DE RESULTADOS
+%                                       (Entrega 7 · 5 % · 13/10)
+% =============================================================
+
+\chapter{Presentación de resultados}\label{cap:resultados}
+
+\begin{guia}[Guía de la cátedra: qué se evalúa en este capítulo]
+\begin{enumerate}
+    \item \textbf{Requerimientos formales}: \gls{rf} y \gls{rnf} con ID,
+          descripción, prioridad y criterio de aceptación medible,
+          trazados a los indicadores del capítulo~\ref{cap:metodologia}.
+    \item \textbf{Evidencia de implementación}: capturas reales del sistema
+          funcionando, enlaces al repositorio (anexo~\ref{anx:repositorios})
+          y al despliegue.
+    \item \textbf{Resultados cuantitativos honestos}: diseño experimental,
+          métricas, matrices de confusión o su equivalente en el dominio,
+          incluyendo lo que salió mal y su análisis. Reportar también lo
+          malo y argumentarlo vale más que esconderlo. Hiperparámetros y
+          versiones en el apéndice~\ref{apx:tecnicos}.
+    \item \textbf{Validación con usuarios y expertos}: idealmente
+          triangulada (métricas técnicas, encuesta, entrevista) y
+          traducida a decisiones de diseño concretas. Instrumentos en los
+          apéndices \ref{apx:encuesta} y \ref{apx:entrevista}.
+\end{enumerate}
+El sistema tiene que existir y andar: la entrega final incluye el
+proyecto funcional.
+\end{guia}
+
+Este capítulo presenta la evidencia obtenida durante el desarrollo y la
+validación de GraphSAST. Se organiza en cinco partes: los requerimientos
+que el sistema debía cumplir, el proceso con el que se construyó, la
+evidencia de que funciona, los resultados de las pruebas técnicas y los
+de la validación con usuarios. Se informan tanto los resultados
+favorables como los desfavorables, y la lectura de cada hipótesis se
+reserva para el capítulo~\ref{cap:conclusiones}.
+
+Los objetivos específicos del capítulo~\ref{cap:introduccion} se
+identifican en adelante como OE-1 a OE-6, en el orden en que allí se
+enuncian: analizador sintáctico (OE-1), construcción del grafo (OE-2),
+motor de contaminación (OE-3), persistencia en Neo4j (OE-4), interfaz de
+visualización (OE-5) y validación (OE-6).
+
+% -------------------------------------------------------------
+\section{Requerimientos del sistema}\label{sec:requerimientos}
+% -------------------------------------------------------------
+
+Los requerimientos se derivan de los objetivos específicos y de los
+indicadores de evaluación definidos en el capítulo~\ref{cap:metodologia}
+(tabla~\ref{tab:indicadores}). Cada requerimiento funcional indica el
+objetivo al que responde y un criterio de aceptación verificable sobre
+el sistema construido; la verificación de cada criterio se presenta en
+la sección~\ref{sec:pruebas}.
+
+\begin{table}[H]
+    \centering
+    \caption{Requerimientos funcionales}
+    \label{tab:rf}
+    \footnotesize
+    \begin{tabularx}{\textwidth}{@{}l >{\hsize=.75\hsize}L >{\hsize=1.25\hsize}L l l L@{}}
+        \toprule
+        \tb{ID} & \tb{Nombre} & \tb{Descripción} & \tb{Prior.} & \tb{Obj.} & \tb{Criterio de aceptación} \\
+        \midrule
+        RF-01 & Análisis sintáctico & Obtener el árbol de sintaxis abstracta de archivos TypeScript y JavaScript & Alta & OE-1 & Los 43 casos del banco sintético se analizan sin errores \\
+        RF-02 & Construcción del grafo & Generar los cinco tipos de nodo y las cinco relaciones del modelo & Alta & OE-2 & Pasan todas las pruebas de representación intermedia y flujo de datos \\
+        RF-03 & Detección de caminos & Reportar caminos de un origen a un destino sensible sin saneamiento, según el catálogo JSON & Alta & OE-3 & Se detectan los 29 casos vulnerables del banco sintético \\
+        RF-04 & Descarte de saneados & No reportar caminos que atraviesan un saneamiento del catálogo & Alta & OE-3 & Ninguno de los 14 casos seguros genera hallazgos \\
+        RF-05 & Análisis entre archivos & Seguir el dato hacia funciones importadas desde otro archivo del proyecto & Alta & OE-3 & En los casos A y B de la validación con usuarios, el hallazgo cruza dos archivos \\
+        RF-06 & Visualización & Dibujar el grafo, resaltar el camino y vincular cada nodo con su archivo y línea & Alta & OE-5 & El camino se resalta y cada nodo muestra su ubicación \\
+        RF-07 & Carga de proyectos & Analizar en el navegador una carpeta e informar los archivos excluidos & Media & OE-5 & El análisis de una carpeta se completa en la versión publicada \\
+        RF-08 & Reportes & Emitir los hallazgos en texto, JSON y SARIF 2.1.0 & Media & OE-6 & El SARIF valida contra el esquema oficial \\
+        RF-09 & Integración continua & Devolver un código de salida distinto de cero ante hallazgos & Media & OE-6 & Pasan todas las pruebas de códigos de salida \\
+        RF-10 & Persistencia en Neo4j & Guardar el grafo y resolver la detección con Cypher & Media & OE-4 & Sobre el banco sintético, Cypher y el recorrido en memoria dan los mismos hallazgos \\
+        RF-11 & API local & Exponer el análisis en una API restringida a \texttt{127.0.0.1} & Baja & OE-5 & Se rechazan las rutas fuera de la carpeta habilitada \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Los requerimientos no funcionales se expresan como umbrales sobre los
+indicadores de la tabla~\ref{tab:indicadores}. El umbral de RNF-02
+proviene del seguimiento del riesgo R-01 fijado en el
+capítulo~\ref{cap:riesgos}, y el de RNF-07, del riesgo R-05. Los
+umbrales de RNF-03 a RNF-06 se fijan en este capítulo, dado que el
+capítulo~\ref{cap:metodologia} definió la forma de medición pero no un
+valor objetivo.
+
+\begin{table}[H]
+    \centering
+    \caption{Requerimientos no funcionales}
+    \label{tab:rnf}
+    \small
+    \begin{tabularx}{\textwidth}{l L L l L}
+        \toprule
+        \tb{ID} & \tb{Atributo} & \tb{Descripción} & \tb{Prior.} & \tb{Umbral medible} \\
+        \midrule
+        RNF-01 & Corrección sobre casos conocidos & El motor no introduce falsos positivos ni falsos negativos sobre el banco sintético & Alta & FP = 0 y FN = 0 en los 43 casos (precisión y exhaustividad) \\
+        RNF-02 & Exhaustividad sobre código real & Detección de las vulnerabilidades etiquetadas en una aplicación deliberadamente vulnerable & Alta & Exhaustividad $\geq$ 50\,\% sobre OWASP NodeGoat (riesgo R-01) \\
+        RNF-03 & Rendimiento & Tiempo de análisis en la línea de comandos & Media & $\leq$ 1 s por cada 1.000 líneas (indicador de tiempo de análisis) \\
+        RNF-04 & Confidencialidad & El código analizado no sale del equipo del usuario & Alta & 0 solicitudes a otros dominios durante el análisis en la versión web \\
+        RNF-05 & Portabilidad & La versión web funciona sin instalación & Media & El análisis se completa en un navegador actualizado sin complementos \\
+        RNF-06 & Mantenibilidad del catálogo & Las reglas se modifican sin cambiar el motor & Media & Agregar un destino o un saneamiento requiere editar solo un archivo JSON \\
+        RNF-07 & Seguridad de las dependencias & El repositorio no publica dependencias con vulnerabilidades graves & Alta & 0 alertas críticas o altas abiertas al 3 de noviembre (riesgo R-05) \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+% -------------------------------------------------------------
+\section{Proceso de desarrollo}\label{sec:proceso}
+% -------------------------------------------------------------
+
+El sistema se construyó en forma incremental, siguiendo el orden de
+etapas previsto en el capítulo~\ref{cap:metodologia}
+(tabla~\ref{tab:hitos}): primero el análisis sintáctico y la
+representación intermedia, después el grafo de llamadas y el flujo de
+datos, a continuación el motor de detección con su persistencia opcional
+y, por último, la visualización. Cada etapa se cerró con pruebas
+automatizadas antes de pasar a la siguiente. La
+tabla~\ref{tab:hitos-reales} registra cuándo se completó cada etapa,
+según los documentos de planificación y validación del repositorio y el
+historial de cambios.
+
+\begin{table}[H]
+    \centering
+    \caption{Etapas de desarrollo completadas}
+    \label{tab:hitos-reales}
+    \small
+    \begin{tabularx}{\textwidth}{l L l}
+        \toprule
+        \tb{Etapa} & \tb{Resultado} & \tb{Registro} \\
+        \midrule
+        Hitos 1 a 3b & Análisis sintáctico, representación intermedia, grafo de llamadas y flujo de datos intra e inter-procedural & 12/06/2026 \\
+        Validación temprana & Verificación de que el grafo contiene los caminos de origen a destino necesarios para la detección & 12/06/2026 \\
+        Hito 5 & Motor de detección en memoria, persistencia opcional en Neo4j, catálogo CWE e informes & 02/07/2026 \\
+        Banco sintético & Revisión del corpus de 43 casos y de la metodología de medición & 01/09/2026 \\
+        Cuarta familia & Separación de la inyección NoSQL (CWE-943) de la inyección SQL & 15/09/2026 \\
+        Línea de comandos & Exclusiones, códigos de salida, SARIF, API local y análisis entre archivos & 22/09/2026 \\
+        Versión web & Análisis en el navegador con carga de carpetas y publicación en Vercel & 23/09/2026 \\
+        Código real & Validación sobre vulnerabilidades documentadas del ecosistema npm & 23/09/2026 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+El desarrollo se apartó del plan en dos aspectos. El primero es el
+alcance: el análisis entre archivos, la versión que se ejecuta en el
+navegador y la familia CWE-943 no figuraban en el alcance del
+capítulo~\ref{cap:metodologia} y se incorporaron durante el desarrollo,
+lo que dio origen al riesgo R-03 del capítulo~\ref{cap:riesgos}. El
+segundo es el modo de ejecución: el diseño preveía la base de datos de
+grafos como motor principal, y el sistema final resuelve la detección por
+defecto con un recorrido en memoria, dejando Neo4j como alternativa
+(capítulo~\ref{cap:marco-tecnologico}). Desde el hito 5 el motor sobre
+Neo4j es opcional porque requiere una instancia activa, y en la versión
+web, que se ejecuta en el navegador, el recorrido en memoria es el único
+disponible.
+
+El diseño del sistema, su organización en paquetes y el modelo de datos
+del grafo se describen en el capítulo~\ref{cap:marco-tecnologico}. La
+integración entre el motor y la interfaz se resolvió con un punto de
+entrada del motor sin dependencias de Node.js, que la versión web ejecuta
+en un proceso en segundo plano del navegador; de este modo, la línea de
+comandos y la interfaz web usan el mismo código de análisis y las pruebas
+del motor cubren a ambas.
+
+% -------------------------------------------------------------
+\section{Evidencia de implementación}\label{sec:evidencia}
+% -------------------------------------------------------------
+
+El sistema se encuentra publicado en \url{https://graph-sast.vercel.app/}
+y su código fuente en el repositorio indicado en el
+anexo~\ref{anx:repositorios}. La versión que corresponde a esta entrega
+se identifica con la etiqueta \completar{entrega-7} del repositorio. Las
+capturas del sistema en funcionamiento se presentan en el
+capítulo~\ref{cap:marco-tecnologico}: la detección de un recorrido
+vulnerable, el descarte del mismo recorrido saneado, el panel de
+métricas y el análisis de un proyecto cargado como carpeta, en el que el
+hallazgo cruza tres archivos.
+
+\completar{Agregar una captura del caso A de la validación con usuarios
+cargado en la versión publicada, con el camino entre los dos archivos
+resaltado.}
+
+% -------------------------------------------------------------
+\section{Pruebas técnicas}\label{sec:pruebas}
+% -------------------------------------------------------------
+
+\subsection{Pruebas automatizadas}
+
+La suite automatizada comprende 247 pruebas en 27 archivos, ejecutadas
+con Vitest: 219 corresponden al motor y 28 a la interfaz web. La
+tabla~\ref{tab:suite} las agrupa por etapa del procesamiento. En la
+ejecución del 24 de septiembre de 2026 todas las pruebas resultaron
+satisfactorias. La paridad entre el motor Cypher y el recorrido en
+memoria (RF-10) no forma parte de la suite, porque requiere una instancia
+activa de Neo4j. \completar{Resultado de la verificación de paridad con
+Neo4j sobre el banco sintético.}
+
+\begin{table}[H]
+    \centering
+    \caption{Pruebas automatizadas por etapa}
+    \label{tab:suite}
+    \small
+    \begin{tabularx}{\textwidth}{L r l}
+        \toprule
+        \tb{Etapa} & \tb{Pruebas} & \tb{Requerimiento} \\
+        \midrule
+        Análisis sintáctico & 2 & RF-01 \\
+        Representación intermedia y grafo de llamadas & 14 & RF-02 \\
+        Flujo de datos intra e inter-procedural y ámbitos & 34 & RF-02 \\
+        Motor de contaminación y destinos XSS & 26 & RF-03, RF-04 \\
+        Catálogo de reglas & 8 & RNF-06 \\
+        Veredicto y selección de motor & 18 & RF-03 \\
+        Análisis entre archivos & 22 & RF-05 \\
+        Escaneo de archivos y exclusiones & 31 & RF-07, RF-08 \\
+        Informes de texto, JSON y SARIF & 21 & RF-08 \\
+        Códigos de salida & 9 & RF-09 \\
+        API local & 19 & RF-11 \\
+        Generación de consultas Cypher & 2 & RF-10 \\
+        Evaluación y banco de pruebas & 7 & RNF-01 \\
+        Punto de entrada del motor & 6 & RF-01 \\
+        Interfaz web & 28 & RF-06, RF-07 \\
+        \midrule
+        \tb{Total} & \tb{247} & \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Banco de pruebas sintético}
+
+\paragraph{Diseño.} El banco se compone de 43 casos de verdad conocida,
+29 vulnerables y 14 seguros, con un total de 198 líneas de código. Cada
+caso declara si es vulnerable, la familia de debilidad y la cantidad
+esperada de hallazgos. Los casos cubren recorridos dentro de una función
+y entre funciones, entradas propias de Express (parámetros, cuerpo,
+encabezados y cookies), asignaciones, desestructuración, literales de
+plantilla, funciones flecha, métodos de clase y componentes JSX. Entre
+los casos seguros se incluyen tres construidos contra la detección por
+nombres: funciones llamadas \texttt{evaluatePrice}, \texttt{myExecutor}
+y \texttt{spawnConfetti}, cuyos nombres contienen los de destinos
+sensibles del catálogo (\texttt{eval}, \texttt{exec} y \texttt{spawn})
+sin serlo. En sentido inverso, dos casos vulnerables verifican que el
+saneamiento se reconoce por su posición en el camino y no por el nombre:
+uno aplica el saneamiento en una rama paralela que no protege al destino,
+y otro usa una función cuyo nombre contiene \texttt{escape} sin sanear
+el dato.
+
+\begin{table}[H]
+    \centering
+    \caption{Composición del banco sintético por familia}
+    \label{tab:banco-composicion}
+    \small
+    \begin{tabular}{l r r}
+        \toprule
+        \tb{Familia} & \tb{Vulnerables} & \tb{Seguros} \\
+        \midrule
+        CWE-89, inyección SQL & 21 & 5 \\
+        CWE-79, Cross-Site Scripting & 3 & 3 \\
+        CWE-78, inyección de comandos & 1 & 0 \\
+        CWE-943, inyección NoSQL & 4 & 0 \\
+        Sin familia (nombres engañosos y otros negativos) & 0 & 6 \\
+        \midrule
+        \tb{Total} & \tb{29} & \tb{14} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Resultados.} La tabla~\ref{tab:confusion} presenta la matriz
+de confusión. El sistema clasificó correctamente los 43 casos: detectó
+los 29 vulnerables y no emitió hallazgos sobre los 14 seguros, con una
+precisión, una exhaustividad y un $F_1$ de 1,00. El análisis completo
+del banco demandó 52\,ms (mediana de cinco ejecuciones), es decir,
+0,27\,ms por línea, lo que equivale a 0,27\,s por cada 1.000 líneas y
+cumple el umbral de RNF-03.
+
+\begin{table}[H]
+    \centering
+    \caption{Matriz de confusión sobre el banco sintético (43 casos)}
+    \label{tab:confusion}
+    \small
+    \begin{tabular}{l r r}
+        \toprule
+        & \tb{Reportado vulnerable} & \tb{No reportado} \\
+        \midrule
+        \tb{Caso vulnerable} & 29 (TP) & 0 (FN) \\
+        \tb{Caso seguro} & 0 (FP) & 14 (TN) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Alcance del resultado.} El banco fue construido por el autor
+y se limita a construcciones que el analizador cubre, de modo que un
+resultado perfecto sobre él no constituye evidencia de desempeño sobre
+código real. Su función es de regresión: verificar que cada cambio del
+motor mantiene la detección de los casos conocidos (RNF-01). La
+distribución es además desigual: 26 de los 43 casos corresponden a
+inyección SQL y solo uno a inyección de comandos.
+
+\subsection{Comparación con una línea de base}\label{sec:linea-base}
+
+Las hipótesis H1 y H2 comparan el análisis sobre el grafo con la
+detección por coincidencia de patrones. Para medir esa diferencia se
+aplica sobre los mismos casos una línea de base que
+\completar{marca como vulnerable toda llamada cuyo nombre coincide con
+un destino del catálogo y que recibe al menos un argumento no literal,
+sin seguir el flujo del dato ni reconocer saneamientos}.
+
+\begin{table}[H]
+    \centering
+    \caption{Resultados de la línea de base y de GraphSAST sobre los mismos casos}
+    \label{tab:metricas}
+    \small
+    \begin{tabular}{l l r r r r r}
+        \toprule
+        \tb{Corpus} & \tb{Detector} & \tb{FP} & \tb{FN} & \tb{Precisión} & \tb{Exhaustividad} & \tb{$F_1$} \\
+        \midrule
+        Banco sintético & Línea de base & \completar{..} & \completar{..} & \completar{..} & \completar{..} & \completar{..} \\
+        Banco sintético & GraphSAST & 0 & 0 & 1,00 & 1,00 & 1,00 \\
+        NodeGoat & Línea de base & \completar{..} & \completar{..} & \completar{..} & \completar{..} & \completar{..} \\
+        NodeGoat & GraphSAST & \completar{..} & \completar{..} & \completar{..} & \completar{..} & \completar{..} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\completar{Lectura de la comparación: en qué casos difieren los dos
+detectores y por qué.}
+
+\subsection{Vulnerabilidades documentadas en paquetes de npm}
+
+Para contrastar el sistema con vulnerabilidades reales se analizaron seis
+advisories del ecosistema npm publicados en la base de datos de GitHub,
+relevados el 1 de septiembre de 2026 y congelados para que la medición
+sea reproducible. Para cada caso se analizaron la versión vulnerable y la
+corregida del paquete, contando solo los hallazgos de la familia del
+advisory. El detalle se presenta en el
+capítulo~\ref{cap:marco-tecnologico}.
+
+El sistema detectó uno de los seis casos (16,7\,\%) y ninguno con
+discriminación: el único hallazgo, en DOMPurify, se mantiene en la
+versión corregida, por lo que no corresponde a la vulnerabilidad
+reportada. En dos paquetes el registro de npm solo contiene código
+compilado; en otro, el paquete publicado es un instalador de tres
+archivos; y en los restantes la falla reside en la lógica interna de
+filtrado de bibliotecas de saneamiento, que no es un recorrido de un
+origen a un destino. El corpus, por lo tanto, no permitió evaluar el
+modelo de amenaza del analizador, y este resultado dio lugar a la
+respuesta al riesgo R-02: sumar una aplicación deliberadamente
+vulnerable.
+
+\subsection{Aplicación deliberadamente vulnerable: OWASP NodeGoat}
+
+\paragraph{Diseño.} OWASP NodeGoat es una aplicación Node.js construida
+con fines didácticos para mostrar los riesgos del OWASP Top 10,
+distribuida con licencia Apache-2.0. Antes de ejecutar el analizador se
+etiquetan las vulnerabilidades documentadas que corresponden a las
+familias del catálogo, de modo que la medición no se ajuste a los
+resultados. \completar{Versión o commit analizado y fecha.}
+
+\paragraph{Resultados.} \completar{Cantidad de vulnerabilidades
+etiquetadas por familia, hallazgos, matriz de confusión y exhaustividad
+desglosada por construcción sintáctica (riesgo R-01).}
+
+\subsection{Rendimiento}
+
+Sobre el banco sintético el análisis demandó 0,27\,ms por línea en la
+línea de comandos. En la versión web, el análisis de un proyecto de 78
+archivos y unas 8.500 líneas demandó alrededor de 2,8\,s en el equipo de
+desarrollo.
+\completar{Tiempo de análisis de NodeGoat en la línea de comandos y en
+la versión web.}
+
+% -------------------------------------------------------------
+\section{Validación con usuarios y con un experto}\label{sec:validacion-usuarios}
+% -------------------------------------------------------------
+
+\paragraph{Diseño.} La hipótesis H3 se evalúa con un estudio
+intra-sujeto: cada participante resuelve un caso con el reporte de texto
+de la línea de comandos y otro con la visualización del grafo, y el
+orden de las condiciones y de los casos se alterna entre participantes.
+Los dos casos tienen la misma estructura, dos archivos con un camino
+vulnerable que los cruza y un endpoint saneado, y difieren en la
+debilidad: inyección SQL en el caso A e inyección de comandos en el caso
+B. Por cada tarea se registran el acierto en cuatro preguntas, el tiempo
+y dos valoraciones en escala de 1 a 5. El protocolo completo y el
+cuestionario se presentan en el apéndice~\ref{apx:encuesta}. De forma
+complementaria se entrevistó a un desarrollador con experiencia en
+seguridad de aplicaciones (apéndice~\ref{apx:entrevista}).
+
+\paragraph{Participantes.} \completar{Cantidad, experiencia con
+JavaScript, período de las sesiones.}
+
+\begin{table}[H]
+    \centering
+    \caption{Resultados por condición en la validación con usuarios}
+    \label{tab:h3-resultados}
+    \small
+    \begin{tabular}{l r r}
+        \toprule
+        \tb{Indicador} & \tb{Reporte de texto} & \tb{Grafo} \\
+        \midrule
+        Acierto, mediana (0 a 4) & \completar{..} & \completar{..} \\
+        Tiempo, mediana (s) & \completar{..} & \completar{..} \\
+        L1 comprensión del recorrido, mediana (1 a 5) & \completar{..} & \completar{..} \\
+        L2 claridad de la corrección, mediana (1 a 5) & \completar{..} & \completar{..} \\
+        Participantes con mejor resultado en la condición & \completar{..} & \completar{..} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\completar{Preferencia declarada, respuestas sobre la disposición a pagar
+USD 8 mensuales (riesgo R-07) y observaciones de las sesiones.}
+
+\paragraph{Entrevista.} \completar{Síntesis de la entrevista por tema.}
+
+\begin{table}[H]
+    \centering
+    \caption{Traducción de la retroalimentación en decisiones de diseño}
+    \label{tab:feedback-decisiones}
+    \small
+    \begin{tabularx}{\textwidth}{l L L l}
+        \toprule
+        \tb{Fuente} & \tb{Hallazgo} & \tb{Decisión} & \tb{Estado} \\
+        \midrule
+        Sesiones (n=\completar{..}) & \completar{...} & \completar{...} & \completar{...} \\
+        Entrevista & \completar{...} & \completar{...} & \completar{...} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+% -------------------------------------------------------------
+\section{Resultados desfavorables y su análisis}\label{sec:resultados-negativos}
+% -------------------------------------------------------------
+
+\paragraph{Validación sobre paquetes de npm.} Como se expuso en la
+sección~\ref{sec:pruebas}, solo uno de seis advisories produjo un
+hallazgo, y ese hallazgo no discrimina entre la versión vulnerable y la
+corregida. El resultado no confirma ni refuta la efectividad del sistema,
+porque las fallas del corpus no son recorridos de un origen a un
+destino, pero deja sin evidencia sobre código real a la validación
+prevista en el capítulo~\ref{cap:metodologia} hasta contar con los
+resultados de NodeGoat.
+
+\paragraph{Falsos positivos por coincidencia de nombres.} Al analizar el
+código del propio sistema, una llamada a \texttt{RegExp.prototype.exec}
+se reportó como inyección de comandos, porque coincide por nombre con el
+destino \texttt{exec} del catálogo. El banco sintético no detectó el
+problema porque sus casos engañosos usan nombres que contienen al de un
+destino, como \texttt{myExecutor}, y no el mismo nombre invocado sobre
+otro objeto. \completar{Estado de la corrección: calificar el destino por
+el módulo del que se importa (riesgo R-04).}
+
+\paragraph{Cobertura del análisis entre archivos.} El dato se sigue entre
+archivos solo cuando la función invocada se declara con
+\texttt{function} y se importa con módulos ES y ruta relativa. Dentro de
+un mismo archivo, en cambio, el banco sintético incluye casos con
+funciones flecha y con un método de clase que se detectan correctamente.
+La limitación afecta, por lo tanto, a las aplicaciones Express
+organizadas en varios archivos con funciones flecha o con
+\texttt{require}, que es la forma habitual de NodeGoat. \completar{Efecto
+medido sobre NodeGoat.}
+
+% -------------------------------------------------------------
+\section{Síntesis de la evidencia}\label{sec:sintesis-evidencia}
+% -------------------------------------------------------------
+
+La tabla~\ref{tab:evidencia-hipotesis} resume qué evidencia se obtuvo
+para cada hipótesis. La respuesta a cada una se desarrolla en el
+capítulo~\ref{cap:conclusiones}.
+
+\begin{table}[H]
+    \centering
+    \caption{Evidencia obtenida por hipótesis}
+    \label{tab:evidencia-hipotesis}
+    \small
+    \begin{tabularx}{\textwidth}{l L L}
+        \toprule
+        \tb{Hipótesis} & \tb{Evidencia obtenida} & \tb{Sección} \\
+        \midrule
+        H1 & Banco sintético: 29 de 29 casos vulnerables detectados, incluidos recorridos entre funciones y entre archivos. \completar{Comparación con la línea de base y resultados de NodeGoat.} & \ref{sec:pruebas} \\
+        H2 & Banco sintético: 0 falsos positivos en 14 casos seguros, tres de ellos saneados y tres con nombres engañosos; dos casos vulnerables con saneamientos que no protegen el destino se detectan. Un falso positivo por coincidencia de nombres fuera del banco. \completar{Falsos positivos de la línea de base.} & \ref{sec:pruebas}, \ref{sec:resultados-negativos} \\
+        H3 & \completar{Resultados de las sesiones y de la entrevista.} & \ref{sec:validacion-usuarios} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}

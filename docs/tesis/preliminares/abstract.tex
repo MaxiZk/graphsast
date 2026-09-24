@@ -1,0 +1,20 @@
+%!TEX root = ../main.tex
+% Abstract in English (~250 words). Keywords are set in main.tex
+% with \keywords{...}. Must be a faithful translation of the Resumen.
+
+\begin{abstract}
+
+GraphSAST is a static application security testing (SAST) system aimed
+at the early detection of software architecture vulnerabilities. The
+system compiles the logic of applications written in
+TypeScript/JavaScript into a formal representation based on a data flow
+graph. Using taint analysis techniques, the tool traces the path of
+untrusted data (sources) towards sensitive operations (sinks) and checks
+whether sanitization mechanisms are present along the way. The project
+covers the design and implementation of the analyzer, the construction
+of the graph, the query engine and an interactive web interface for
+visualizing risk paths, and validates its precision and its ability to
+reduce false positives against repositories with documented
+vulnerabilities.
+
+\end{abstract}

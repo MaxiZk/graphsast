@@ -1,0 +1,99 @@
+%!TEX root = ../main.tex
+% =============================================================
+%  CAPÍTULO 1 — INTRODUCCIÓN            (Entrega 1 · 5 % · 9/6)
+% =============================================================
+
+\chapter{Introducción}\label{cap:introduccion}
+
+\begin{guia}[Guía de la cátedra: qué se evalúa en este capítulo]
+\begin{enumerate}
+    \item \textbf{Descripción del problema}: concreto, anclado en evidencia
+          (datos duros con fuente, casos reales, competidores nombrados).
+    \item \textbf{Objetivo general}: uno solo, medible, en un párrafo.
+          Los \textbf{objetivos específicos} se desprenden de él y
+          \emph{no} son los pasos del plan de trabajo.
+    \item \textbf{Hipótesis}: explícita, formulada como pregunta o
+          afirmación de investigación que pueda responderse en el
+          capítulo~\ref{cap:conclusiones}.
+    \item \textbf{Relevancia}: por qué importa, a quién beneficia, qué les
+          falta a las soluciones existentes.
+    \item \textbf{Alcance y recursos}: qué entra y qué no; stack y fuentes
+          de datos previstos. El ``alcance que nunca cierra'' es el riesgo
+          número uno de la materia.
+\end{enumerate}
+Extensión orientativa: 4 a 6 páginas. Redacción impersonal, sin ``yo
+creo'', oraciones de 15 a 22 palabras, sin palabras vacías
+(``claramente'', ``obviamente''). Toda cifra con su fuente citada, por
+ejemplo (Autor, año).
+\end{guia}
+
+\section{Introducción y contexto}\label{sec:n1.1}
+
+El desarrollo de software moderno exige la incorporación de controles de seguridad en las etapas iniciales del ciclo de vida (enfoque \emph{shift-left}). Tradicionalmente, la auditoría de seguridad se realiza mediante análisis dinámico en fases avanzadas de prueba o a través de analizadores estáticos basados en coincidencia de patrones de texto y firmas de vulnerabilidades conocidas.
+
+La limitación de las herramientas basadas en patrones es que no interpretan la semántica del programa. Tienden a marcar variables como inseguras simplemente por su nombre, o bien pierden el rastro de los datos cuando estos atraviesan varias funciones, desestructuraciones o módulos. Las fallas de seguridad más difíciles de detectar no suelen ser un comando peligroso aislado en una línea, sino un problema de diseño en el modo en que la información viaja entre los componentes del sistema.
+
+Para resolver esto, GraphSAST convierte el código fuente en un grafo dirigido que modela las llamadas, dependencias y mutaciones de las variables. De esta manera, auditar la seguridad se convierte en un problema computable de accesibilidad sobre el grafo.
+
+\section{Definición del problema}\label{sec:n1.2}
+
+Las herramientas SAST convencionales presentan dificultades concretas en proyectos reales:
+
+\paragraph{Falsos positivos por falta de contexto.} Al buscar firmas o patrones de texto, alertan sobre variables que en realidad ya fueron validadas o que no reciben datos externos, y saturan al equipo con reportes que requieren revisión manual.
+
+\paragraph{Pérdida de trazabilidad en flujos complejos.} Cuando una entrada de usuario pasa por middlewares, se asigna a propiedades de objetos o se transfiere entre módulos, los analizadores por expresiones regulares pierden el recorrido del dato.
+
+\paragraph{Dificultad para interpretar reportes planos.} Las listas tradicionales de advertencias muestran la línea del fallo, pero obligan al programador a reconstruir mentalmente todo el camino que siguió la variable desde su origen.
+
+Estas limitaciones definen la pregunta de investigación: ¿puede un analizador basado en grafos de flujo de datos detectar vulnerabilidades de arquitectura con mayor precisión y menor cantidad de falsos positivos que las herramientas basadas en coincidencia de patrones de texto?
+
+\section{Objetivo}\label{sec:n1.3}
+
+\paragraph{Objetivo general:} Desarrollar un sistema de análisis estático de código fuente (SAST) que compile la lógica de una aplicación en un grafo de flujo de datos para auditar, detectar y visualizar de forma interactiva fallas de arquitectura de software y posibles fugas de información, evaluando su precisión sobre proyectos reales.
+
+\paragraph{Objetivos específicos.}
+
+\begin{enumerate}[label=OE-\arabic*.,leftmargin=*]
+    \item Construir el analizador sintáctico que procese código fuente TypeScript/JavaScript mediante la biblioteca ts-morph y extraiga los nodos relevantes del Árbol de Sintaxis Abstracta (AST).
+    \item Diseñar e implementar el algoritmo de transformación del AST en un grafo dirigido de flujo de datos e invocaciones, con aristas FLOWS\_TO, CALLS, BINDS\_TO, RETURNS y SANITIZED\_BY.
+    \item Desarrollar el motor de análisis de taint que detecte caminos source-sink no sanitizados para los patrones CWE-89, CWE-79 y CWE-78, parametrizado mediante un catálogo externo en formato JSON.
+    \item Persistir el grafo compilado en la base de datos Neo4j y exponer las consultas de accesibilidad mediante el lenguaje Cypher.
+    \item Construir la interfaz web interactiva (TypeScript con Cytoscape.js) que visualice la topología del programa y resalte los recorridos de riesgo detectados.
+    \item Validar el prototipo contra un banco de pruebas de casos sintéticos y proyectos reales, midiendo precisión, exhaustividad, falsos positivos y falsos negativos frente a una herramienta de referencia.
+\end{enumerate}
+
+\section{Barreras}\label{sec:n1.4}
+
+\begin{itemize}
+    \item Complejidad del análisis de lenguajes reales: la construcción de un analizador robusto para un lenguaje moderno implica el tratamiento de numerosas construcciones sintácticas.
+    \item Escalabilidad del grafo: el tamaño del grafo crece con el código, por lo que el mantenimiento de tiempos de cómputo razonables constituye un desafío.
+    \item Precisión del análisis de taint: la reducción de falsos positivos sin perder vulnerabilidades reales requiere un modelado cuidadoso de fuentes, destinos y sanitizadores.
+    \item Alcance del lenguaje: la cobertura de todas las construcciones de un lenguaje resulta inviable en el tiempo del proyecto, por lo que debe acotarse a un subconjunto documentado.
+\end{itemize}
+
+\section{Relevancia del proyecto}\label{sec:n1.5}
+
+Las vulnerabilidades de seguridad conllevan un alto costo. Una herramienta capaz de detectar fallas de arquitectura antes de la ejecución, con menor ruido que los analizadores tradicionales y con una visualización comprensible, aporta valor directo a los equipos de desarrollo. En el plano académico, el proyecto integra teoría de grafos, análisis de lenguajes de programación y ciberseguridad aplicada, y produce un artefacto verificable sobre código real.
+
+El trabajo se vincula asimismo con las disciplinas de aseguramiento de la calidad del software (Quality Assurance). Mientras las pruebas funcionales validan el comportamiento dinámico del sistema en ejecución, el análisis estático mediante grafos ofrece un control preventivo sobre el diseño y la arquitectura en una etapa previa a la compilación y el despliegue, lo que sitúa a GraphSAST como complemento del testing tradicional dentro del ciclo de aseguramiento de la calidad.
+
+\section{Hipótesis de investigación}\label{sec:n1.6}
+
+\paragraph{H1.} La representación del código fuente como un grafo de flujo de datos permite identificar vulnerabilidades de arquitectura y recorridos de riesgo con mayor precisión que los analizadores basados en coincidencias aisladas de patrones de texto.
+
+\paragraph{H2.} El análisis de taint estructurado sobre el grafo reduce la tasa de falsos positivos respecto de la detección basada en expresiones regulares.
+
+\paragraph{H3.} La visualización topológica del recorrido del dato facilita la interpretación del riesgo por parte del equipo de desarrollo frente a los listados de errores en texto plano.
+
+\section{Enfoque}\label{sec:n1.7}
+
+El proyecto se enmarca en una investigación aplicada con validación empírica. El prototipo se construye de manera incremental (analizador $\rightarrow$ grafo $\rightarrow$ consultas $\rightarrow$ visualización) y se evalúa cuantitativamente contra un banco de pruebas compuesto por casos sintéticos con fallas conocidas y proyectos reales de código abierto con vulnerabilidades documentadas, midiendo precisión, exhaustividad, falsos positivos, falsos negativos y tiempo de análisis.
+
+\section{Recursos}\label{sec:n1.8}
+
+\begin{itemize}
+    \item \textbf{Software: }biblioteca de parsing ts-morph, base de datos de grafos Neo4j, biblioteca de visualización Cytoscape.js, entorno de testing Vitest y control de versiones Git.
+    \item \textbf{Datos: }repositorios públicos con vulnerabilidades documentadas y casos sintéticos construidos para la validación.
+    \item \textbf{Hardware: }equipo de desarrollo personal.
+    \item \textbf{Humanos: }el alumno como responsable del desarrollo y la validación.
+\end{itemize}
