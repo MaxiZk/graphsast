@@ -1,4 +1,4 @@
-import type { ScanFilesOutput, ScanFinding, Verdict } from "@graphsast/core/browser";
+import type { IRGraph, ScanFilesOutput, ScanFinding, Verdict } from "@graphsast/core/browser";
 import { plural } from "./labels.js";
 
 /** Hallazgo del proyecto con el grafo donde se encontró, para poder dibujarlo. */
@@ -121,5 +121,52 @@ export function projectVerdict(
     detail:
       `Se recorrieron los caminos de ${plural(analyzed, "archivo", "archivos")}, incluidas las `
       + `llamadas entre archivos, y ninguno llega sin sanitizar.${skipped}`,
+  };
+}
+
+/** Parte del grafo que se dibuja, y cuántos nodos tiene el grafo completo. */
+export interface GraphView {
+  graph: IRGraph;
+  total: number;
+}
+
+/**
+ * Recorta el grafo de un proyecto a lo que se puede leer. Los archivos que se
+ * llaman entre sí se analizan como un solo grafo, que en un proyecto real
+ * pasa los miles de nodos: dibujado entero, el layout lo estira a cientos de
+ * miles de píxeles y encuadrarlo deja un zoom en el que no se ve nada. Por
+ * encima de `limit` se dibuja el camino resaltado con sus vecinos inmediatos
+ * o, sin camino, los nodos del archivo elegido.
+ */
+export function focusGraph(
+  graph: IRGraph,
+  focus: { path?: string[]; file?: string | null },
+  limit: number,
+): GraphView {
+  const total = graph.nodes.length;
+  if (total <= limit) return { graph, total };
+
+  let keep: Set<string>;
+  if (focus.path?.length) {
+    const onPath = new Set(focus.path);
+    keep = new Set(onPath);
+    for (const e of graph.edges) {
+      if (keep.size >= limit) break;
+      if (onPath.has(e.from)) keep.add(e.to);
+      else if (onPath.has(e.to)) keep.add(e.from);
+    }
+  } else if (focus.file) {
+    keep = new Set(graph.nodes.filter((n) => n.loc.file === focus.file).map((n) => n.id));
+  } else {
+    return { graph, total };
+  }
+
+  return {
+    total,
+    graph: {
+      file: graph.file,
+      nodes: graph.nodes.filter((n) => keep.has(n.id)),
+      edges: graph.edges.filter((e) => keep.has(e.from) && keep.has(e.to)),
+    },
   };
 }

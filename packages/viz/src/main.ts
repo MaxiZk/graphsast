@@ -22,6 +22,7 @@ import {
   plural,
 } from "./labels.js";
 import {
+  focusGraph,
   findingHeading,
   findingLocation,
   findingPath,
@@ -60,6 +61,7 @@ const rulesSummary = document.querySelector<HTMLElement>("#rules-summary")!;
 const verdictEl = document.querySelector<HTMLDivElement>("#verdict")!;
 const readingEl = document.querySelector<HTMLParagraphElement>("#reading")!;
 const nodeDetail = document.querySelector<HTMLPreElement>("#node-detail")!;
+const graphNote = document.querySelector<HTMLParagraphElement>("#graph-note")!;
 const edgeFilters = document.querySelector<HTMLFieldSetElement>("#edge-filters")!;
 const dimToggle = document.querySelector<HTMLInputElement>("#dim-toggle")!;
 const tabProject = document.querySelector<HTMLButtonElement>("#tab-project")!;
@@ -308,12 +310,23 @@ function fitGraph(instance: Core, hasHighlight: boolean) {
   if (path.nonempty()) instance.fit(path.closedNeighborhood(), 48);
 }
 
+/**
+ * Nodos a partir de los cuales el grafo de un proyecto se recorta. El
+ * breadthfirst con unos cientos todavía se lee; con los miles que junta un
+ * proyecto real el zoom de encuadre queda en 0,001 y el panel se ve vacío.
+ */
+const MAX_PROJECT_NODES = 250;
+
 function renderGraph() {
   if (!graph) return;
   const finding = currentHighlight();
+  const view = mode === "project"
+    ? focusGraph(graph, { path: finding?.path, file: selectedFile }, MAX_PROJECT_NODES)
+    : { graph, total: graph.nodes.length };
+  renderGraphNote(view.graph.nodes.length, view.total, !!finding);
   const instance = ensureCy();
   instance.json({
-    elements: toCytoscapeElements(graph, {
+    elements: toCytoscapeElements(view.graph, {
       highlight: finding,
       roles: lastRoles,
       visibleEdges: visibleEdgeKinds(),
@@ -337,6 +350,18 @@ function renderGraph() {
   renderCodeHighlight();
 }
 
+/** Avisa cuando el grafo dibujado es un recorte del que se analizó. */
+function renderGraphNote(shown: number, total: number, onPath: boolean) {
+  graphNote.hidden = shown === total;
+  graphNote.textContent = shown === total
+    ? ""
+    : `Se muestran ${shown} de ${total} nodos: `
+      + (onPath
+        ? "el camino de riesgo y sus vecinos inmediatos."
+        : `los de ${selectedFile ?? "este archivo"}.`)
+      + " El análisis recorrió el grafo completo.";
+}
+
 /**
  * Descarta el resultado en pantalla. Se usa cuando el análisis falla: sin esto
  * queda el grafo del análisis anterior, que no corresponde al código actual.
@@ -350,6 +375,7 @@ function clearAnalysisView() {
   highlightIndex = 0;
 
   cy?.elements().remove();
+  graphNote.hidden = true;
   verdictEl.hidden = true;
   readingEl.textContent = "";
   findingsList.innerHTML = "";
@@ -605,6 +631,7 @@ function showProjectGraph(graphIndex: number, findingIndex: number) {
   if (graph) renderGraph();
   else {
     cy?.elements().remove();
+    graphNote.hidden = true;
     renderCodeHighlight();
   }
 }
