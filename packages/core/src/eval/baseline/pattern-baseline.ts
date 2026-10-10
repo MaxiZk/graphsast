@@ -1,4 +1,4 @@
-import { calleeMatchesPattern } from "../../catalog/rules.js";
+import { calleeMatchesPattern, sinkSpecOf } from "../../catalog/rules.js";
 import type { CweCatalogEntry } from "../../catalog/types.js";
 
 /**
@@ -116,7 +116,9 @@ function matchSink(
   callee: string,
 ): { cwe: number; sink: string } | null {
   for (const entry of entries) {
-    for (const sink of entry.sinks) {
+    // Solo el patrón del callee: la línea de base es texto, no mira
+    // argumentos, receptor ni imports (ver `SinkSpec`).
+    for (const { callee: sink } of entry.sinks.map(sinkSpecOf)) {
       if (calleeMatchesPattern(callee, sink)) return { cwe: entry.cwe, sink };
     }
   }

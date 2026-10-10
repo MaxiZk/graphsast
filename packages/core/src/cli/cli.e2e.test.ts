@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, vi } from "vitest";
+import { describe, it, expect, afterAll, beforeAll, vi } from "vitest";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -9,16 +9,23 @@ import addFormats from "ajv-formats";
 
 /**
  * Tests de punta a punta del CLI: un proceso aparte, con argumentos reales,
- * sobre carpetas reales. Corre el código fuente con vite-node, así que no
- * depende de que `dist/` esté compilado.
+ * sobre carpetas reales. Corre el binario compilado (`dist/`), el mismo que se
+ * instala; antes de empezar recompila con `tsc -b`, que es incremental, para
+ * no probar nunca un `dist/` viejo.
  */
 
-// Cada caso lanza uno o dos procesos (~0,7 s cada uno): en CI puede pasar los 5 s.
-vi.setConfig({ testTimeout: 60_000 });
+// Cada caso lanza uno o dos procesos; la compilación inicial, unos segundos.
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 180_000 });
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const CLI = path.join(HERE, "graphsast.cli.ts");
-const VITE_NODE = path.resolve(HERE, "../../../../node_modules/.bin/vite-node");
+const PACKAGE = path.resolve(HERE, "../..");
+const CLI = path.join(PACKAGE, "dist/cli/graphsast.cli.js");
+const TSC = path.resolve(PACKAGE, "../../node_modules/.bin/tsc");
+
+beforeAll(() => {
+  const r = spawnSync(TSC, ["-b"], { cwd: PACKAGE, encoding: "utf8" });
+  if (r.status !== 0) throw new Error(`tsc -b falló:\n${r.stdout}${r.stderr}`);
+});
 
 const dirs: string[] = [];
 afterAll(() => {
@@ -36,7 +43,7 @@ function project(files: Record<string, string>): string {
 }
 
 function run(...args: string[]) {
-  const r = spawnSync(VITE_NODE, [CLI, "--", ...args], {
+  const r = spawnSync(process.execPath, [CLI, ...args], {
     encoding: "utf8",
     env: { ...process.env, NO_COLOR: "1" },
     timeout: 60_000,
