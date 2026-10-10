@@ -1,0 +1,233 @@
+%!TEX root = ../main.tex
+% =============================================================
+%  CAPÍTULO 6 — ANÁLISIS DE RIESGOS     (Entrega 6 · 5 % · 29/9)
+% =============================================================
+
+\chapter{Análisis de riesgos}\label{cap:riesgos}
+
+\begin{guia}[Guía de la cátedra: qué espera ver en este capítulo]
+Formato obligatorio de cada riesgo: \textbf{``Debido a [causa], podría
+ocurrir [evento], lo que provocaría [efecto]''}. Sin causa es un miedo,
+no un riesgo.
+\begin{enumerate}
+    \item \textbf{Tabla de riesgos} con ID, descripción causa--evento--efecto,
+          naturaleza, etapa, probabilidad (1--5), impacto (1--5),
+          \gls{exposicion} (1--25), respuesta, responsable y contingencia;
+          ordenada por exposición descendente. Con los 6 a 8 primeros bien
+          tratados alcanza; el resto se monitorea.
+    \item Al menos un riesgo de \textbf{cada naturaleza} (alcance, técnicos,
+          recursos, terceros, datos y cumplimiento) y de \textbf{cada etapa}
+          (antes de arrancar, durante, pasaje a producción, operación).
+    \item Al menos un riesgo \textbf{externo} (``si no tienen ninguno, no
+          miraron para afuera'') y al menos uno con respuesta
+          \textbf{aceptar} bien justificado (``aceptar se escribe; ignorar
+          se paga'').
+    \item \textbf{Supuestos y restricciones} separados de los riesgos. Cada
+          supuesto que falla se convierte en riesgo.
+    \item Que sean propios: ``un riesgo copiado de internet se nota a tres
+          metros''.
+\end{enumerate}
+Los siete que matan proyectos: alcance que nunca cierra (el número uno
+de la materia), pérdida de la fuente de datos, equipo que se desarma,
+tecnología que no da, inviabilidad de costo, barrera legal o ética,
+nadie a cargo. Y la pregunta de jurado: ¿quién lo mantiene cuando
+ustedes se reciben? Marco de referencia: \citet{pmi2021}.
+\end{guia}
+
+Este capítulo identifica, evalúa y planifica la respuesta a los riesgos del proyecto en su estado actual: un prototipo funcional publicado, con la validación sobre código real y con usuarios todavía en curso, y con cuatro entregas por delante hasta la entrega final del 17 de noviembre. Reemplaza y amplía la tabla~\ref{tab:riesgos-iniciales} del capítulo~\ref{cap:metodologia}, que registraba tres riesgos técnicos identificados durante la planificación. Varios de los riesgos que se presentan no son hipotéticos: surgieron durante el desarrollo, y en esos casos se indica la evidencia que los originó.
+
+\section{Enfoque y escalas de evaluación}\label{sec:n6.1}
+
+El marco de referencia es la guía del \citet{pmi2021}, que trata el riesgo como un evento o una condición incierta que, si ocurre, afecta al menos uno de los objetivos del proyecto. Cada riesgo se redacta con una estructura de causa, evento y efecto: «Debido a [causa], podría ocurrir [evento], lo que provocaría [efecto]». La causa es la condición presente que lo origina y sobre la que se puede actuar; el evento, lo que podría suceder; y el efecto, su consecuencia sobre los objetivos.
+
+La probabilidad (P) y el impacto (I) se califican en una escala de 1 a 5, y la exposición (E) se obtiene como su producto, con valores entre 1 y 25. La tabla~\ref{tab:exposicion} fija los niveles de exposición: baja hasta 5, media entre 6 y 10, y alta desde 12.
+
+\paragraph{Probabilidad.} 1 muy improbable; 2 poco probable; 3 posible; 4 probable; 5 muy probable.
+
+\paragraph{Impacto.} 1 insignificante, sin efecto visible en los entregables; 2 menor, un retrabajo acotado dentro de la misma semana; 3 moderado, afecta la calidad de un entregable sin comprometer su fecha; 4 importante, compromete una entrega o una hipótesis; 5 severo, compromete la aprobación del proyecto o la defensa.
+
+\begin{table}[H]
+    \centering
+    \caption{Matriz de exposición: probabilidad por impacto}
+    \label{tab:exposicion}
+    \small
+    \begin{tabular}{l c c c c c}
+        \toprule
+        \tb{Probabilidad / Impacto} & \tb{1 Insignif.} & \tb{2 Menor} & \tb{3 Moderado} & \tb{4 Importante} & \tb{5 Severo} \\
+        \midrule
+        \tb{5 Muy probable} & \riesgoBajo{5} & \riesgoMedio{10} & \riesgoAlto{15} & \riesgoAlto{20} & \riesgoAlto{25} \\
+        \tb{4 Probable} & \riesgoBajo{4} & \riesgoMedio{8} & \riesgoAlto{12} & \riesgoAlto{16} & \riesgoAlto{20} \\
+        \tb{3 Posible} & \riesgoBajo{3} & \riesgoMedio{6} & \riesgoMedio{9} & \riesgoAlto{12} & \riesgoAlto{15} \\
+        \tb{2 Poco probable} & \riesgoBajo{2} & \riesgoBajo{4} & \riesgoMedio{6} & \riesgoMedio{8} & \riesgoMedio{10} \\
+        \tb{1 Muy improbable} & \riesgoBajo{1} & \riesgoBajo{2} & \riesgoBajo{3} & \riesgoBajo{4} & \riesgoBajo{5} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Para cada riesgo se elige una de cuatro respuestas: evitar, que elimina la causa, por ejemplo modificando el alcance; mitigar, que reduce la probabilidad o el impacto; transferir, que traslada el riesgo a un tercero con mayor capacidad de absorberlo; y aceptar, que convive con el riesgo en forma documentada, con un responsable y un plan de contingencia. Los riesgos se clasifican además por su naturaleza (alcance, técnica, recursos, terceros, datos y cumplimiento), por la etapa en la que pueden materializarse (antes de arrancar, durante el desarrollo, en el pasaje a producción y durante la operación) y según su origen sea interno o externo al proyecto.
+
+\section{Supuestos y restricciones}\label{sec:n6.2}
+
+Los supuestos son condiciones que se dan por ciertas sin haberlas verificado; las restricciones, límites que el proyecto no puede modificar. Se registran por separado porque no son riesgos, aunque cada supuesto que deja de cumplirse se convierte en uno. La tabla~\ref{tab:supuestos-restricciones} indica con qué riesgo o sección se vincula cada uno.
+
+\begin{table}[H]
+    \centering
+    \caption{Supuestos (S) y restricciones (C) del proyecto}
+    \label{tab:supuestos-restricciones}
+    \small
+    \begin{tabularx}{\textwidth}{l L l}
+        \toprule
+        \tb{ID} & \tb{Supuesto o restricción} & \tb{Vínculo} \\
+        \midrule
+        S-01 & Los usuarios de la versión web cuentan con un navegador actualizado, con soporte para Web Workers y módulos ES. & R-12 \\
+        S-02 & Las operaciones sensibles que emplean las aplicaciones analizadas coinciden con las registradas en el catálogo: consultas SQL, ejecución de procesos, escritura en el documento y métodos de Mongoose. & R-01, R-08 \\
+        S-03 & Existen aplicaciones Node.js deliberadamente vulnerables, con vulnerabilidades documentadas y una licencia que permite analizarlas, como OWASP NodeGoat (licencia Apache-2.0). & R-02 \\
+        S-04 & Se consiguen entre cinco y ocho desarrolladores dispuestos a participar de la validación de la hipótesis H3 entre el 5 y el 9 de octubre. & R-06 \\
+        S-05 & Vercel mantiene las condiciones y el precio del plan Pro (USD 20 mensuales) durante el horizonte de evaluación. & Capítulo 5 (Tabla 14) \\
+        S-06 & El procesador de pagos admite vendedores radicados en Argentina y mantiene su comisión del 5 \% más USD 0,50 por transacción. & Capítulo 5 (Tabla 14) \\
+        C-01 & Restricción: el proyecto tiene un único integrante, con una dedicación parcial de tres a cuatro días por semana. & R-11 \\
+        C-02 & Restricción: las fechas son fijas; capítulo 7 el 13 de octubre, capítulo 8 el 20 de octubre, documento integrado el 27 de octubre, sistema congelado el 3 de noviembre y entrega final el 17 de noviembre. & R-03 \\
+        C-03 & Restricción: durante el desarrollo no hay presupuesto; se emplean herramientas libres y planes gratuitos. & R-09 \\
+        C-04 & Restricción: el código analizado no puede salir del equipo del usuario, por lo que el análisis se ejecuta en el navegador o en la interfaz de línea de comandos, sin procesamiento en un servidor. & R-12 \\
+        C-05 & Restricción: el alcance se limita a JavaScript y TypeScript y a las cuatro familias de debilidades del catálogo. & R-01 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Matriz de riesgos}\label{sec:n6.3}
+
+La tabla~\ref{tab:matriz-riesgos} registra los doce riesgos identificados, ordenados por exposición descendente. Cubren las seis naturalezas y las cuatro etapas; tres son de origen externo (R-06, R-07 y R-09) y uno se acepta en forma explícita (R-11). Los ocho primeros, de exposición alta, se desarrollan en la sección~\ref{sec:n6.4}; los restantes se revisan según lo indicado en la sección~\ref{sec:n6.7}.
+
+\begin{landscape}
+\footnotesize
+\begin{xltabular}{\linewidth}{l >{\hsize=1.5\hsize}L >{\raggedright\arraybackslash}p{1.9cm} >{\raggedright\arraybackslash}p{1.6cm} c c c >{\hsize=0.9\hsize}L p{0.9cm} >{\hsize=0.6\hsize}L}
+    \caption{Matriz de riesgos ordenada por exposición. P: probabilidad; I: impacto; E: exposición}
+    \label{tab:matriz-riesgos} \\
+    \toprule
+    \tb{ID} & \tb{Descripción (causa, evento, efecto)} & \tb{Naturaleza} & \tb{Etapa} & \tb{P} & \tb{I} & \tb{E} & \tb{Respuesta} & \tb{Resp.} & \tb{Contingencia} \\
+    \midrule
+    \endfirsthead
+    \toprule
+    \tb{ID} & \tb{Descripción (causa, evento, efecto)} & \tb{Naturaleza} & \tb{Etapa} & \tb{P} & \tb{I} & \tb{E} & \tb{Respuesta} & \tb{Resp.} & \tb{Contingencia} \\
+    \midrule
+    \endhead
+    \bottomrule
+    \endfoot
+    R-01 & Debido a que el motor solo resuelve llamadas a funciones declaradas con function e importadas mediante módulos ES, podría ocurrir que en aplicaciones Express escritas con funciones flecha, clases o require el analizador no siga el recorrido del dato, lo que provocaría una exhaustividad baja sobre código real y dejaría sin sustento a la hipótesis H1 fuera del banco sintético. & Técnica & Durante & 4 & 5 & \riesgoAlto{20} & Mitigar: incorporar al alcance congelado solo las funciones flecha asignadas a constantes y los callbacks de rutas de Express; declarar el resto como limitación. & Autor & Presentar H1 como validada sobre el subconjunto soportado, con la exhaustividad desglosada por construcción. \\
+    R-02 & Debido a que los advisories de npm corresponden mayormente a bibliotecas publicadas como código compilado o con fallas en su propia lógica de filtrado, podría ocurrir que el corpus de vulnerabilidades reales no tenga casos evaluables por el modelo de origen y destino, lo que provocaría no poder medir el desempeño sobre código real. & Datos & Durante & 5 & 4 & \riesgoAlto{20} & Mitigar: sumar aplicaciones deliberadamente vulnerables con vulnerabilidades documentadas, como OWASP NodeGoat, etiquetadas antes de analizarlas. & Autor & Declarar la validación sobre código real como preliminar en los capítulos 7 y 8. \\
+    R-03 & Debido a que cada construcción no soportada que aparece en un caso de prueba se percibe como una mejora pendiente del motor, podría ocurrir que el alcance técnico siga creciendo después del congelamiento, lo que provocaría llegar a la defensa con funciones incompletas y sin tiempo para integrar el documento. & Alcance & Durante & 4 & 4 & \riesgoAlto{16} & Evitar: cerrar la lista de mejoras el 13 de octubre; lo posterior pasa a trabajo futuro. & Autor & Volver a la última versión etiquetada estable. \\
+    R-04 & Debido a que los destinos sensibles se reconocen por el nombre de la función invocada, podría ocurrir que llamadas homónimas sin relación con el riesgo se reporten como vulnerabilidades, lo que provocaría falsos positivos que contradicen la propuesta de valor del sistema. & Técnica & Operación & 4 & 3 & \riesgoAlto{12} & Mitigar: calificar los destinos por el objeto receptor o el módulo importado, por ejemplo exec de child\_process. & Autor & Documentar las reglas afectadas como de baja confianza. \\
+    R-05 & Debido a que las dependencias del proyecto registran vulnerabilidades conocidas, podría ocurrir que el jurado o un usuario las detecte en el repositorio, lo que provocaría una pérdida de credibilidad especialmente grave para una herramienta de seguridad. & Cumplimiento & Pasaje a producción & 4 & 3 & \riesgoAlto{12} & Mitigar: revisar las alertas, actualizar las dependencias y fijar sus versiones antes del 3 de noviembre. & Autor & Documentar en el README las alertas pendientes y su impacto real. \\
+    R-06 & Debido a que la validación de H3 depende de desarrolladores externos que participan en forma voluntaria, podría ocurrir que no se reúnan participantes suficientes en la semana prevista, lo que provocaría no poder contrastar la hipótesis sobre la visualización. & Terceros (externo) & Durante & 3 & 4 & \riesgoAlto{12} & Mitigar: convocatoria anticipada, sesiones remotas de veinte minutos y un protocolo breve. & Autor & Estudio reducido declarado preliminar, complementado con la entrevista a un experto. \\
+    R-07 & Debido a que existen herramientas consolidadas con análisis de flujo de datos, como Semgrep y CodeQL, gratuitas en determinadas condiciones de uso, podría ocurrir que los desarrolladores no estén dispuestos a pagar una suscripción, lo que provocaría una captación inferior a la proyectada en el capítulo 5. & Recursos (externo) & Operación & 3 & 4 & \riesgoAlto{12} & Mitigar: posicionar el producto por el análisis desde el navegador sin instalación y por la visualización del recorrido, y relevar la disposición a pagar en la validación con usuarios. & Autor & Reformular el modelo hacia un esquema gratuito con funciones pagas. \\
+    R-08 & Debido a que el catálogo de orígenes, destinos y sanitizadores depende de APIs de bibliotecas que evolucionan y el autor es su único mantenedor, podría ocurrir que después de la entrega el catálogo quede desactualizado, lo que provocaría falsos negativos crecientes. & Datos & Operación & 4 & 3 & \riesgoAlto{12} & Transferir: publicar el código con licencia abierta y documentar cómo extender el catálogo en JSON para recibir contribuciones. & Autor & Indicar en el README la fecha de la última revisión del catálogo. \\
+    R-09 & Debido a que la versión publicada depende de Vercel y de la conectividad del aula, podría ocurrir que el sitio no esté disponible durante la defensa, lo que impediría mostrar el sistema funcionando al jurado. & Terceros (externo) & Pasaje a producción & 2 & 5 & \riesgoMedio{10} & Mitigar: ejecución local preparada y video de la demostración grabado la semana anterior. & Autor & Mostrar el video y ejecutar la versión local. \\
+    R-10 & Debido a que el repositorio no declara una licencia, podría ocurrir que el código no pueda reutilizarse ni mantenerse legalmente por terceros, lo que provocaría la falta de continuidad del proyecto e incumpliría un requisito de la cátedra. & Cumplimiento & Antes de arrancar & 5 & 2 & \riesgoMedio{10} & Evitar: agregar una licencia MIT, compatible con las licencias MIT y Apache-2.0 de las dependencias principales. & Autor & No aplica: la respuesta elimina la causa. \\
+    R-11 & Debido a que el proyecto tiene un único integrante con dedicación parcial, podría ocurrir una enfermedad o una sobrecarga en las semanas previas a la entrega, lo que provocaría atrasos en las entregas 7 y 8. & Recursos & Durante & 2 & 4 & \riesgoMedio{8} & Aceptar: no hay reemplazo posible; el margen de cuatro semanas entre la entrega 8 y la final absorbe una semana de atraso, y el avance queda versionado. & Autor & Priorizar el documento sobre nuevas funciones y solicitar una prórroga con evidencia. \\
+    R-12 & Debido a que el análisis se ejecuta en el navegador con el compilador de TypeScript, un módulo de unos 5,9 MB, y mantiene en memoria el grafo del proyecto, podría ocurrir que en proyectos grandes o en equipos modestos el análisis tarde demasiado o agote la memoria de la pestaña, lo que provocaría que el usuario no obtenga resultados. & Técnica & Operación & 2 & 3 & \riesgoMedio{6} & Mitigar: excluir dependencias y archivos de más de 1 MB, mostrar el progreso y ofrecer la interfaz de línea de comandos para proyectos grandes. & Autor & Analizar el proyecto con la interfaz de línea de comandos. \\
+\end{xltabular}
+\end{landscape}
+
+\section{Tratamiento de los riesgos principales}\label{sec:n6.4}
+
+Los ocho riesgos de exposición alta se desarrollan con la evidencia que los sostiene, la respuesta planificada y el indicador con el que se controla su evolución.
+
+\subsection{R-01: alcance del motor frente a aplicaciones reales}\label{sec:n6.4.1}
+
+\paragraph{Evidencia.} La resolución de llamadas se limita a funciones declaradas por nombre (sección~\ref{sec:n4.2.5}). Sobre el código del propio sistema, el enlace entre archivos resolvió 369 llamadas en 78 archivos, pero los callbacks de rutas de Express y los métodos de clase quedan fuera del recorrido.
+
+\paragraph{Respuesta.} Se incorporan al alcance congelado únicamente las funciones flecha asignadas a constantes y los callbacks de rutas de Express, dos formas habituales en las aplicaciones objetivo; el resto de las construcciones se declara como limitación.
+
+\paragraph{Seguimiento.} Exhaustividad sobre el corpus de aplicaciones reales, desglosada por construcción sintáctica. Si al 13 de octubre se mantiene por debajo del 50 \%, se aplica la contingencia.
+
+\subsection{R-02: corpus de vulnerabilidades reales}\label{sec:n6.4.2}
+
+\paragraph{Evidencia.} En la validación del capítulo~\ref{cap:marco-tecnologico} (tabla~\ref{tab:advisories}), tres de los seis advisories no tenían código fuente analizable en el paquete publicado, y en los restantes la falla residía en la lógica interna de bibliotecas de saneamiento. El riesgo ya se materializó en forma parcial.
+
+\paragraph{Respuesta.} Se suma OWASP NodeGoat, una aplicación Node.js construida con fines didácticos para mostrar los riesgos del OWASP Top 10 y distribuida con licencia Apache-2.0. Antes de ejecutar el analizador se etiquetan las vulnerabilidades documentadas que corresponden al catálogo, para que la medición no se ajuste a los resultados.
+
+\paragraph{Seguimiento.} Cantidad de casos etiquetados y evaluables al 6 de octubre.
+
+\subsection{R-03: alcance que no cierra}\label{sec:n6.4.3}
+
+\paragraph{Evidencia.} Durante el desarrollo se sumaron el análisis entre archivos, la versión web y una cuarta familia de debilidades (CWE-943), ninguno de ellos previsto en el alcance definido en el capítulo~\ref{cap:metodologia}.
+
+\paragraph{Respuesta.} El 13 de octubre se cierra la lista de mejoras del motor. Toda mejora posterior se registra como trabajo futuro en el capítulo~\ref{cap:conclusiones}, y desde el 3 de noviembre el repositorio solo admite correcciones de errores.
+
+\paragraph{Seguimiento.} Cada entrega se etiqueta en el repositorio, desde entrega-6 hasta entrega-final, lo que permite comparar el alcance entregado con el comprometido.
+
+\subsection{R-04: falsos positivos por coincidencia de nombres}\label{sec:n6.4.4}
+
+\paragraph{Evidencia.} Al analizar el código del propio sistema, una llamada a \texttt{RegExp.\allowbreak prototype.\allowbreak exec} se reportó como inyección de comandos (CWE-78), porque coincide por nombre con el destino exec del catálogo.
+
+\paragraph{Respuesta.} Se califica cada destino por el objeto receptor o por el módulo del que se importa la función, de modo que exec solo se considere sensible cuando proviene de child\_process.
+
+\paragraph{Seguimiento.} Falsos positivos del banco sintético, hoy nulos, y del corpus de aplicaciones reales.
+
+\subsection{R-05: dependencias con vulnerabilidades conocidas}\label{sec:n6.4.5}
+
+\paragraph{Evidencia.} Al publicar la rama principal, GitHub informó doce alertas de dependencias, tres de ellas críticas, y la instalación en Vercel reportó ocho vulnerabilidades en el árbol de dependencias.
+
+\paragraph{Respuesta.} Antes del congelamiento se revisa cada alerta, se actualizan las dependencias afectadas y se distingue entre las que llegan a la versión publicada y las que solo intervienen en el desarrollo.
+
+\paragraph{Seguimiento.} Cantidad de alertas críticas y altas abiertas en el repositorio; el objetivo es no tener ninguna al 3 de noviembre.
+
+\subsection{R-06: participantes para la validación de H3}\label{sec:n6.4.6}
+
+\paragraph{Evidencia.} La hipótesis H3 compara la interpretación del riesgo con y sin visualización, algo que el banco de pruebas no puede medir y que depende de personas externas al proyecto.
+
+\paragraph{Respuesta.} La convocatoria se realiza con dos semanas de anticipación, con sesiones remotas de veinte minutos: cada participante localiza el camino vulnerable en un reporte de texto y en el grafo, y se registran el tiempo, el acierto y una valoración en escala de Likert.
+
+\paragraph{Seguimiento.} Participantes confirmados al 1 de octubre; con menos de cinco se aplica la contingencia.
+
+\subsection{R-07: competencia de herramientas gratuitas}\label{sec:n6.4.7}
+
+\paragraph{Evidencia.} Semgrep y CodeQL implementan análisis de flujo de datos (capítulo~\ref{cap:marco-teorico}) y se ofrecen sin costo en determinadas condiciones de uso. El capítulo~\ref{cap:economica} identificó la captación de usuarios como la condición crítica de la viabilidad económica.
+
+\paragraph{Respuesta.} El producto se posiciona por el análisis desde el navegador, sin instalación y sin envío del código, y por la visualización interactiva del recorrido del dato. La validación con usuarios incorpora una pregunta sobre la disposición a pagar.
+
+\paragraph{Seguimiento.} Resultados de esa pregunta; si la mayoría de los participantes rechaza el precio, se revisa el escenario del capítulo~\ref{cap:economica}.
+
+\subsection{R-08: mantenimiento del catálogo}\label{sec:n6.4.8}
+
+\paragraph{Evidencia.} El catálogo registra 23 destinos sensibles y 18 sanitizadores en cuatro archivos JSON, y cada nueva versión de una biblioteca puede introducir operaciones que no figuran en él.
+
+\paragraph{Respuesta.} Se publica el código con licencia abierta (R-10) y se documenta en el README cómo agregar una entrada al catálogo, para que otros desarrolladores puedan contribuir. La sección~\ref{sec:n6.6} desarrolla la continuidad del sistema.
+
+\paragraph{Seguimiento.} Fecha de la última revisión del catálogo, registrada en el historial del repositorio.
+
+\section{Riesgos críticos de un proyecto final}\label{sec:n6.5}
+
+La cátedra identifica siete riesgos que con mayor frecuencia hacen fracasar un proyecto final. La tabla~\ref{tab:riesgos-criticos} indica cómo se presenta cada uno en este proyecto y dónde se trata.
+
+\begin{table}[H]
+    \centering
+    \caption{Relación entre los riesgos críticos de un proyecto final y los riesgos identificados}
+    \label{tab:riesgos-criticos}
+    \small
+    \begin{tabularx}{\textwidth}{L L l}
+        \toprule
+        \tb{Riesgo crítico} & \tb{Cómo se presenta en este proyecto} & \tb{Tratamiento} \\
+        \midrule
+        Alcance que nunca cierra & El motor admite mejoras indefinidas: cada construcción del lenguaje no soportada es una candidata. & R-03 \\
+        Pérdida de la fuente de datos & El corpus de vulnerabilidades reales resultó poco evaluable. & R-02 \\
+        Equipo que se desarma & El equipo es de una persona y no tiene reemplazo. & R-11 \\
+        Tecnología que no da & La resolución de llamadas limita el desempeño sobre código real, y el navegador limita el tamaño de proyecto analizable. & R-01, R-12 \\
+        Inviabilidad de costo & El costo de desarrollo es nulo; en la operación, la viabilidad depende de la captación y no de los costos (capítulo 5). & R-07 \\
+        Barrera legal o ética & El código analizado no sale del equipo del usuario, lo que evita tratar código de terceros en servidores propios; falta declarar la licencia del repositorio. & R-10 \\
+        Nadie a cargo & El autor es el único responsable del mantenimiento después de la entrega. & R-08 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Continuidad del sistema después de la entrega}\label{sec:n6.6}
+
+La pregunta sobre quién mantiene el sistema cuando el autor se recibe se responde con tres decisiones. Primero, el código se publicará con licencia MIT en un repositorio público (R-10), lo que permite que cualquier persona lo use, lo modifique y lo continúe. Segundo, la parte que más cambia con el tiempo, las reglas de detección, está separada del motor en los archivos JSON del catálogo, de modo que actualizarla no requiere conocer la implementación del análisis. Tercero, la versión web no tiene componentes de servidor ni base de datos que administrar: el despliegue en Vercel se reconstruye a partir del repositorio, y mantenerla en línea para uso no comercial no tiene costo.
+
+El autor asume el mantenimiento durante el horizonte de evaluación del capítulo~\ref{cap:economica}. Si el proyecto no continúa como producto, queda disponible como herramienta académica de código abierto.
+
+\section{Seguimiento y actualización}\label{sec:n6.7}
+
+La matriz se revisa en cada entrega, al etiquetar la versión correspondiente en el repositorio: se actualizan la probabilidad y el impacto de cada riesgo, se registran los que se materializaron y se agregan los nuevos. Los riesgos R-09 a R-12 no tienen un tratamiento desarrollado más allá de la respuesta de la tabla~\ref{tab:matriz-riesgos} y se revisan en esas mismas instancias.
+
+Las fechas de control son el 1 de octubre para la convocatoria de participantes (R-06), el 6 de octubre para el corpus de aplicaciones reales (R-02), el 13 de octubre para el cierre del alcance (R-03) y el 3 de noviembre para las dependencias y la licencia (R-05 y R-10).

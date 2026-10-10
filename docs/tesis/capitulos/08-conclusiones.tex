@@ -1,0 +1,145 @@
+%!TEX root = ../main.tex
+% =============================================================
+%  CAPÍTULO 8 — IMPLICANCIAS, CONCLUSIONES Y RECOMENDACIONES
+%                                       (Entrega 8 · 5 % · 20/10)
+% =============================================================
+
+\chapter{Implicancias, conclusiones y recomendaciones}\label{cap:conclusiones}
+
+\begin{guia}[Guía de la cátedra: qué se evalúa en este capítulo]
+\begin{enumerate}
+    \item \textbf{Respuesta explícita a la hipótesis} del
+          capítulo~\ref{cap:introduccion}, con matices y contraejemplos
+          si corresponde (``afirmativa, con matices'' es una respuesta
+          válida; ``se cumplieron todos los objetivos'' sin evidencia no).
+    \item \textbf{Implicancias}: técnicas, sociales y económicas.
+    \item \textbf{Limitaciones honestas}, por categoría (técnicas, de datos,
+          de validación, de mercado), sin maquillaje. Declarar como
+          preliminar lo que es preliminar.
+    \item \textbf{Recomendaciones} accionables y \textbf{trabajo futuro}.
+    \item \textbf{Contribución al conocimiento}: qué sabe ahora la disciplina
+          que antes no sabía.
+\end{enumerate}
+Cierra el arco narrativo: cada objetivo específico se retoma y se
+indica en qué medida se alcanzó, con referencia a la sección que lo
+demuestra.
+\end{guia}
+
+% Esqueleto al 24/09/2026. Las respuestas a las hipótesis dependen de la
+% línea de base, de NodeGoat y de la validación con usuarios del
+% capítulo 7; hasta tenerlas, quedan como marcadores.
+
+\completar{Párrafo de apertura: la pregunta de investigación del
+capítulo~\ref{cap:introduccion} y cómo se organiza la respuesta.}
+
+% -------------------------------------------------------------
+\section{Respuesta a las hipótesis}\label{sec:respuesta-hipotesis}
+% -------------------------------------------------------------
+
+\paragraph{H1.} La representación del código como grafo de flujo de
+datos permite identificar vulnerabilidades con mayor precisión que la
+coincidencia de patrones. \completar{Respuesta (afirmativa, negativa o
+con matices) con la cifra de la tabla~\ref{tab:metricas} que la sostiene
+y el contraejemplo que la limita.}
+
+\paragraph{H2.} El análisis de contaminación sobre el grafo reduce los
+falsos positivos respecto de la detección por expresiones regulares.
+\completar{Respuesta con los falsos positivos de la línea de base y de
+GraphSAST, y el falso positivo por coincidencia de nombres de la
+sección~\ref{sec:resultados-negativos}.}
+
+\paragraph{H3.} La visualización del recorrido facilita la
+interpretación del riesgo frente al listado en texto.
+\completar{Respuesta con los resultados de la
+tabla~\ref{tab:h3-resultados}, declarada preliminar por el tamaño de la
+muestra.}
+
+% -------------------------------------------------------------
+\section{Cumplimiento de los objetivos}\label{sec:cumplimiento}
+% -------------------------------------------------------------
+
+\begin{table}[H]
+    \centering
+    \caption{Grado de cumplimiento de los objetivos específicos}
+    \label{tab:cumplimiento}
+    \small
+    \begin{tabularx}{\textwidth}{l L l L}
+        \toprule
+        \tb{Objetivo} & \tb{Evidencia} & \tb{Grado} & \tb{Observación} \\
+        \midrule
+        OE-1 & RF-01; sección~\ref{sec:pruebas} & \completar{..} & El análisis sintáctico se apoya en ts-morph, sin un analizador propio (capítulo~\ref{cap:marco-tecnologico}) \\
+        OE-2 & RF-02; tabla~\ref{tab:suite} & \completar{..} & Cinco categorías de nodo y cinco de arista, como se definió \\
+        OE-3 & RF-03 a RF-05; tabla~\ref{tab:confusion} & \completar{..} & Cuatro familias en lugar de tres: se sumó CWE-943 \\
+        OE-4 & RF-10 & \completar{..} & Neo4j opera como motor opcional; el recorrido en memoria es el modo por defecto \\
+        OE-5 & RF-06, RF-07; capítulo~\ref{cap:marco-tecnologico} & \completar{..} & La visualización se publicó como aplicación web que analiza en el navegador \\
+        OE-6 & Secciones~\ref{sec:pruebas} y~\ref{sec:validacion-usuarios} & \completar{..} & \completar{Estado de la validación sobre código real y con usuarios} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+% -------------------------------------------------------------
+\section{Implicancias}\label{sec:implicancias}
+% -------------------------------------------------------------
+
+\paragraph{Técnicas.} \completar{Qué muestran los resultados sobre la
+formulación de la seguridad como accesibilidad en un grafo: dónde
+funcionó y dónde la resolución de llamadas limita el enfoque.}
+
+\paragraph{Sociales.} \completar{Análisis en el navegador sin enviar el
+código a un servidor; acceso a una herramienta de este tipo para
+desarrolladores independientes y equipos chicos; vínculo con el
+aseguramiento de la calidad.}
+
+\paragraph{Económicas.} \completar{Relación con el capítulo~\ref{cap:economica}:
+la captación de usuarios como condición crítica y lo que respondieron
+los participantes sobre la disposición a pagar.}
+
+% -------------------------------------------------------------
+\section{Limitaciones}\label{sec:limitaciones}
+% -------------------------------------------------------------
+
+\paragraph{Técnicas.} El análisis entre archivos solo sigue funciones
+declaradas con \texttt{function} e importadas con módulos ES y ruta
+relativa. Los destinos sensibles se reconocen por el nombre de la
+función invocada. \completar{Estado final tras el congelamiento del 3 de
+noviembre.}
+
+\paragraph{De datos.} El banco sintético fue construido por el autor y
+concentra 26 de sus 43 casos en inyección SQL. El corpus de advisories
+de npm resultó no evaluable por el modelo de amenaza del analizador.
+\completar{Tamaño y representatividad del corpus de NodeGoat.}
+
+\paragraph{De validación.} \completar{Tamaño y origen de la muestra de
+participantes; autor en el doble rol de desarrollador y facilitador;
+casos de dos archivos.}
+
+\paragraph{De mercado.} \completar{Competencia de herramientas gratuitas
+en determinadas condiciones de uso (riesgo R-07) y supuestos de
+captación del capítulo~\ref{cap:economica}.}
+
+% -------------------------------------------------------------
+\section{Recomendaciones}\label{sec:recomendaciones}
+% -------------------------------------------------------------
+
+\completar{Recomendaciones accionables para la práctica profesional (por
+ejemplo, en qué etapa del desarrollo incorporar el análisis) y para el
+desarrollo tecnológico de la herramienta.}
+
+% -------------------------------------------------------------
+\section{Trabajo futuro}\label{sec:trabajo-futuro}
+% -------------------------------------------------------------
+
+\completar{Mejoras que quedaron fuera del cierre de alcance del 13 de
+octubre (riesgo R-03): resolución de funciones flecha, métodos de clase
+y \texttt{require} entre archivos; calificación de destinos por módulo;
+ampliación del catálogo; validación con una muestra mayor y con
+proyectos reales de mayor tamaño.}
+
+% -------------------------------------------------------------
+\section{Contribución al conocimiento}\label{sec:contribucion}
+% -------------------------------------------------------------
+
+\completar{Qué se sabe después de este trabajo que no se sabía antes. El
+aporte no es la técnica, que existe en CodeQL, Semgrep y Joern
+(capítulo~\ref{cap:marco-teorico}), sino la implementación propia de la
+cadena completa y su medición, incluidos los resultados desfavorables.}

@@ -1,0 +1,122 @@
+%!TEX TS-program = pdflatex
+%!TEX encoding = UTF-8 Unicode
+% =============================================================
+%   Proyecto Final de Ingeniería Informática — USAL
+%   Archivo principal. Compilar con pdfLaTeX (+ biber + makeglossaries).
+%   En Overleaf: Menú > Compiler > pdfLaTeX. La primera compilación del
+%   plan gratuito puede cortarse a los 20 s: apretar Recompile otra vez
+%   y termina (queda caché). Después cada compilación tarda unos segundos.
+% =============================================================
+
+\documentclass[%
+    language=spanish,   % spanish (por defecto) o english
+    guias=false,        % true: muestra las cajas de guía de la cátedra
+                        % false: las oculta (usar para la ENTREGA FINAL)
+    pdfa=false,         % true: genera PDF/A-2b (más lento; requiere LuaLaTeX)
+]{usal-proyecto-final}
+
+
+% -------------------------------------------------------------
+% DATOS DEL TRABAJO  (completar)
+% -------------------------------------------------------------
+\title{GraphSAST: analizador estático de código basado en grafos de flujo
+       de datos para detectar vulnerabilidades en aplicaciones JavaScript}
+\thesisHeader{Facultad de Ingeniería\\Proyecto Final de Ingeniería Informática}
+\academicYear{2026}
+% \graduationDate{17/11/2026} % (opcional) fecha de defensa
+
+% autor/a (para trabajos grupales, separar con \\ o \and)
+\author{Maximo Zuidwijk}
+\authorEmail{m.zuidwijk@usal.edu.ar}
+
+% autoridades que figuran en la portada (decano y director retirados a pedido del autor)
+\profesor{Esteban Tissera}{Profesor, Facultad de Ingeniería}
+% \tutor{Nombre del tutor o tutora}{Cargo, Institución} % (opcional)
+
+% resumen / abstract
+\palabrasclave{análisis estático, análisis de contaminación, grafo de flujo de datos, seguridad de aplicaciones}
+\keywords{static analysis, taint analysis, data flow graph, application security}
+
+% segunda página: declaración de originalidad
+\secondpage{\input{preliminares/segunda-pagina}}
+
+% dedicatoria (opcional; descomentar para agregar una página de dedicatoria)
+% \dedication{\textit{A ...}}
+
+% portada: logo y marca de agua (opcionales)
+% \coverlogo{template/usal}            % logo superior (por defecto)
+% \coverwatermark{template/marca-agua} % marca de agua de fondo (vacío = sin marca)
+
+
+% -------------------------------------------------------------
+% RECURSOS
+% -------------------------------------------------------------
+\addbibresource{refs.bib}                 % bibliografía (BibTeX)
+\loadglsentries{preliminares/glosario}    % términos del glosario
+\loadglsentries{preliminares/siglas}      % siglas y acrónimos
+\loadglsentries{preliminares/simbolos}    % símbolos
+\input{custom-symbols}                    % macros y teoremas propios
+\nocite{*}                                % la bibliografía incluye las fuentes consultadas no citadas en el texto
+
+% sin páginas en blanco: cada capítulo empieza en la página siguiente,
+% sea par o impar
+\makeatletter
+\@openrightfalse
+\makeatother
+\let\cleardoublepage\clearpage
+% las páginas terminan donde termina el texto, sin estirar los espacios
+\raggedbottom
+
+% índice general: 2 = hasta subsección (1.1.1 no se lista)
+\setcounter{tocdepth}{2}
+
+%% Para imprimir solo la tapa con letra grande y sin marca de agua:
+%\begin{document}
+%    \makecover
+%\end{document}
+
+
+% =============================================================
+\begin{document}
+
+    % portada, agradecimientos, resumen, declaración de IA, índices
+    % fondo de la portada: red de flujo de datos con un camino source -> sink
+    % (figuras/portada/generar.py). Solo se aplica a la primera página.
+    \AddToHookNext{shipout/background}{%
+        \put(0pt,-\paperheight){\includegraphics[width=\paperwidth,height=\paperheight]{figuras/portada/portada-fondo}}}
+
+    \frontmatter
+
+    % cuerpo del trabajo: un archivo por capítulo, en el orden de entrega
+    \mainmatter
+    \input{capitulos/01-introduccion}
+    \glsresetall % las siglas se vuelven a expandir completas a partir de acá
+    \input{capitulos/02-metodologia}
+    \input{capitulos/03-marco-teorico}
+    \input{capitulos/04-marco-tecnologico}
+    \input{capitulos/05-justificacion-economica}
+    \input{capitulos/06-riesgos}
+    \input{capitulos/07-resultados}
+    \input{capitulos/08-conclusiones}
+
+    % bibliografía
+    \backmatter
+
+    % apéndices: material producido por el autor (A, B, C...)
+    \begin{appendices}
+        \input{apendices/A-encuesta-validacion}
+        \input{apendices/B-entrevista}
+        \input{apendices/C-detalles-tecnicos}
+    \end{appendices}
+
+    % anexos: material de terceros o externo (I, II...)
+    \begin{anexos}
+        \input{anexos/I-repositorios}
+    \end{anexos}
+
+    % glosario, siglas y símbolos
+    % las entradas que no se usan en el texto también se imprimen, sin página
+    \glsaddallunused
+    \glosarios
+
+\end{document}
