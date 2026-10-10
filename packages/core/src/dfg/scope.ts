@@ -27,17 +27,29 @@ export function scopeEncloses(defPath: string[], usePath: string[]): boolean {
 }
 
 /**
- * Defs visibles desde un uso: mismo ámbito de función y, dentro de ella,
- * mismo bloque o uno que lo contenga.
+ * Defs visibles desde un uso, por ámbito léxico.
+ *
+ * Una def es visible si su ámbito encierra al del uso, también a través de
+ * funciones: una closure ve las variables de la función que la envuelve
+ * (`run(() => db.query(q))`). Si varias lo son, gana la del ámbito más
+ * interno, que es la que sombrea a las demás: `const q = "x"` dentro de la
+ * closure tapa la `q` contaminada de afuera.
+ *
+ * Sin `useScopePath` (IR de una versión anterior) se aproxima como antes:
+ * defs de la misma función.
  */
 export function defsInScope(
   defs: IRNode[],
   useOwnerFnId: string | null,
   useScopePath?: string[],
 ): IRNode[] {
-  const byFunction = useOwnerFnId
-    ? defs.filter((d) => nodeOwnerFnId(d) === useOwnerFnId)
-    : defs;
-  if (!useScopePath || useScopePath.length === 0) return byFunction;
-  return byFunction.filter((d) => scopeEncloses(nodeScopePath(d), useScopePath));
+  if (!useScopePath || useScopePath.length === 0) {
+    return useOwnerFnId
+      ? defs.filter((d) => nodeOwnerFnId(d) === useOwnerFnId)
+      : defs;
+  }
+  const visible = defs.filter((d) => scopeEncloses(nodeScopePath(d), useScopePath));
+  if (visible.length <= 1) return visible;
+  const innermost = Math.max(...visible.map((d) => nodeScopePath(d).length));
+  return visible.filter((d) => nodeScopePath(d).length === innermost);
 }

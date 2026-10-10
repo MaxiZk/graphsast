@@ -126,14 +126,7 @@ function f(req) {
     expect(edges).toContainEqual({ kind: "FLOWS_TO", from: param.id, to: call.id });
   });
 
-  /**
-   * Limitación preexistente, no introducida por el ámbito de bloque: el
-   * filtro por función contenedora corta la captura de un closure sobre la
-   * variable de su función envolvente. Verificado idéntico con y sin
-   * `scopePath`. Queda como test de constancia: si algún día se resuelve
-   * (BINDS_TO inter-procedural), este test falla y hay que actualizarlo.
-   */
-  it("closure sobre variable externa: no conecta (limitación conocida)", () => {
+  it("closure sobre variable externa: conecta con la def de la función envolvente", () => {
     const { mod, edges } = dfgOf(`
 function f(req) {
   const q = req.query.id;
@@ -144,7 +137,7 @@ function f(req) {
     const call = mod.nodes.find(
       (n): n is IRCall => n.kind === "Call" && n.callee === "db.query",
     )!;
-    expect(edges).not.toContainEqual({ kind: "FLOWS_TO", from: q.id, to: call.id });
+    expect(edges).toContainEqual({ kind: "FLOWS_TO", from: q.id, to: call.id });
   });
 
   it("el taint real dentro de un mismo bloque se sigue detectando", () => {
@@ -178,5 +171,69 @@ describe("scopeEncloses", () => {
   });
   it("sin info de ámbito no filtra (degrada a la sobre-aproximación previa)", () => {
     expect(scopeEncloses([], ["S0", "S1"])).toBe(true);
+  });
+});
+
+describe("closures y sombreado", () => {
+  function findingsOf(code: string) {
+    return analyzeTaint(analyzeGraph(code));
+  }
+
+  it("una closure que usa la variable contaminada de afuera es un hallazgo", () => {
+    expect(findingsOf(`
+function f(req) {
+  const q = req.query.id;
+  run(() => { db.query(q); });
+}
+`)).toHaveLength(1);
+  });
+
+  it("una closure anidada dos niveles también ve la variable", () => {
+    expect(findingsOf(`
+function f(req) {
+  const q = req.query.id;
+  return function outer() {
+    return () => db.query(q);
+  };
+}
+`)).toHaveLength(1);
+  });
+
+  it("una def interna con el mismo nombre sombrea a la de afuera", () => {
+    expect(findingsOf(`
+function f(req) {
+  const q = req.query.id;
+  run(() => { const q = "SELECT 1"; db.query(q); });
+}
+`)).toEqual([]);
+  });
+
+  it("un parámetro de la closure sombrea a la variable de afuera", () => {
+    const { mod, edges } = dfgOf(`
+function f(req) {
+  const q = req.query.id;
+  items.forEach((q) => db.query(q));
+}
+`);
+    const [outer] = varsNamed(mod.nodes, "q");
+    const call = mod.nodes.find(
+      (n): n is IRCall => n.kind === "Call" && n.callee === "db.query",
+    )!;
+    expect(edges).not.toContainEqual({ kind: "FLOWS_TO", from: outer.id, to: call.id });
+  });
+
+  it("estado de módulo: una función escribe y otra lee", () => {
+    expect(findingsOf(`
+let last = "";
+function save(req) { last = req.body.q; }
+function run() { db.query(last); }
+`)).toHaveLength(1);
+  });
+
+  it("dos funciones hermanas no se ven las variables", () => {
+    expect(findingsOf(`
+function a(req) { const q = req.body; }
+function b() { const q = "x"; db.query(q); }
+`)).toEqual([]);
   });
 });

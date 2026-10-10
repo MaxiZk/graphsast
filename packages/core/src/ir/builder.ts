@@ -318,6 +318,7 @@ function emitFunction(fn: FunctionLike, file: string, nodes: IRNode[]): void {
     paramIds,
     returnTexts: returns.map((r) => r.getText()),
     returnFlows: returns.map((r) => flowRefOf(r, file)),
+    returnScopePaths: returns.map((r) => scopePathOf(r)),
   };
   nodes.push(irFn);
 }

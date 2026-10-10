@@ -47,6 +47,8 @@ export interface IRFunction extends IRNodeBase {
   paramIds: string[];
   returnTexts: string[]; // textos de las expresiones retornadas (display)
   returnFlows: FlowRef[]; // raíces de flujo de cada return
+  /** Ámbito de cada return (mismo índice), para resolver sus nombres. */
+  returnScopePaths?: string[][];
   /**
    * Contenedor del que la función es miembro: el nombre de la clase
    * (`class UserService { find() {} }`), de la variable que guarda el objeto

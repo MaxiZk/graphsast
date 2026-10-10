@@ -1,7 +1,7 @@
 import type { IRModule, IRNode, IREdge, IRCall, IRFunction } from "../ir/types.js";
 import { buildCallGraph } from "../cfg/callgraph.js";
 import { buildDefIndex, flowInputIds } from "./dataflow.js";
-import { nodeOwnerFnId } from "./scope.js";
+import { nodeOwnerFnId, nodeScopePath } from "./scope.js";
 
 /**
  * Aristas que cruzan de una llamada a la función que invoca:
@@ -21,18 +21,19 @@ export function callSiteEdges(
 ): IREdge[] {
   const edges: IREdge[] = [];
   const scope = nodeOwnerFnId(call);
+  const callPath = nodeScopePath(call);
   call.argFlows.forEach((flow, i) => {
     const paramId = fn.paramIds[i];
     if (!paramId) return;
-    for (const from of flowInputIds(flow, scope, callerDefs)) {
+    for (const from of flowInputIds(flow, scope, callerDefs, callPath)) {
       edges.push({ kind: "BINDS_TO", from, to: paramId });
     }
   });
-  for (const flow of fn.returnFlows) {
-    for (const from of flowInputIds(flow, fn.id, calleeDefs)) {
+  fn.returnFlows.forEach((flow, i) => {
+    for (const from of flowInputIds(flow, fn.id, calleeDefs, fn.returnScopePaths?.[i])) {
       edges.push({ kind: "RETURNS", from, to: call.id });
     }
-  }
+  });
   return edges;
 }
 
