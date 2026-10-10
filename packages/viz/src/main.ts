@@ -35,6 +35,7 @@ import {
 import type { CatalogSummary, ProjectAnalysis, UploadedFile } from "./protocol.js";
 import {
   describeSelection,
+  gitignoreFilter,
   filesFromDrop,
   filesFromInput,
   selectUploads,
@@ -683,7 +684,7 @@ function showProject() {
 }
 
 async function scanUploads(uploads: UploadedFile[]) {
-  const selection = selectUploads(uploads);
+  const selection = selectUploads(uploads, await gitignoreFilter(uploads));
   selectionSummary.hidden = false;
   selectionSummary.textContent = describeSelection(selection);
   if (selection.accepted.length === 0) {
@@ -703,7 +704,7 @@ async function scanUploads(uploads: UploadedFile[]) {
     project = await analyzeProject(selection.accepted, (done, total, file) => {
       scanProgress.value = done;
       statusEl.textContent = `Analizando ${done + 1} de ${total}: ${file}`;
-    });
+    }, selection.configs);
     if (mode !== "project") return;
     showProject();
     const { totals } = project.output.result;

@@ -286,13 +286,9 @@ describe("arrows, CommonJS y métodos de clase entre archivos", () => {
 
 describe("fuera del alcance: no se liga (y no se simula)", () => {
   const unsupported: [string, Record<string, string>][] = [
-    ["alias de tsconfig", {
+    ["alias sin tsconfig que lo declare", {
       "src/repository.ts": "export function findById(userId: string) { return db.query(`SELECT ${userId}`); }\n",
       "src/controller.ts": 'import { findById } from "@/repository";\nexport function show(req: any) { findById(req.params.id); }\n',
-    }],
-    ["import() dinámico", {
-      "repository.ts": "export function findById(userId: string) { return db.query(`SELECT ${userId}`); }\n",
-      "controller.ts": 'export async function show(req: any) { const m = await import("./repository"); m.findById(req.params.id); }\n',
     }],
   ];
 

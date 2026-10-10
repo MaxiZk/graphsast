@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 import ignore from "ignore";
+import { isProjectConfigName } from "../project/tsconfig.js";
 import {
   ALWAYS_IGNORE,
   DEFAULT_EXTENSIONS,
@@ -30,6 +31,8 @@ interface WalkContext {
   maxBytes: number;
   gitignore: boolean;
   exclude: IgnoreScope | null;
+  /** Si está, junta acá los tsconfig/jsconfig que encuentra al recorrer. */
+  configs?: string[];
 }
 
 /** Ruta de entrada inválida: no existe, no se puede leer o no es archivo/carpeta. */
@@ -136,7 +139,10 @@ function walk(
       walk(full, root, active, ctx, out);
       continue;
     }
-    if (!ctx.extensions.includes(path.extname(entry.name))) continue;
+    if (!ctx.extensions.includes(path.extname(entry.name))) {
+      if (ctx.configs && isProjectConfigName(entry.name)) ctx.configs.push(full);
+      continue;
+    }
     let size: number;
     try {
       size = statSync(full).size;
@@ -158,6 +164,7 @@ function walk(
 export function discoverFiles(
   target: string,
   options: ScanOptions = {},
+  configsOut?: string[],
 ): string[] {
   const extensions = options.extensions ?? DEFAULT_EXTENSIONS;
   const maxBytes = options.maxFileBytes ?? DEFAULT_MAX_FILE_BYTES;
@@ -183,6 +190,7 @@ export function discoverFiles(
     exclude: options.exclude?.length
       ? { base: root, rules: ignore().add(options.exclude) }
       : null,
+    configs: configsOut,
   };
 
   const out: string[] = [];
@@ -206,4 +214,29 @@ export function commonRoot(targets: string[]): string {
     }
   }
   return root;
+}
+
+/**
+ * tsconfig/jsconfig de las carpetas que contienen a `target`, hasta la raíz
+ * del repositorio (la que tiene `.git`) o del disco. Escanear `./src` con el
+ * `tsconfig.json` en la raíz es lo habitual, y sin él `@/x` no se resuelve.
+ */
+export function ancestorConfigs(target: string): string[] {
+  const out: string[] = [];
+  let dir = path.resolve(target);
+  if (existsSync(dir) && statSync(dir).isFile()) dir = path.dirname(dir);
+  for (;;) {
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+    try {
+      for (const name of readdirSync(dir)) {
+        if (isProjectConfigName(name)) out.push(path.join(dir, name));
+      }
+    } catch {
+      break;
+    }
+    if (existsSync(path.join(dir, ".git"))) break;
+  }
+  return out;
 }

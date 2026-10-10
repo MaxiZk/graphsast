@@ -6,6 +6,7 @@ import type { IREdge, IRGraph, IRNode } from "../ir/types.js";
 import type { TaintFinding } from "../taint/types.js";
 import { extractLinks, projectIndexOf, type ModuleLinks } from "../project/links.js";
 import { buildCrossModuleEdges, connectedComponents } from "../project/link.js";
+import { aliasResolverFor, isProjectConfigName } from "../project/tsconfig.js";
 import type {
   ScanFinding,
   ScanFileResult,
@@ -178,7 +179,7 @@ function mergeGraphs(
  * `onFile` avisa antes de parsear cada archivo, para mostrar progreso.
  */
 export function scanFilesWithGraphs(
-  inputs: ScanInput[],
+  allInputs: ScanInput[],
   options: ScanOptions = {},
   root = "",
   onFile?: (done: number, total: number, file: string) => void,
@@ -187,6 +188,16 @@ export function scanFilesWithGraphs(
   const failed = new Map<string, ScanFileResult>();
   const parsed: ParsedFile[] = [];
   const order: string[] = [];
+  // Los tsconfig/jsconfig que vengan entre los archivos no se analizan: aportan
+  // alias de imports (`@/x`). Sin `options.aliases`, se usan esos.
+  const isConfig = (p: string) => isProjectConfigName(p.slice(p.lastIndexOf("/") + 1));
+  const inputs = allInputs.filter((i) => !isConfig(i.path));
+  const aliases = options.aliases ?? aliasResolverFor(
+    allInputs
+      .filter((i): i is { path: string; content: string } => isConfig(i.path) && "content" in i)
+      .map((i) => ({ path: `/${i.path}`, content: i.content })),
+  );
+
   inputs.forEach((input, i) => {
     const rel = input.path;
     order.push(rel);
@@ -222,7 +233,7 @@ export function scanFilesWithGraphs(
   const linkStarted = performance.now();
   const cross = options.crossFile === false
     ? { edges: [], exactCallIds: new Set<string>(), calls: 0, pairs: [] }
-    : buildCrossModuleEdges(projectIndexOf(parsed), parsed);
+    : buildCrossModuleEdges(projectIndexOf(parsed, aliases), parsed);
   const components = connectedComponents(parsed.map((p) => p.abs), cross.pairs);
   const linkMs = performance.now() - linkStarted;
 
