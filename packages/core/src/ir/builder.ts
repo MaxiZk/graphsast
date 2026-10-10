@@ -29,9 +29,17 @@ function idOf(kind: string, loc: Loc): string {
   return `${loc.file}#${kind}@${loc.line}:${loc.col}`;
 }
 
-/** Id del nodo Call que le corresponde a una CallExpression del AST. */
+/**
+ * Id del nodo Call que le corresponde a una CallExpression del AST.
+ *
+ * Se ubica en el paréntesis que abre los argumentos, no en el inicio de la
+ * expresión: en `db.collection("u").find(q).toArray()` las tres llamadas
+ * empiezan en `db`, y con el inicio compartían id y quedaban fusionadas en un
+ * solo nodo. La `loc` del nodo sigue siendo el inicio de la llamada.
+ */
 function callIdOf(call: Node, file: string): string {
-  return idOf("Call", locOf(call, file));
+  const paren = call.getFirstChildByKind(SyntaxKind.OpenParenToken);
+  return idOf("Call", locOf(paren ?? call, file));
 }
 
 /** Convierte el resultado del walker en una referencia serializable. */
@@ -124,11 +132,114 @@ function declarationScopePathOf(decl: VariableDeclaration, at: Node): string[] {
   return isVar ? functionScopePathOf(at) : scopePathOf(at);
 }
 
-function fnNameOf(fn: FunctionLike): string {
-  if (TsNode.isFunctionDeclaration(fn) || TsNode.isMethodDeclaration(fn)) {
-    return fn.getName() ?? "";
+/** Nombre de una propiedad sin comillas (`"find"` → `find`). */
+function propertyNameText(name: Node): string {
+  if (TsNode.isStringLiteral(name) || TsNode.isNoSubstitutionTemplateLiteral(name)) {
+    return name.getLiteralValue();
   }
+  return TsNode.isIdentifier(name) || TsNode.isPrivateIdentifier(name) ? name.getText() : "";
+}
+
+/**
+ * Nombre con el que se llama a un objeto literal o una clase: la variable que
+ * lo guarda (`const svc = {...}`) o el destino al que se asigna
+ * (`module.exports = {...}`). Vacío si es anónimo.
+ */
+function containerNameOf(node: Node): string {
+  if (TsNode.isClassDeclaration(node)) return node.getName() ?? "";
+  const parent = node.getParent();
+  if (!parent) return "";
+  if (TsNode.isVariableDeclaration(parent)) {
+    const nameNode = parent.getNameNode();
+    return TsNode.isIdentifier(nameNode) ? nameNode.getText() : "";
+  }
+  if (
+    TsNode.isBinaryExpression(parent)
+    && parent.getOperatorToken().getKind() === SyntaxKind.EqualsToken
+    && parent.getRight() === node
+  ) {
+    return parent.getLeft().getText().replace(/\s+/g, "");
+  }
+  if (TsNode.isClassExpression(node)) return node.getName() ?? "";
   return "";
+}
+
+/**
+ * Nombre por el que se invoca la función y el contenedor del que es miembro.
+ *
+ * Una arrow o function expression no tiene nombre propio, pero se la llama por
+ * el de la variable, campo o propiedad que la guarda: `const find = (id) =>
+ * ...` se invoca como `find(id)`. Sin esto, solo las `function` declaradas por
+ * nombre se resolvían, y el código escrito con arrows (la mayoría de Express
+ * moderno) quedaba fuera del call graph.
+ */
+function fnIdentityOf(fn: FunctionLike): { name: string; memberOf?: string } {
+  const parent = fn.getParent();
+
+  if (TsNode.isFunctionDeclaration(fn)) return { name: fn.getName() ?? "" };
+
+  if (TsNode.isMethodDeclaration(fn)) {
+    const owner = parent && (TsNode.isClassDeclaration(parent)
+      || TsNode.isClassExpression(parent)
+      || TsNode.isObjectLiteralExpression(parent))
+      ? containerNameOf(parent)
+      : "";
+    return { name: propertyNameText(fn.getNameNode()), memberOf: owner || undefined };
+  }
+
+  // Arrow o function expression: el nombre viene de donde se la guarda.
+  if (parent && TsNode.isVariableDeclaration(parent)) {
+    const nameNode = parent.getNameNode();
+    if (TsNode.isIdentifier(nameNode)) return { name: nameNode.getText() };
+  }
+  if (parent && TsNode.isPropertyDeclaration(parent)) {
+    const cls = parent.getParent();
+    return {
+      name: propertyNameText(parent.getNameNode()),
+      memberOf: cls ? containerNameOf(cls) || undefined : undefined,
+    };
+  }
+  if (parent && TsNode.isPropertyAssignment(parent)) {
+    const obj = parent.getParent();
+    return {
+      name: propertyNameText(parent.getNameNode()),
+      memberOf: obj ? containerNameOf(obj) || undefined : undefined,
+    };
+  }
+  if (
+    parent
+    && TsNode.isBinaryExpression(parent)
+    && parent.getOperatorToken().getKind() === SyntaxKind.EqualsToken
+    && parent.getRight() === fn
+  ) {
+    const left = parent.getLeft();
+    if (TsNode.isPropertyAccessExpression(left)) {
+      return {
+        name: left.getName(),
+        memberOf: left.getExpression().getText().replace(/\s+/g, ""),
+      };
+    }
+    if (TsNode.isIdentifier(left)) return { name: left.getText() };
+  }
+  if (TsNode.isFunctionExpression(fn)) return { name: fn.getName() ?? "" };
+  return { name: "" };
+}
+
+/**
+ * A qué apunta `this` en el lugar de una llamada: la clase o el objeto
+ * literal con nombre más cercano que la encierra.
+ */
+function thisOwnerOf(node: Node): string | undefined {
+  for (const anc of node.getAncestors()) {
+    if (TsNode.isClassDeclaration(anc) || TsNode.isClassExpression(anc)) {
+      return containerNameOf(anc) || undefined;
+    }
+    if (TsNode.isObjectLiteralExpression(anc)) {
+      const name = containerNameOf(anc);
+      if (name) return name;
+    }
+  }
+  return undefined;
 }
 
 /** Expresiones retornadas por la función (cuerpo conciso de arrow incluido). */
@@ -173,6 +284,7 @@ function emitFunction(fn: FunctionLike, file: string, nodes: IRNode[]): void {
   const paramIds: string[] = [];
 
   fn.getParameters().forEach((p, index) => {
+    const decorators = p.getDecorators().map((d) => d.getName());
     // `paramIds` queda alineado con la posición del argumento (lo que asume
     // interproc): un id por parámetro declarado, el del primer binding.
     let positionalId: string | null = null;
@@ -187,6 +299,7 @@ function emitFunction(fn: FunctionLike, file: string, nodes: IRNode[]): void {
         scopePath: scopePathOf(at),
         index,
         ownerFnId: fnId,
+        ...(decorators.length > 0 ? { decorators } : {}),
       };
       positionalId ??= param.id;
       nodes.push(param);
@@ -195,16 +308,19 @@ function emitFunction(fn: FunctionLike, file: string, nodes: IRNode[]): void {
   });
 
   const returns = returnExpressionsOf(fn);
+  const { name, memberOf } = fnIdentityOf(fn);
   const irFn: IRFunction = {
     id: fnId,
     kind: "Function",
-    name: fnNameOf(fn),
+    name,
+    ...(memberOf ? { memberOf } : {}),
     code: fn.getText(),
     loc: fnLoc,
     scopePath: scopePathOf(fn),
     paramIds,
     returnTexts: returns.map((r) => r.getText()),
     returnFlows: returns.map((r) => flowRefOf(r, file)),
+    returnScopePaths: returns.map((r) => scopePathOf(r)),
   };
   nodes.push(irFn);
 }
@@ -374,6 +490,75 @@ function emitPropertyWriteSinks(
   }
 }
 
+/** Nombre local → de qué paquete y con qué nombre se importó. */
+type PackageBindings = Map<string, { module: string; imported: string }>;
+
+/** `node:child_process` → `child_process`. Las rutas relativas no son paquetes. */
+function packageNameOf(specifier: string): string | null {
+  if (specifier.startsWith(".") || specifier.startsWith("/")) return null;
+  return specifier.replace(/^node:/, "");
+}
+
+/** `require("x")` → `"x"`. */
+function requireTarget(node: Node | undefined): string | null {
+  if (!node || !TsNode.isCallExpression(node)) return null;
+  if (node.getExpression().getText() !== "require") return null;
+  const [arg] = node.getArguments();
+  return arg && TsNode.isStringLiteral(arg) ? arg.getLiteralValue() : null;
+}
+
+/**
+ * Nombres locales que vienen de un paquete, por `import` o `require`:
+ * `import { exec } from "child_process"`, `import * as cp from "node:child_process"`,
+ * `const { execSync: run } = require("child_process")`.
+ */
+function packageBindingsOf(sourceFile: SourceFile): PackageBindings {
+  const out: PackageBindings = new Map();
+  for (const decl of sourceFile.getImportDeclarations()) {
+    const module = packageNameOf(decl.getModuleSpecifierValue());
+    if (!module) continue;
+    const def = decl.getDefaultImport();
+    if (def) out.set(def.getText(), { module, imported: "*" });
+    const ns = decl.getNamespaceImport();
+    if (ns) out.set(ns.getText(), { module, imported: "*" });
+    for (const spec of decl.getNamedImports()) {
+      const local = spec.getAliasNode()?.getText() ?? spec.getName();
+      out.set(local, { module, imported: spec.getName() });
+    }
+  }
+  for (const decl of sourceFile.getDescendantsOfKind(SyntaxKind.VariableDeclaration)) {
+    const target = requireTarget(decl.getInitializer());
+    const module = target ? packageNameOf(target) : null;
+    if (!module) continue;
+    const nameNode = decl.getNameNode();
+    if (TsNode.isIdentifier(nameNode)) {
+      out.set(nameNode.getText(), { module, imported: "*" });
+    } else if (TsNode.isObjectBindingPattern(nameNode)) {
+      for (const el of nameNode.getElements()) {
+        const local = el.getNameNode();
+        if (!TsNode.isIdentifier(local)) continue;
+        out.set(local.getText(), {
+          module,
+          imported: el.getPropertyNameNode()?.getText() ?? local.getText(),
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/** `cp.exec` con `cp` = `child_process` → `child_process.exec`. */
+function qualifiedCalleeOf(callee: string, bindings: PackageBindings): string | undefined {
+  const normalized = callee.replace(/\s+/g, "").replace(/\?\./g, ".");
+  const dot = normalized.indexOf(".");
+  const head = dot === -1 ? normalized : normalized.slice(0, dot);
+  const rest = dot === -1 ? "" : normalized.slice(dot);
+  const binding = bindings.get(head);
+  if (!binding) return undefined;
+  const base = binding.imported === "*" ? binding.module : `${binding.module}.${binding.imported}`;
+  return base + rest;
+}
+
 /**
  * `fileName` permite conservar la ruta relativa al escanear un proyecto
  * (`src/routes/users.ts` en vez de `users.ts`), de modo que los ids de nodo
@@ -406,11 +591,12 @@ export function buildIR(sourceFile: SourceFile, fileName?: string): IRModule {
     nodes.push(irLit);
   }
 
+  const packages = packageBindingsOf(sourceFile);
   for (const call of sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
     const cLoc = locOf(call, file);
     const args = call.getArguments();
     const irCall: IRCall = {
-      id: idOf("Call", cLoc),
+      id: callIdOf(call, file),
       kind: "Call",
       name: call.getExpression().getText(),
       code: call.getText(),
@@ -422,6 +608,10 @@ export function buildIR(sourceFile: SourceFile, fileName?: string): IRModule {
       receiverFlow: receiverFlowOf(call, file),
       ownerFnId: ownerFnIdOf(call, file),
     };
+    const owner = thisOwnerOf(call);
+    if (owner) irCall.thisOwner = owner;
+    const qualified = qualifiedCalleeOf(irCall.callee, packages);
+    if (qualified) irCall.qualifiedCallee = qualified;
     nodes.push(irCall);
   }
 

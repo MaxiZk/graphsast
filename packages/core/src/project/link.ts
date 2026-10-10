@@ -1,6 +1,7 @@
-import type { IRCall, IREdge, IRFunction, IRGraph } from "../ir/types.js";
-import { buildDefIndex, flowInputIds } from "../dfg/dataflow.js";
-import { nodeOwnerFnId } from "../dfg/scope.js";
+import type { IRCall, IREdge, IRFunction, IRGraph, IRNode } from "../ir/types.js";
+import { buildDefIndex } from "../dfg/dataflow.js";
+import { callSiteEdges } from "../dfg/interproc.js";
+import { FunctionIndex, normalizeCallee } from "../cfg/resolve.js";
 import { resolveImportedCallee, type ProjectIndex } from "./links.js";
 
 export interface ProjectFile {
@@ -9,8 +10,14 @@ export interface ProjectFile {
 }
 
 export interface CrossModuleLinks {
-  /** `CALLS` y `BINDS_TO` entre archivos, iguales a los de `buildInterproc`. */
+  /** `CALLS`, `BINDS_TO` y `RETURNS` entre archivos, iguales a los de `buildInterproc`. */
   edges: IREdge[];
+  /**
+   * Llamadas resueltas con certeza a una función de otro archivo. Al unir los
+   * grafos se les quitan los `FLOWS_TO` argumento → llamada: el valor sale de
+   * lo que la función retorna (ver `buildDataFlow`).
+   */
+  exactCallIds: Set<string>;
   /** Llamadas resueltas a una función de otro archivo. */
   calls: number;
   /** Pares de archivos (ruta absoluta) unidos por al menos una llamada. */
@@ -18,10 +25,15 @@ export interface CrossModuleLinks {
 }
 
 /**
- * Aristas inter-procedurales entre archivos: cada llamada a una función
- * importada liga la llamada con la función (`CALLS`) y cada argumento con el
- * parámetro de la misma posición (`BINDS_TO`). Es lo que `buildInterproc`
- * hace dentro de un archivo, con la resolución de imports en el medio.
+ * Aristas inter-procedurales entre archivos: cada llamada a una función de otro
+ * archivo liga la llamada con la función (`CALLS`), cada argumento con el
+ * parámetro de la misma posición (`BINDS_TO`) y lo que la función retorna con
+ * la llamada (`RETURNS`). Es lo que `buildInterproc` hace dentro de un archivo.
+ *
+ * Una llamada se resuelve por el import que la nombra (con certeza) o, si es
+ * un método sobre un receptor desconocido que no se resolvió dentro de su
+ * archivo, por el único método con ese nombre en todo el escaneo (heurística,
+ * ver `FunctionIndex.resolve`).
  */
 export function buildCrossModuleEdges(
   index: ProjectIndex,
@@ -29,44 +41,64 @@ export function buildCrossModuleEdges(
 ): CrossModuleLinks {
   const fnById = new Map<string, IRFunction>();
   const fileOfFn = new Map<string, string>();
+  const allNodes: IRNode[] = [];
+  const defsOfFile = new Map<string, Map<string, IRNode[]>>();
   for (const f of files) {
+    // buildDefIndex solo mira los nodos.
+    defsOfFile.set(f.abs, buildDefIndex({ file: f.graph.file, nodes: f.graph.nodes, assignments: [] }));
     for (const node of f.graph.nodes) {
       if (node.kind !== "Function") continue;
+      allNodes.push(node);
       fnById.set(node.id, node as IRFunction);
       fileOfFn.set(node.id, f.abs);
     }
   }
+  const projectFunctions = new FunctionIndex(allNodes);
 
   const edges: IREdge[] = [];
+  const exactCallIds = new Set<string>();
   const pairs = new Map<string, [string, string]>();
   let calls = 0;
 
   for (const f of files) {
-    // buildDefIndex solo mira los nodos.
-    const defsByName = buildDefIndex({ file: f.graph.file, nodes: f.graph.nodes, assignments: [] });
+    const callerDefs = defsOfFile.get(f.abs)!;
     for (const node of f.graph.nodes) {
       if (node.kind !== "Call") continue;
       const call = node as IRCall;
-      const fnId = resolveImportedCallee(index, f.abs, call.callee);
-      const fn = fnId ? fnById.get(fnId) : undefined;
-      const target = fnId ? fileOfFn.get(fnId) : undefined;
+      const { fn, exact } = crossFileTarget(index, f.abs, call, projectFunctions, fnById);
+      const target = fn ? fileOfFn.get(fn.id) : undefined;
       if (!fn || !target || target === f.abs) continue;
 
       calls++;
+      if (exact) exactCallIds.add(call.id);
+      call.resolution = exact ? "exact" : "guess";
       edges.push({ kind: "CALLS", from: call.id, to: fn.id });
-      const scope = nodeOwnerFnId(call);
-      call.argFlows.forEach((flow, i) => {
-        const paramId = fn.paramIds[i];
-        if (!paramId) return;
-        for (const from of flowInputIds(flow, scope, defsByName)) {
-          edges.push({ kind: "BINDS_TO", from, to: paramId });
-        }
-      });
+      edges.push(...callSiteEdges(call, fn, callerDefs, defsOfFile.get(target)!));
       pairs.set(`${f.abs}\0${target}`, [f.abs, target]);
     }
   }
 
-  return { edges, calls, pairs: [...pairs.values()] };
+  return { edges, exactCallIds, calls, pairs: [...pairs.values()] };
+}
+
+/** Función de otro archivo a la que apunta una llamada, si la hay. */
+function crossFileTarget(
+  index: ProjectIndex,
+  abs: string,
+  call: IRCall,
+  projectFunctions: FunctionIndex,
+  fnById: ReadonlyMap<string, IRFunction>,
+): { fn?: IRFunction; exact: boolean } {
+  const imported = resolveImportedCallee(index, abs, call.callee);
+  if (imported) return { fn: fnById.get(imported), exact: true };
+
+  // Ya resuelta dentro de su archivo: no se adivina de nuevo.
+  if (call.resolution) return { exact: false };
+  const callee = normalizeCallee(call.callee);
+  const dot = callee.lastIndexOf(".");
+  if (dot === -1) return { exact: false };
+  const [only] = projectFunctions.uniqueMember(callee.slice(dot + 1));
+  return { fn: only, exact: false };
 }
 
 /**

@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Lunes 06:17 UTC: el benchmark de CVEs reales, que baja paquetes de npm.
+    - cron: "17 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build, tests y benchmark
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Compilar (tsc -b)
+        run: npm run build
+      - name: Tests (core + viz, incluye CLI de punta a punta)
+        run: npm test
+      - name: Benchmark sintético (falla si algún caso se clasifica mal)
+        run: npm run benchmark
+      - name: Build de la versión web
+        run: npm run viz:build
+
+  cve:
+    name: Benchmark sobre CVEs reales
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Correr el corpus congelado (eval-cve-corpus.json)
+        run: npm run cve:run
+        env:
+          CVE_JSON: cve-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cve-report
+          path: cve-report.json

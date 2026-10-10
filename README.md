@@ -36,14 +36,49 @@ código fuente → AST (ts-morph) → IR → grafo (CALLS / FLOWS_TO / BINDS_TO 
 ```
 
 - **Source**: todo parámetro de función (salvo `res`, `next` y `_`) que ninguna
-  llamada del código analizado alimenta.
+  llamada del código analizado alimenta. Con `--sources catalog`, solo los que
+  declara el catálogo (`req`, `request`, `ctx`, `@Body()` de NestJS...).
 - **Sink**: dónde ese dato puede causar daño (`db.query`, `execSync`, `innerHTML`).
-- **Sanitizer**: función que limpia el dato (`validator.escape`, `sanitize`).
-- **Hallazgo**: existe un camino de source a sink que no atraviesa un sanitizer.
+- **Sanitizer**: función que limpia el dato para una CWE (`escapeHtml` para XSS,
+  `parseInt` para cualquiera).
+- **Hallazgo**: existe un camino de source a sink que no atraviesa un sanitizer
+  de la CWE del sink.
 
 Los sanitizers se **quitan del grafo** antes de buscar el camino, de modo que
 todo camino hallado es por construcción no sanitizado. Las familias activas
 están en [`catalog/`](catalog/): CWE-89, CWE-78, CWE-79 y CWE-943.
+
+Las llamadas a funciones del propio código se siguen: funciones declaradas,
+arrows y function expressions guardadas en una variable, campo o propiedad,
+métodos (`this.m()`, `Clase.m()`, `objeto.m()`), imports de ES y de CommonJS.
+El dato entra a la función por sus parámetros (`BINDS_TO`) y vuelve al llamador
+por lo que la función retorna (`RETURNS`), así que un sanitizer dentro de la
+función corta el camino.
+
+### Formato del catálogo
+
+Cada `catalog/cwe-*.json` declara `sources`, `sinks` y `sanitizers`. Un sink es
+un patrón de callee (`"db.query"`, `".save"`, `"innerHTML"`) o un objeto con
+restricciones:
+
+```json
+{ "callee": "db.query", "args": [0] }
+{ "callee": "exec", "bare": true, "args": [0] }
+{ "callee": "child_process.exec", "args": [0] }
+{ "callee": ".find", "receiver": "^[A-Z][A-Za-z0-9_]*$" }
+```
+
+- `args`: posiciones de los argumentos peligrosos. `db.query(sql, [id])` solo
+  es vulnerable por `sql`: los valores ligados por parámetro son la forma
+  segura de escribir la consulta.
+- `bare`: solo la llamada suelta, `exec(...)` y no `regex.exec(...)`.
+- `receiver`: expresión regular sobre el receptor (`User.find(...)` sí,
+  `users.find(...)` no).
+- Un patrón `paquete.f` coincide aunque el import tenga otro nombre local
+  (`const cp = require("child_process"); cp.exec(x)`).
+
+En `sources`, `req.body` aporta la raíz `req`, y `@Body` los parámetros
+decorados con `@Body()`. Solo se usan con `--sources catalog`.
 
 ## Instalación
 
@@ -154,6 +189,7 @@ mostrando todas. Una familia que no está activa en el catálogo es un error
 | `--cwe <89,79>` | Reportar solo estos CWE |
 | `--fail-on <cwe-89,…>` | Solo estas familias provocan el código `1` |
 | `--no-cross-file` | Analizar cada archivo por separado |
+| `--sources <params\|catalog>` | Qué parámetros son entrada no confiable: todos los que nadie llama (default) o solo los del catálogo |
 | `--max-depth <n>` | Profundidad máxima del camino (default 15) |
 | `--max-file-bytes <n>` | Omitir archivos más grandes (default 1 MB) |
 | `--verbose`, `--no-path` | Nivel de detalle del reporte de texto |
@@ -304,8 +340,15 @@ npm run benchmark
 ```
 
 Corre el corpus etiquetado (`packages/core/src/eval/benchmark/corpus.ts`) y
-reporta precisión, recall, F1 y ms/línea. Ver
+reporta precisión, recall, F1 y ms/línea; sale con `1` si algún caso se
+clasifica mal. `npm run cve:run` corre el corpus de vulnerabilidades reales
+(`eval-cve-corpus.json`, baja los paquetes de npm). Ver
 [`docs/validacion/`](docs/validacion/) para la metodología.
+
+El workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) corre build,
+tests (incluidos los del CLI de punta a punta), benchmark y build de la web en
+cada push a `main` y en cada PR; el benchmark de CVEs, una vez por semana o a
+mano.
 
 ## Neo4j (opcional)
 
@@ -347,41 +390,42 @@ packages/viz/  versión web (Vite + Cytoscape.js); el análisis corre en un Web 
 ## Limitaciones
 
 **Análisis entre archivos.** GraphSAST sigue el dato de un archivo a otro
-cuando un archivo llama a una `function` declarada en otro archivo del mismo
-escaneo, importada con `import` de ES y ruta relativa (nombrada, con alias,
-default o namespace, directa o a través de re-exports y `export *`). **No** lo
-sigue a través de `require`/`module.exports`, arrow functions o `const`
-exportadas, métodos de clase, alias de `tsconfig` (`@/x`), paquetes de
-`node_modules` ni `import()` dinámico. En esos casos cada archivo se analiza
-por separado, y el hallazgo, si lo hay, arranca en el parámetro de la función
-que contiene el sink en vez de en el controlador.
+cuando una llamada apunta a una función de otro archivo del mismo escaneo:
+importada con `import` de ES y ruta relativa (nombrada, con alias, default o
+namespace, directa o a través de re-exports y `export *`), con `require`
+(`module.exports`, `exports.f`), declarada como `function` o como `const` con
+una arrow. **No** lo sigue a través de alias de `tsconfig` (`@/x`), paquetes de
+`node_modules` ni `import()` dinámico. En esos casos el hallazgo, si lo hay,
+arranca en el parámetro de la función que contiene el sink en vez de en el
+controlador.
 
-**Resolución de llamadas.** Tanto dentro de un archivo como entre archivos,
-una llamada solo se resuelve si apunta a una `function` declarada por nombre.
-Las arrow functions, las funciones asignadas a variables y las llamadas sobre
-objetos (`service.find()`, `this.repo.save()`) no se resuelven. En una
-aplicación Express o NestJS escrita con clases o arrow functions, el camino
-desde el handler hasta el sink no se reconstruye.
+**Métodos sobre receptores desconocidos.** Sin tipos, `this.repo.save()` o
+`svc.findOne()` no dicen qué clase hay detrás. Se resuelven al único método
+con ese nombre en todo el código analizado; si hay dos, o el nombre es de la
+biblioteca estándar (`find`, `get`, `then`, `exec`...), no se resuelven. Es
+una heurística: en esas llamadas se conserva además el atajo argumento →
+resultado, para no perder un sink de biblioteca homónimo.
 
-**Modelo de source.** Toda función cuyo parámetro no está ligado por una
-llamada del código analizado se trata como punto de entrada. Una función
-exportada que nadie llama dentro del escaneo, o que solo recibe literales,
-produce hallazgos aunque en la práctica reciba datos internos. El campo
-`sources` de `catalog/*.json` (`req.body`, etc.) no se usa.
+**Modelo de source.** Por defecto, toda función cuyo parámetro no está ligado
+por una llamada del código analizado se trata como punto de entrada: una
+función exportada que nadie llama dentro del escaneo produce hallazgos aunque
+en la práctica reciba datos internos. `--sources catalog` lo restringe a los
+sources del catálogo, a costa de perder entradas con otros nombres.
 
-**Sanitizer dentro de la función llamada.** Si `f(x)` sanea `x` adentro y
-retorna el resultado, el camino desde el argumento hasta lo que `f` retorna no
-pasa por el sanitizer (aristas `CALLS` + `RETURNS`) y el hallazgo se reporta
-igual. Un sanitizer en el llamador sí corta el camino. Pasa igual dentro de un
-archivo y entre archivos.
+**Estado compartido.** El análisis no es sensible al orden: una variable de
+módulo o de una closure que varias funciones escriben acumula todo lo que se
+escribe en ella, y aparece en los caminos de todas las que la leen.
 
-**Closures.** Una función anidada que usa una variable de la función que la
-envuelve (`run(() => db.query(q))`) no queda conectada a esa variable: el
-flujo se pierde.
+**Sinks por nombre.** Un sink se reconoce por el callee, no por el tipo del
+objeto. Las restricciones del catálogo (`bare`, `receiver`, paquete de origen)
+evitan los casos conocidos (`regex.exec`, `users.find`), pero un nombre de
+receptor convencional (`db.query`, `conn.query`) puede no ser lo que parece.
+`new Modelo(x)` es transparente: `new ObjectId(id)` no sanea.
 
-**Sinks por nombre.** Un sink se reconoce por el nombre de la llamada, sin el
-tipo del objeto: `regex.exec(x)` coincide con el sink `exec` de CWE-78 y
-produce un falso positivo.
+**Validación no es sanitización.** `zod`, `joi` o `class-validator` validan la
+forma del dato, no su contenido: un `z.string()` acepta `' OR 1=1 --`. Por eso
+no están en el catálogo como sanitizers. Las conversiones numéricas
+(`parseInt`, `Number`) sí, porque un número no puede llevar la inyección.
 
 **Precisión general.** El análisis no es sensible al contexto de llamada ni
 al camino de ejecución, y la profundidad máxima de un camino es 15 pasos. Solo

@@ -1,10 +1,11 @@
 import { loadCatalogBundle } from "../catalog/load.js";
-import { labelsFromCatalog, rulesFromCatalog } from "../catalog/rules.js";
+import { labelsFromCatalog, rulesFromCatalog, type SourceMode } from "../catalog/rules.js";
 import type { CatalogBundle, CatalogLabels } from "../catalog/types.js";
 import type { TaintRule } from "./types.js";
 
 let cachedBundle: CatalogBundle | null = null;
 let cachedRules: TaintRule[] | null = null;
+let cachedCatalogSourceRules: TaintRule[] | null = null;
 let cachedLabels: CatalogLabels | null = null;
 
 export function getCatalogBundle(): CatalogBundle {
@@ -16,6 +17,15 @@ export function getCatalogBundle(): CatalogBundle {
 export function defaultTaintRules(): TaintRule[] {
   if (!cachedRules) cachedRules = rulesFromCatalog(getCatalogBundle());
   return cachedRules;
+}
+
+/** Reglas según el modelo de source (ver `SourceMode`). */
+export function taintRulesFor(mode: SourceMode = "params"): TaintRule[] {
+  if (mode === "params") return defaultTaintRules();
+  if (!cachedCatalogSourceRules) {
+    cachedCatalogSourceRules = rulesFromCatalog(getCatalogBundle(), "catalog");
+  }
+  return cachedCatalogSourceRules;
 }
 
 /** Etiquetas legibles por id de regla (para UI e informes). */

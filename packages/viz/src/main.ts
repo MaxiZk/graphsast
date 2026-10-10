@@ -552,7 +552,11 @@ function renderFindings() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = i === highlightIndex ? "active" : "";
-    btn.innerHTML = `<strong>${findingTitle(graph!, f, i)}</strong>${formatFindingPath(graph!, f)}`;
+    // Texto, no HTML: el título y el camino llevan código del usuario
+    // (`o["<img onerror=...>"]()` es un callee válido).
+    const title = document.createElement("strong");
+    title.textContent = findingTitle(graph!, f, i);
+    btn.append(title, formatFindingPath(graph!, f));
     btn.addEventListener("click", () => {
       highlightIndex = i;
       renderFindings();

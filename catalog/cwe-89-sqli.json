@@ -5,20 +5,197 @@
   "sources": [
     "req.query",
     "req.body",
-    "req.params"
+    "req.params",
+    "req.headers",
+    "req.cookies",
+    "request.query",
+    "request.body",
+    "request.params",
+    "request.headers",
+    "ctx.query",
+    "ctx.params",
+    "ctx.request",
+    "ctx.headers",
+    "@Body",
+    "@Param",
+    "@Query",
+    "@Headers",
+    "@Req",
+    "@Request"
   ],
   "sinks": [
-    "db.query",
-    "connection.execute",
-    "sequelize.query",
-    "pool.query",
-    "mysql.query"
+    {
+      "callee": "db.query",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "connection.execute",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "sequelize.query",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "pool.query",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "mysql.query",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "connection.query",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "conn.query",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "client.query",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "db.execute",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "pool.execute",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "knex.raw",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".whereRaw",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".orWhereRaw",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".havingRaw",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".orderByRaw",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".groupByRaw",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".joinRaw",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".$queryRawUnsafe",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".$executeRawUnsafe",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "manager.query",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "dataSource.query",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "queryRunner.query",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "db.exec",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "db.prepare",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "db.run",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "db.all",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "db.each",
+      "args": [
+        0
+      ]
+    }
   ],
   "sanitizers": [
     "mysql.escape",
     "parameterized",
     "validator.escape",
     "sanitize",
-    "escape"
+    "escape",
+    "escapeId",
+    "parseInt",
+    "parseFloat",
+    "Number"
   ]
 }

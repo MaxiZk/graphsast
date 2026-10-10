@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { loadCatalogBundle } from "./load.js";
 import {
   calleeMatchesPattern,
+  sinkSpecOf,
   cweForSinkNode,
   labelsFromCatalog,
   rulesFromCatalog,
@@ -20,15 +21,14 @@ describe("catalog CWE", () => {
     expect(cwes).toContain(943);
   });
 
-  it("CWE-89 solo cubre sinks relacionales", () => {
+  it("CWE-89 cubre clientes SQL y solo mira el texto de la consulta", () => {
     const sqli = bundle.entries.find((e) => e.cwe === 89)!;
-    expect(sqli.sinks).toEqual([
-      "db.query",
-      "connection.execute",
-      "sequelize.query",
-      "pool.query",
-      "mysql.query",
-    ]);
+    const specs = sqli.sinks.map(sinkSpecOf);
+    for (const callee of ["db.query", "connection.execute", "knex.raw", ".$queryRawUnsafe", "db.prepare"]) {
+      expect(specs.map((s) => s.callee)).toContain(callee);
+    }
+    // Los valores ligados (`db.query(sql, [id])`) son la forma segura.
+    for (const spec of specs) expect(spec.args).toEqual([0]);
   });
 
   it("CWE-943 cubre los sinks de Mongoose/MongoDB", () => {

@@ -1,6 +1,7 @@
 import { graphFromSourceFile } from "../ir/graph.js";
 import { parseSource, type ParseResult } from "../parser/parser.js";
 import { analyzeTaint } from "../taint/analyzer.js";
+import { taintRulesFor } from "../taint/rules.js";
 import type { IREdge, IRGraph, IRNode } from "../ir/types.js";
 import type { TaintFinding } from "../taint/types.js";
 import { extractLinks, projectIndexOf, type ModuleLinks } from "../project/links.js";
@@ -87,7 +88,7 @@ export function scanSource(
   if (error) return failedFile(relPath, lineCount, performance.now() - started, error);
 
   const graph = graphFromSourceFile(parsed.sourceFile, relPath);
-  const raw = analyzeTaint(graph, { maxDepth: options.maxDepth });
+  const raw = analyzeTaint(graph, { maxDepth: options.maxDepth, rules: taintRulesFor(options.sources) });
   return {
     file: relPath,
     findings: toScanFindings(relPath, graph, filterCwe(raw, options)),
@@ -138,13 +139,24 @@ function fileOfNodeId(id: string): string {
   return id.slice(0, id.lastIndexOf("#"));
 }
 
-function mergeGraphs(members: ParsedFile[], crossEdges: IREdge[]): IRGraph {
+/**
+ * Une los grafos de un componente con las aristas entre sus archivos. A las
+ * llamadas resueltas con certeza a otro archivo se les quita el atajo
+ * argumento → llamada: su valor ahora sale de lo que la función retorna.
+ */
+function mergeGraphs(
+  members: ParsedFile[],
+  crossEdges: IREdge[],
+  exactCallIds: ReadonlySet<string>,
+): IRGraph {
   const files = new Set(members.map((m) => m.rel));
   return {
     file: members[0]!.rel,
     nodes: members.flatMap((m) => m.graph.nodes),
     edges: [
-      ...members.flatMap((m) => m.graph.edges),
+      ...members.flatMap((m) => m.graph.edges).filter(
+        (e) => !(exactCallIds.has(e.to) && (e.kind === "FLOWS_TO" || e.kind === "SANITIZED_BY")),
+      ),
       ...crossEdges.filter((e) => files.has(fileOfNodeId(e.from))),
     ],
   };
@@ -209,7 +221,7 @@ export function scanFilesWithGraphs(
   // Fase 2: llamadas entre archivos.
   const linkStarted = performance.now();
   const cross = options.crossFile === false
-    ? { edges: [], calls: 0, pairs: [] }
+    ? { edges: [], exactCallIds: new Set<string>(), calls: 0, pairs: [] }
     : buildCrossModuleEdges(projectIndexOf(parsed), parsed);
   const components = connectedComponents(parsed.map((p) => p.abs), cross.pairs);
   const linkMs = performance.now() - linkStarted;
@@ -222,8 +234,8 @@ export function scanFilesWithGraphs(
   for (const component of components) {
     const started = performance.now();
     const members = component.map((abs) => byAbs.get(abs)!);
-    const graph = members.length === 1 ? members[0]!.graph : mergeGraphs(members, cross.edges);
-    const raw = filterCwe(analyzeTaint(graph, { maxDepth: options.maxDepth }), options);
+    const graph = members.length === 1 ? members[0]!.graph : mergeGraphs(members, cross.edges, cross.exactCallIds);
+    const raw = filterCwe(analyzeTaint(graph, { maxDepth: options.maxDepth, rules: taintRulesFor(options.sources) }), options);
     const scanFindings = toScanFindings(members[0]!.rel, graph, raw);
     for (const f of scanFindings) {
       const list = findingsByFile.get(f.file);

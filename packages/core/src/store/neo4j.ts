@@ -1,4 +1,5 @@
 import neo4j, { type Driver, type Session } from "neo4j-driver";
+import type { TaintAnnotations } from "../taint/analyzer.js";
 import type { IRGraph } from "../ir/types.js";
 import type { TaintFinding, TaintRoles } from "../taint/types.js";
 import {
@@ -48,6 +49,7 @@ export async function persistGraph(
   graph: IRGraph,
   roles: TaintRoles,
   database?: string,
+  annotations?: TaintAnnotations,
 ): Promise<void> {
   const session = driver.session({ database });
   try {
@@ -58,16 +60,17 @@ export async function persistGraph(
           `CREATE (n:GSNode {
             id: $id, kind: $kind, name: $name, code: $code,
             file: $file, line: $line, col: $col, callee: $callee,
-            taintRole: $taintRole
+            taintRole: $taintRole,
+            sinkCwe: $sinkCwe, sinkArgs: $sinkArgs, sanitizerCwes: $sanitizerCwes
           })`,
-          nodeProperties(node, roles),
+          nodeProperties(node, roles, annotations),
         );
       }
       for (const edge of graph.edges) {
         await tx.run(
           `MATCH (a:GSNode {id: $from}), (b:GSNode {id: $to})
-           CREATE (a)-[r:${edge.kind}]->(b)`,
-          { from: edge.from, to: edge.to },
+           CREATE (a)-[r:${edge.kind} {arg: $arg}]->(b)`,
+          { from: edge.from, to: edge.to, arg: edge.arg ?? null },
         );
       }
     });
