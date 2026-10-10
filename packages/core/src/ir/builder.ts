@@ -284,6 +284,7 @@ function emitFunction(fn: FunctionLike, file: string, nodes: IRNode[]): void {
   const paramIds: string[] = [];
 
   fn.getParameters().forEach((p, index) => {
+    const decorators = p.getDecorators().map((d) => d.getName());
     // `paramIds` queda alineado con la posición del argumento (lo que asume
     // interproc): un id por parámetro declarado, el del primer binding.
     let positionalId: string | null = null;
@@ -298,6 +299,7 @@ function emitFunction(fn: FunctionLike, file: string, nodes: IRNode[]): void {
         scopePath: scopePathOf(at),
         index,
         ownerFnId: fnId,
+        ...(decorators.length > 0 ? { decorators } : {}),
       };
       positionalId ??= param.id;
       nodes.push(param);

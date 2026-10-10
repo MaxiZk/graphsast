@@ -1,6 +1,7 @@
 import { graphFromSourceFile } from "../ir/graph.js";
 import { parseSource, type ParseResult } from "../parser/parser.js";
 import { analyzeTaint } from "../taint/analyzer.js";
+import { taintRulesFor } from "../taint/rules.js";
 import type { IREdge, IRGraph, IRNode } from "../ir/types.js";
 import type { TaintFinding } from "../taint/types.js";
 import { extractLinks, projectIndexOf, type ModuleLinks } from "../project/links.js";
@@ -87,7 +88,7 @@ export function scanSource(
   if (error) return failedFile(relPath, lineCount, performance.now() - started, error);
 
   const graph = graphFromSourceFile(parsed.sourceFile, relPath);
-  const raw = analyzeTaint(graph, { maxDepth: options.maxDepth });
+  const raw = analyzeTaint(graph, { maxDepth: options.maxDepth, rules: taintRulesFor(options.sources) });
   return {
     file: relPath,
     findings: toScanFindings(relPath, graph, filterCwe(raw, options)),
@@ -234,7 +235,7 @@ export function scanFilesWithGraphs(
     const started = performance.now();
     const members = component.map((abs) => byAbs.get(abs)!);
     const graph = members.length === 1 ? members[0]!.graph : mergeGraphs(members, cross.edges, cross.exactCallIds);
-    const raw = filterCwe(analyzeTaint(graph, { maxDepth: options.maxDepth }), options);
+    const raw = filterCwe(analyzeTaint(graph, { maxDepth: options.maxDepth, rules: taintRulesFor(options.sources) }), options);
     const scanFindings = toScanFindings(members[0]!.rel, graph, raw);
     for (const f of scanFindings) {
       const list = findingsByFile.get(f.file);

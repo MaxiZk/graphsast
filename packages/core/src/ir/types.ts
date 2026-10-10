@@ -62,6 +62,8 @@ export interface IRParameter extends IRNodeBase {
   kind: "Parameter";
   index: number;
   ownerFnId: string;
+  /** Nombres de sus decoradores (`@Body() dto` → `["Body"]`), si tiene. */
+  decorators?: string[];
 }
 
 export interface IRVariable extends IRNodeBase {

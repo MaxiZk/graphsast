@@ -50,6 +50,10 @@ OPCIONES
                               Siempre excluidas: ${ALWAYS_IGNORE.join(",")}
   --cwe <89,79>               Reportar solo estos CWE
   --no-cross-file             Analizar cada archivo por separado
+  --sources <params|catalog>  Qué parámetros son entrada no confiable:
+                              params = todo parámetro que nadie llama (default)
+                              catalog = solo los del catálogo (req, ctx,
+                              @Body() de NestJS...): menos falsos positivos
   --max-depth <n>             Profundidad máxima del camino (default: 15)
   --max-file-bytes <n>        Omitir archivos más grandes (default: 1000000)
   --fail-on <cwe-89,cwe-78>   Solo estas familias CWE provocan el código 1
@@ -174,6 +178,14 @@ function parseArgs(argv: string[]): Cli {
           cli.failOn.push(cwe);
         }
         break;
+      case "--sources": {
+        const mode = nextValue(argv, i++, arg);
+        if (mode !== "params" && mode !== "catalog") {
+          throw new UsageError(`--sources debe ser params o catalog (recibido: ${mode}).`);
+        }
+        cli.scan.sources = mode;
+        break;
+      }
       case "--max-depth": {
         const n = Number(nextValue(argv, i++, arg));
         if (!Number.isInteger(n) || n < 1) {

@@ -82,16 +82,56 @@ function sanitizerRule(entry: CweCatalogEntry, pattern: string): TaintRule {
   };
 }
 
-/** Reglas base + catálogo CWE externo (ADR-4). */
-export function rulesFromCatalog(bundle: CatalogBundle): TaintRule[] {
-  const rules: TaintRule[] = [
-    {
+/**
+ * Qué parámetros son entradas no confiables.
+ *
+ * - `params` (default): cualquier parámetro que el código analizado no liga
+ *   con una llamada. Sobre-aproxima: una función exportada de una librería
+ *   que nadie llama en el escaneo también cuenta.
+ * - `catalog`: solo los que el catálogo declara en `sources`. `req.body`
+ *   aporta la raíz `req`; `@Body` aporta los parámetros decorados con
+ *   `@Body()` (NestJS).
+ */
+export type SourceMode = "params" | "catalog";
+
+/** Raíces y decoradores que el catálogo declara como sources. */
+export function catalogSourceMatchers(bundle: CatalogBundle): { roots: Set<string>; decorators: Set<string> } {
+  const roots = new Set<string>();
+  const decorators = new Set<string>();
+  for (const entry of bundle.entries) {
+    for (const source of entry.sources) {
+      if (source.startsWith("@")) decorators.add(source.slice(1));
+      else roots.add(source.split(".")[0]!);
+    }
+  }
+  return { roots, decorators };
+}
+
+function sourceRule(bundle: CatalogBundle, mode: SourceMode): TaintRule {
+  if (mode === "params") {
+    return {
       id: "param-any",
       kind: "source",
       match: (n) =>
         n.kind === "Parameter" && !SOURCE_PARAM_BLOCKLIST.has(n.name),
-    },
-  ];
+    };
+  }
+  const { roots, decorators } = catalogSourceMatchers(bundle);
+  return {
+    id: "param-catalog",
+    kind: "source",
+    match: (n) =>
+      n.kind === "Parameter"
+      && (roots.has(n.name) || (n.decorators ?? []).some((d) => decorators.has(d))),
+  };
+}
+
+/** Reglas base + catálogo CWE externo (ADR-4). */
+export function rulesFromCatalog(
+  bundle: CatalogBundle,
+  sourceMode: SourceMode = "params",
+): TaintRule[] {
+  const rules: TaintRule[] = [sourceRule(bundle, sourceMode)];
 
   for (const entry of bundle.entries) {
     for (const sink of entry.sinks) {
@@ -108,6 +148,7 @@ export function rulesFromCatalog(bundle: CatalogBundle): TaintRule[] {
 export function labelsFromCatalog(bundle: CatalogBundle): CatalogLabels {
   const labels: CatalogLabels = {
     "param-any": "Parámetros de función (excepto res/next)",
+    "param-catalog": "Parámetros declarados como source en el catálogo",
   };
   for (const entry of bundle.entries) {
     for (const sink of entry.sinks) {
