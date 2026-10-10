@@ -37,15 +37,19 @@ function receiverText(callee: string): string | null {
 }
 
 /** ¿La llamada coincide con el sink, con sus restricciones? */
-export function callMatchesSink(call: IRCall, spec: SinkSpec): boolean {
+export function callMatchesSink(
+  call: IRCall,
+  spec: SinkSpec,
+  receiverPattern: RegExp | null = spec.receiver === undefined ? null : new RegExp(spec.receiver),
+): boolean {
   const qualified = call.qualifiedCallee;
   if (qualified && spec.callee.includes(".") && qualified === spec.callee) return true;
 
   if (!calleeMatchesPattern(call.callee, spec.callee)) return false;
   const receiver = receiverText(call.callee);
   if (spec.bare && receiver !== null) return false;
-  if (spec.receiver !== undefined) {
-    if (receiver === null || !new RegExp(spec.receiver).test(receiver)) return false;
+  if (receiverPattern) {
+    if (receiver === null || !receiverPattern.test(receiver)) return false;
   }
   return true;
 }
@@ -58,6 +62,7 @@ export function callMatchesSink(call: IRCall, spec: SinkSpec): boolean {
  */
 function sinkRule(entry: CweCatalogEntry, sink: string | SinkSpec): TaintRule {
   const spec = sinkSpecOf(sink);
+  const receiverPattern = spec.receiver === undefined ? null : new RegExp(spec.receiver);
   return {
     id: ruleIdOf(entry, "sink", spec.callee),
     kind: "sink",
@@ -67,7 +72,7 @@ function sinkRule(entry: CweCatalogEntry, sink: string | SinkSpec): TaintRule {
     match: (n): n is IRCall =>
       n.kind === "Call"
       && n.resolution !== "exact"
-      && callMatchesSink(n, spec),
+      && callMatchesSink(n, spec, receiverPattern),
   };
 }
 

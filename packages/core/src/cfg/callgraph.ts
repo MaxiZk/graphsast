@@ -1,5 +1,6 @@
-import type { IRModule, IREdge, IRCall } from "../ir/types.js";
-import { FunctionIndex } from "./resolve.js";
+import type { IRModule, IREdge, IRCall, IRNode } from "../ir/types.js";
+import { defsInScope, nodeOwnerFnId, nodeScopePath } from "../dfg/scope.js";
+import { FunctionIndex, normalizeCallee } from "./resolve.js";
 
 export interface CallResolution {
   /** Aristas `CALLS` del nodo Call al nodo Function. */
@@ -20,10 +21,25 @@ export interface CallResolution {
  */
 export function resolveCalls(mod: IRModule): CallResolution {
   const index = new FunctionIndex(mod.nodes);
+  const paramsByName = new Map<string, IRNode[]>();
+  for (const node of mod.nodes) {
+    if (node.kind !== "Parameter") continue;
+    const list = paramsByName.get(node.name);
+    if (list) list.push(node);
+    else paramsByName.set(node.name, [node]);
+  }
+
   const edges: IREdge[] = [];
   const exactCallIds = new Set<string>();
   for (const node of mod.nodes) {
     if (node.kind !== "Call") continue;
+    // `function h(req, run) { run(x) }`: `run` es el callback recibido, no
+    // una función del módulo que se llame igual.
+    const callee = normalizeCallee((node as IRCall).callee);
+    const shadowing = paramsByName.get(callee);
+    if (shadowing && defsInScope(shadowing, nodeOwnerFnId(node), nodeScopePath(node)).length > 0) {
+      continue;
+    }
     const { targets, exact } = index.resolve(node as IRCall);
     if (targets.length === 0) continue;
     if (exact) exactCallIds.add(node.id);

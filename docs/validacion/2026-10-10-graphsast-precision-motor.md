@@ -59,6 +59,6 @@ son HTML.
 
 ## Tests
 
-Core: de 218 a 287 tests (más uno omitido), incluidos 12 de punta a punta del
+Core: de 218 a 294 tests (más uno omitido), incluidos 12 de punta a punta del
 CLI que lanzan el binario real sobre proyectos temporales y validan el SARIF
 contra el esquema oficial. Viz: 31.

@@ -148,3 +148,30 @@ describe("valor de retorno de una llamada resuelta", () => {
     `)).toEqual(["req"]);
   });
 });
+
+describe("un parámetro con el nombre de una función la sombrea", () => {
+  it("el callback recibido no se resuelve a la función homónima del módulo", () => {
+    const graph = analyzeGraph(`
+      function run(x) { return "SELECT 1"; }
+      function h(req, run) { db.query(run(req.body)); }
+    `, "t.ts");
+    expect(callsFrom(graph, "run")).toEqual([]);
+    // Sin resolver, el resultado se aproxima por el argumento: el flujo sigue.
+    expect(sourcesOf(`
+      function run(x) { return "SELECT 1"; }
+      function h(req, run) { db.query(run(req.body)); }
+    `)).toEqual(["req"]);
+  });
+
+  it("fuera del alcance del parámetro la función sí se resuelve", () => {
+    const code = `
+      function run(x) { return "SELECT 1"; }
+      function other(run) { return run; }
+      function h(req) { db.query(run(req.body)); }
+    `;
+    const graph = analyzeGraph(code, "t.ts");
+    expect(callsFrom(graph, "run").map((f) => f.name)).toEqual(["run"]);
+    // run ignora su argumento: el resultado no está contaminado.
+    expect(sourcesOf(code)).toEqual([]);
+  });
+});
