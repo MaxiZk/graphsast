@@ -19,46 +19,66 @@ function rootSources(graph: IRGraph, sources: IRNode[]): IRNode[] {
   );
 }
 
+/** Cómo participa cada nodo en el taint, según las reglas. */
+export interface TaintAnnotations {
+  /** Sinks: CWE de la primera regla que los reconoce y argumentos peligrosos. */
+  sinks: Map<string, { cwe?: number; args?: readonly number[] }>;
+  /**
+   * Sanitizers: CWE de cada regla que los reconoce (`undefined` = regla sin
+   * CWE, vale para todos los sinks).
+   */
+  sanitizers: Map<string, (number | undefined)[]>;
+}
+
 /**
- * Sanitizers a excluir del recorrido para un par (source, sink) dado: los de
- * la CWE del sink, más los que no declaran CWE. `escape` para SQL no protege
- * un sink XSS, ni `String(x)` —que neutraliza operadores de MongoDB— una
- * consulta SQL. Los extremos nunca se bloquean: un nodo puede ser sink y
- * sanitizer a la vez.
+ * Las decisiones del motor que no dependen del recorrido: qué sinks hay, con
+ * qué CWE y por qué argumentos, y para qué CWE vale cada sanitizer. Las usan
+ * el motor en memoria y el de Neo4j (que las persiste como propiedades), así
+ * los dos aplican las mismas reglas.
+ */
+export function annotateTaint(graph: IRGraph, rules: TaintRule[]): TaintAnnotations {
+  const sinkRules = rules.filter((r) => r.kind === "sink");
+  const sanitizerRules = rules.filter((r) => r.kind === "sanitizer");
+  const sinks: TaintAnnotations["sinks"] = new Map();
+  const sanitizers: TaintAnnotations["sanitizers"] = new Map();
+  for (const node of graph.nodes) {
+    const sink = sinkRules.find((r) => r.match(node));
+    if (sink) sinks.set(node.id, { cwe: sink.cwe, ...(sink.args ? { args: sink.args } : {}) });
+    const cwes = sanitizerRules.filter((r) => r.match(node)).map((r) => r.cwe);
+    if (cwes.length > 0) sanitizers.set(node.id, cwes);
+  }
+  return { sinks, sanitizers };
+}
+
+/**
+ * ¿El sanitizer protege a un sink de esta CWE? Sí si alguna de sus reglas es
+ * de esa CWE o no declara CWE; un sink sin CWE se protege con cualquiera.
+ * `escape` para SQL no protege un sink XSS, ni `String(x)` —que neutraliza
+ * operadores de MongoDB— una consulta SQL.
+ */
+export function sanitizerApplies(
+  sanitizerCwes: readonly (number | undefined)[],
+  sinkCwe: number | undefined,
+): boolean {
+  if (sinkCwe === undefined) return true;
+  return sanitizerCwes.some((c) => c === undefined || c === sinkCwe);
+}
+
+/**
+ * Sanitizers a excluir del recorrido para un par (source, sink). Los extremos
+ * nunca se bloquean: un nodo puede ser sink y sanitizer a la vez.
  */
 function blockedFor(
-  sanitizersByCwe: ReadonlyMap<number | undefined, ReadonlySet<string>>,
-  cwe: number | undefined,
+  annotations: TaintAnnotations,
+  sinkCwe: number | undefined,
   sourceId: string,
   sinkId: string,
 ): Set<string> {
-  const blocked = new Set([
-    ...(sanitizersByCwe.get(undefined) ?? []),
-    ...(cwe === undefined
-      ? [...sanitizersByCwe.values()].flatMap((ids) => [...ids])
-      : sanitizersByCwe.get(cwe) ?? []),
-  ]);
-  blocked.delete(sourceId);
-  blocked.delete(sinkId);
-  return blocked;
-}
-
-/** Sanitizers del grafo agrupados por la CWE de la regla que los reconoce. */
-function sanitizersByCweOf(
-  rules: TaintRule[],
-  nodes: IRNode[],
-): Map<number | undefined, Set<string>> {
-  const out = new Map<number | undefined, Set<string>>();
-  for (const rule of rules) {
-    if (rule.kind !== "sanitizer") continue;
-    for (const n of nodes) {
-      if (!rule.match(n)) continue;
-      const set = out.get(rule.cwe) ?? new Set<string>();
-      set.add(n.id);
-      out.set(rule.cwe, set);
-    }
+  const blocked = new Set<string>();
+  for (const [id, cwes] of annotations.sanitizers) {
+    if (id !== sourceId && id !== sinkId && sanitizerApplies(cwes, sinkCwe)) blocked.add(id);
   }
-  return out;
+  return blocked;
 }
 
 /**
@@ -66,8 +86,7 @@ function sanitizersByCweOf(
  * argumentos (`db.query(sql, [id])` → solo `sql`), solo cuentan los
  * `FLOWS_TO` de esas posiciones; sin restricción, cualquier arista.
  */
-function entersSink(rule: TaintRule | undefined): (edge: IREdge) => boolean {
-  const args = rule?.args;
+export function entersSink(args: readonly number[] | undefined): (edge: IREdge) => boolean {
   if (!args) return () => true;
   return (edge) =>
     (edge.kind === "FLOWS_TO" || edge.kind === "SANITIZED_BY")
@@ -92,9 +111,8 @@ export function analyzeTaint(
     graph,
     nodesMatching(rules, "source", graph.nodes),
   );
-  const sinks = nodesMatching(rules, "sink", graph.nodes);
-  const sanitizersByCwe = sanitizersByCweOf(rules, graph.nodes);
-  const sinkRules = rules.filter((r) => r.kind === "sink");
+  const annotations = annotateTaint(graph, rules);
+  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
 
   const findings: TaintFinding[] = [];
   const reachConfig = {
@@ -102,17 +120,16 @@ export function analyzeTaint(
     propagateEdges: config.propagateEdges,
   };
 
-  for (const sink of sinks) {
-    // La primera regla que reconoce al sink decide su CWE y sus argumentos.
-    const rule = sinkRules.find((r) => r.match(sink));
-    const enters = entersSink(rule);
+  for (const [sinkId, spec] of annotations.sinks) {
+    const sink = byId.get(sinkId)!;
+    const enters = entersSink(spec.args);
     for (const source of sources) {
       const path = findPath(
         graph,
         source.id,
         sink.id,
         reachConfig,
-        blockedFor(sanitizersByCwe, rule?.cwe, source.id, sink.id),
+        blockedFor(annotations, spec.cwe, source.id, sink.id),
         enters,
       );
       if (!path) continue;
