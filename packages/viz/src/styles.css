@@ -458,6 +458,35 @@ body {
   cursor: pointer;
 }
 
+.graph-search {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+}
+
+.graph-search-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.graph-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.graph-search-count {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .graph-note {
   margin: 0 0 0.65rem;
   font-size: 0.75rem;

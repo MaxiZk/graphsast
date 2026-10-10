@@ -85,7 +85,16 @@
       <section class="panel graph-panel">
         <div class="panel-head">
           <h2>Grafo</h2>
-          <button type="button" id="fit-btn" class="btn-ghost">Centrar</button>
+          <div class="btn-row">
+            <button type="button" id="fit-btn" class="btn-ghost">Centrar</button>
+            <button type="button" id="export-png" class="btn-ghost" title="Descargar el grafo dibujado como imagen">PNG</button>
+            <button type="button" id="export-json" class="btn-ghost" title="Descargar el grafo completo y los hallazgos">JSON</button>
+          </div>
+        </div>
+
+        <div class="graph-search">
+          <input type="search" id="graph-search" class="graph-search-input" placeholder="Buscar nodo: nombre, código o archivo:línea" aria-label="Buscar nodo en el grafo" />
+          <span id="graph-search-count" class="graph-search-count" aria-live="polite"></span>
         </div>
 
         <fieldset id="edge-filters" class="edge-filters">

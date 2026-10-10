@@ -1,4 +1,5 @@
 import cytoscape, { type Core } from "cytoscape";
+import { VERSION } from "@graphsast/core/browser";
 import type {
   AnalysisPayload,
   IRGraph,
@@ -8,7 +9,7 @@ import type {
 } from "@graphsast/core/browser";
 import { analyzeProject, analyzeSnippet } from "./analysis-client.js";
 import { renderCodeLines } from "./code-lines.js";
-import { linesOnPath, toCytoscapeElements } from "./cytoscape.js";
+import { graphExport, linesOnPath, nodeMatchesQuery, toCytoscapeElements } from "./cytoscape.js";
 import {
   DEFAULT_EXAMPLE_ID,
   DEMO_EXAMPLES,
@@ -63,6 +64,10 @@ const verdictEl = document.querySelector<HTMLDivElement>("#verdict")!;
 const readingEl = document.querySelector<HTMLParagraphElement>("#reading")!;
 const nodeDetail = document.querySelector<HTMLPreElement>("#node-detail")!;
 const graphNote = document.querySelector<HTMLParagraphElement>("#graph-note")!;
+const graphSearch = document.querySelector<HTMLInputElement>("#graph-search")!;
+const graphSearchCount = document.querySelector<HTMLSpanElement>("#graph-search-count")!;
+const exportPngBtn = document.querySelector<HTMLButtonElement>("#export-png")!;
+const exportJsonBtn = document.querySelector<HTMLButtonElement>("#export-json")!;
 const edgeFilters = document.querySelector<HTMLFieldSetElement>("#edge-filters")!;
 const dimToggle = document.querySelector<HTMLInputElement>("#dim-toggle")!;
 const tabProject = document.querySelector<HTMLButtonElement>("#tab-project")!;
@@ -181,6 +186,15 @@ function cytoscapeStyle(): cytoscape.StylesheetJson {
     {
       selector: ".dimmed",
       style: { opacity: 0.18 },
+    },
+    {
+      selector: "node.search-hit",
+      style: {
+        opacity: 1,
+        "border-width": 5,
+        "border-color": "#facc15",
+        "z-index": 10,
+      },
     },
     {
       selector: "edge",
@@ -348,7 +362,61 @@ function renderGraph() {
     })
     .run();
   fitGraph(instance, !!finding);
+  applySearch(false);
   renderCodeHighlight();
+}
+
+/**
+ * Marca los nodos dibujados que coinciden con la búsqueda; con `focus`,
+ * encuadra la primera coincidencia y sus vecinos. Busca en lo dibujado: en un
+ * proyecto grande es el recorte alrededor del hallazgo elegido.
+ */
+function applySearch(focus: boolean) {
+  const query = graphSearch.value;
+  if (!cy) {
+    graphSearchCount.textContent = "";
+    return;
+  }
+  cy.nodes().removeClass("search-hit");
+  if (!query.trim()) {
+    graphSearchCount.textContent = "";
+    return;
+  }
+  const hits = cy.nodes().filter((n) => nodeMatchesQuery(n.data(), query));
+  hits.addClass("search-hit");
+  graphSearchCount.textContent = hits.empty()
+    ? "Sin coincidencias en el grafo dibujado"
+    : plural(hits.length, "coincidencia", "coincidencias");
+  if (focus && hits.nonempty()) {
+    cy.animate({ fit: { eles: hits.first().closedNeighborhood(), padding: 60 } }, { duration: 250 });
+  }
+}
+
+/** Descarga un archivo generado en el navegador. */
+function download(name: string, href: string) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = name;
+  a.click();
+}
+
+function exportPng() {
+  if (!cy || cy.elements().empty()) {
+    statusEl.textContent = "No hay grafo para exportar todavía.";
+    return;
+  }
+  download("graphsast-grafo.png", cy.png({ full: true, scale: 2, bg: "#070a10" }));
+}
+
+function exportJson() {
+  if (!graph) {
+    statusEl.textContent = "No hay grafo para exportar todavía.";
+    return;
+  }
+  const data = graphExport(graph, findings, { generator: "GraphSAST", version: VERSION });
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  download("graphsast-grafo.json", url);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 /** Avisa cuando el grafo dibujado es un recorte del que se analizó. */
@@ -853,6 +921,15 @@ exampleSelect.addEventListener("change", () => {
 });
 analyzeBtn.addEventListener("click", () => void runAnalysis());
 fitBtn.addEventListener("click", () => cy?.fit(undefined, 36));
+exportPngBtn.addEventListener("click", exportPng);
+exportJsonBtn.addEventListener("click", exportJson);
+graphSearch.addEventListener("input", () => applySearch(false));
+graphSearch.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    applySearch(true);
+  }
+});
 edgeFilters.addEventListener("change", () => renderGraph());
 codeInput.addEventListener("input", () => {
   // El contenido ya no es el del ejemplo elegido: que el rótulo no mienta.

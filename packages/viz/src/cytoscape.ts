@@ -17,6 +17,7 @@ export interface CytoscapeElement {
     label: string;
     kind?: string;
     code?: string;
+    file?: string;
     line?: number;
     source?: string;
     target?: string;
@@ -68,6 +69,7 @@ export function toCytoscapeElements(
         label: nodeLabel(node),
         kind: node.kind,
         code: node.code,
+        file: node.loc.file,
         line: node.loc.line,
       },
       classes: classes.join(" "),
@@ -104,4 +106,41 @@ export function linesOnPath(graph: IRGraph, finding?: TaintFinding): number[] {
     if (node) lines.add(node.loc.line);
   }
   return [...lines].sort((a, b) => a - b);
+}
+
+/**
+ * ¿El nodo coincide con lo que se busca? `archivo:línea` (`users.ts:12`)
+ * busca por ubicación; cualquier otro texto, en el rótulo, el código o el
+ * archivo, sin distinguir mayúsculas.
+ */
+export function nodeMatchesQuery(
+  data: { label?: string; code?: string; file?: string; line?: number },
+  query: string,
+): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return false;
+  const at = /^(.+):(\d+)$/.exec(q);
+  if (at) {
+    return (data.file ?? "").toLowerCase().endsWith(at[1]!) && data.line === Number(at[2]);
+  }
+  return [data.label, data.code, data.file].some((v) => (v ?? "").toLowerCase().includes(q));
+}
+
+/**
+ * Lo que se descarga como JSON: el grafo analizado completo (no el recorte
+ * dibujado) y los hallazgos con sus caminos, para procesarlos afuera.
+ */
+export function graphExport(
+  graph: IRGraph,
+  findings: readonly TaintFinding[],
+  meta: { generator: string; version: string },
+) {
+  return {
+    ...meta,
+    exportedAt: new Date().toISOString(),
+    file: graph.file,
+    nodes: graph.nodes,
+    edges: graph.edges,
+    findings,
+  };
 }

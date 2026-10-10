@@ -19,10 +19,7 @@ export interface ProjectConfig {
 /** Candidatos (rutas absolutas sin extensión) para un specifier no relativo. */
 export type AliasResolver = (fromAbs: string, specifier: string) => string[];
 
-/** `tsconfig.json`, `tsconfig.app.json`, `jsconfig.json`. */
-export function isProjectConfigName(name: string): boolean {
-  return /^(?:tsconfig(?:\.[\w-]+)?|jsconfig)\.json$/.test(name);
-}
+export { isProjectConfigName } from "./config-name.js";
 
 interface RawConfig {
   dir: string;

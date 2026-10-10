@@ -35,5 +35,5 @@ export type {
   ScanOptions,
   ScanTotals,
 } from "./scan/types.js";
-export { isProjectConfigName } from "./project/tsconfig.js";
+export { isProjectConfigName } from "./project/config-name.js";
 export { VERSION } from "./version.js";
