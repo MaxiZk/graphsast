@@ -29,9 +29,17 @@ function idOf(kind: string, loc: Loc): string {
   return `${loc.file}#${kind}@${loc.line}:${loc.col}`;
 }
 
-/** Id del nodo Call que le corresponde a una CallExpression del AST. */
+/**
+ * Id del nodo Call que le corresponde a una CallExpression del AST.
+ *
+ * Se ubica en el paréntesis que abre los argumentos, no en el inicio de la
+ * expresión: en `db.collection("u").find(q).toArray()` las tres llamadas
+ * empiezan en `db`, y con el inicio compartían id y quedaban fusionadas en un
+ * solo nodo. La `loc` del nodo sigue siendo el inicio de la llamada.
+ */
 function callIdOf(call: Node, file: string): string {
-  return idOf("Call", locOf(call, file));
+  const paren = call.getFirstChildByKind(SyntaxKind.OpenParenToken);
+  return idOf("Call", locOf(paren ?? call, file));
 }
 
 /** Convierte el resultado del walker en una referencia serializable. */
@@ -410,7 +418,7 @@ export function buildIR(sourceFile: SourceFile, fileName?: string): IRModule {
     const cLoc = locOf(call, file);
     const args = call.getArguments();
     const irCall: IRCall = {
-      id: idOf("Call", cLoc),
+      id: callIdOf(call, file),
       kind: "Call",
       name: call.getExpression().getText(),
       code: call.getText(),

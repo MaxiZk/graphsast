@@ -98,3 +98,36 @@ describe("buildIR — arrow functions y callbacks Express", () => {
     expect(params.map((p) => p.name)).toEqual(["req", "res"]);
   });
 });
+
+describe("buildIR — ids únicos", () => {
+  it("las llamadas encadenadas no comparten id aunque empiecen en el mismo lugar", () => {
+    const ir = buildIR(loadSource(
+      'function h(req) { return db.collection("u").find(req.query).toArray(); }',
+      "a.ts",
+    ));
+    const calls = ir.nodes.filter((n): n is IRCall => n.kind === "Call");
+    expect(calls.map((c) => c.callee).sort()).toEqual([
+      "db.collection",
+      'db.collection("u").find',
+      'db.collection("u").find(req.query).toArray',
+    ]);
+    expect(new Set(calls.map((c) => c.id)).size).toBe(3);
+    // La ubicación visible sigue siendo el inicio de la llamada.
+    expect(new Set(calls.map((c) => c.loc.col)).size).toBe(1);
+  });
+
+  it("ningún nodo repite id en un archivo con llamadas anidadas y escrituras de propiedad", () => {
+    const ir = buildIR(loadSource(
+      [
+        "function f(a) {",
+        "  const el = document.getElementById(a);",
+        "  el.innerHTML = fmt(a)(a).trim();",
+        "  return Promise.resolve(a).then((x) => x).catch(() => null);",
+        "}",
+      ].join("\n"),
+      "a.ts",
+    ));
+    const ids = ir.nodes.map((n) => n.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
