@@ -73,9 +73,16 @@ npm test                 # suite automatizada (247 pruebas)
 npm run benchmark        # banco sintetico (43 casos)
 npm run cve:run          # advisories de npm
 npm run scan -- scan docs/validacion/h3/caso-a --verbose
+npm run baseline         # linea de base en el banco
+npm run nodegoat         # NodeGoat, commit c5cb68a
 \end{lstlisting}
 
-\completar{Comando y versión de NodeGoat, y comando de la línea de base.}
+El evaluador de NodeGoat clona el repositorio en el commit
+\texttt{c5cb68a}, cuyo identificador completo está fijado en el
+manifiesto \texttt{eval-nodegoat.json} junto con las vulnerabilidades
+etiquetadas, el alcance del análisis y la regla de conteo. La copia se
+guarda en el directorio temporal del sistema, o en el indicado por la
+variable \texttt{NODEGOAT\_CACHE}.
 
 \section{Variables de entorno}
 
