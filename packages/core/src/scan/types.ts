@@ -73,6 +73,8 @@ export interface ScanOptions {
   maxDepth?: number;
   /** Filtrar por CWE (vacío = todos). */
   cwe?: number[];
+  /** Qué parámetros son entradas no confiables (default: `params`). */
+  sources?: "params" | "catalog";
 }
 
 export const DEFAULT_EXTENSIONS = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"];

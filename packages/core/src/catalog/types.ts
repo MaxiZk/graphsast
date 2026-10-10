@@ -1,10 +1,34 @@
+/**
+ * Un sink con restricciones. El string suelto (`"db.query"`) equivale a
+ * `{ "callee": "db.query" }`: cualquier argumento y el receptor cuentan.
+ */
+export interface SinkSpec {
+  /**
+   * Patrón del callee. `x` coincide con `x(...)` y con `algo.x(...)`;
+   * `.x` solo con la forma miembro; `a.b` con `a.b(...)` y con `algo.a.b(...)`.
+   * Un patrón `modulo.f` coincide también si `f` viene de importar `modulo`
+   * con otro nombre (`const cp = require("child_process"); cp.exec(...)`).
+   */
+  callee: string;
+  /**
+   * Posiciones de los argumentos peligrosos (desde 0). Sin esto, todos y el
+   * receptor. `db.query(sql, [id])` es `[0]`: los valores ligados por
+   * parámetro son la forma segura de escribir la consulta.
+   */
+  args?: number[];
+  /** Solo la llamada suelta `x(...)`, no `algo.x(...)` (`exec` vs `regex.exec`). */
+  bare?: boolean;
+  /** Expresión regular sobre el texto del receptor (`User` en `User.find`). */
+  receiver?: string;
+}
+
 export interface CweCatalogEntry {
   cwe: number;
   name: string;
   /** Qué es esa debilidad, en una frase, para mostrar junto a la familia. */
   description?: string;
   sources: string[];
-  sinks: string[];
+  sinks: (string | SinkSpec)[];
   sanitizers: string[];
 }
 

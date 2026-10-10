@@ -6,7 +6,8 @@ import type { IRNode, IRCall } from "../ir/types.js";
 
 function dfgOf(code: string, file = "t.ts") {
   const mod = buildIR(loadSource(code, file));
-  return { mod, edges: buildDataFlow(mod) };
+  // Estos tests miran qué fluye adónde; el índice de argumento tiene el suyo.
+  return { mod, edges: buildDataFlow(mod).map(({ kind, from, to }) => ({ kind, from, to })) };
 }
 
 function nodeByName(nodes: IRNode[], kind: IRNode["kind"], name: string) {
@@ -174,5 +175,20 @@ describe("buildDataFlow — req.body (operando miembro)", () => {
       from: param.id,
       to: call.id,
     });
+  });
+});
+
+describe("buildDataFlow — por qué argumento entra el dato", () => {
+  it("cada FLOWS_TO hacia una llamada lleva la posición del argumento, o -1 si es el receptor", () => {
+    const mod = buildIR(loadSource(
+      `function h(sql, id, conn) { conn.query(sql, [id]); }`,
+      "t.ts",
+    ));
+    const edges = buildDataFlow(mod);
+    const call = mod.nodes.find((n) => n.kind === "Call" && n.name === "conn.query")!;
+    const param = (name: string) => mod.nodes.find((n) => n.kind === "Parameter" && n.name === name)!.id;
+    expect(edges).toContainEqual({ kind: "FLOWS_TO", from: param("sql"), to: call.id, arg: 0 });
+    expect(edges).toContainEqual({ kind: "FLOWS_TO", from: param("id"), to: call.id, arg: 1 });
+    expect(edges).toContainEqual({ kind: "FLOWS_TO", from: param("conn"), to: call.id, arg: -1 });
   });
 });

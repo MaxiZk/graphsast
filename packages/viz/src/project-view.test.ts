@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { getTaintRoles, scanFilesWithGraphs } from "@graphsast/core";
 import {
+  focusGraph,
   findingPath,
   graphIndexOfFile,
   linesInFile,
@@ -77,5 +78,32 @@ describe("hallazgos del proyecto", () => {
     const { output } = scan({ ...CROSS_FILE, "bad.ts": "def f(x):\n    return x" });
     expect(graphIndexOfFile(output, "app/controller.ts")).toBe(graphIndexOfFile(output, "app/repo.ts"));
     expect(graphIndexOfFile(output, "bad.ts")).toBe(-1);
+  });
+});
+
+describe("focusGraph", () => {
+  it("deja entero un grafo chico", () => {
+    const { output } = scan(CROSS_FILE);
+    const { graph } = output.graphs[0]!;
+    expect(focusGraph(graph, {}, 1000).graph).toBe(graph);
+  });
+
+  it("en un grafo grande recorta al camino y sus vecinos, sin aristas colgadas", () => {
+    const { output } = scan(CROSS_FILE);
+    const [scanGraph] = output.graphs;
+    const path = scanGraph!.findings[0]!.path;
+    const view = focusGraph(scanGraph!.graph, { path }, path.length + 1);
+    const ids = new Set(view.graph.nodes.map((n) => n.id));
+    expect(view.total).toBe(scanGraph!.graph.nodes.length);
+    expect(view.graph.nodes.length).toBeLessThan(view.total);
+    expect(path.every((id) => ids.has(id))).toBe(true);
+    expect(view.graph.edges.every((e) => ids.has(e.from) && ids.has(e.to))).toBe(true);
+  });
+
+  it("sin camino muestra solo los nodos del archivo elegido", () => {
+    const { output } = scan(CROSS_FILE);
+    const view = focusGraph(output.graphs[0]!.graph, { file: "app/repo.ts" }, 1);
+    expect(view.graph.nodes.length).toBeGreaterThan(0);
+    expect(view.graph.nodes.every((n) => n.loc.file === "app/repo.ts")).toBe(true);
   });
 });

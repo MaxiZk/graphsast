@@ -458,6 +458,12 @@ body {
   cursor: pointer;
 }
 
+.graph-note {
+  margin: 0 0 0.65rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .rules-details {
   margin-top: 0.75rem;
   border-top: 1px solid var(--border);

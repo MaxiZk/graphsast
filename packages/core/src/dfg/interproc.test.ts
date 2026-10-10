@@ -63,40 +63,38 @@ describe("buildInterproc — BINDS_TO (argumento -> parámetro)", () => {
   });
 });
 
-describe("buildInterproc — RETURNS (función -> def retornada)", () => {
-  it("retorno de un identificador liga la función con su def", () => {
-    const { mod, edges } = interOf(`function src(){ const x = 1; return x; }`);
-
-    const fn = nodeByName(mod.nodes, "Function", "src");
+describe("buildInterproc — RETURNS (valor retornado -> llamada)", () => {
+  it("lo que la función retorna llega al nodo de cada llamada", () => {
+    const { mod, edges } = interOf(
+      `function src(){ const x = 1; return x; } function h(){ const a = src(); const b = src(); }`,
+    );
     const varX = nodeByName(mod.nodes, "Variable", "x");
-
-    expect(edges).toContainEqual({
-      kind: "RETURNS",
-      from: fn.id,
-      to: varX.id,
-    });
+    const calls = mod.nodes.filter((n) => n.kind === "Call" && n.name === "src");
+    expect(calls).toHaveLength(2);
+    for (const call of calls) {
+      expect(edges).toContainEqual({ kind: "RETURNS", from: varX.id, to: call.id });
+    }
   });
 
-  it("retorno de parámetro liga la función con el parámetro", () => {
-    const { mod, edges } = interOf(`function id(p){ return p; }`);
-
-    const fn = nodeByName(mod.nodes, "Function", "id");
+  it("retornar un parámetro liga el parámetro con la llamada", () => {
+    const { mod, edges } = interOf(`function id(p){ return p; } function h(v){ return id(v); }`);
     const paramP = nodeByName(mod.nodes, "Parameter", "p");
+    const call = nodeByName(mod.nodes, "Call", "id");
+    expect(edges).toContainEqual({ kind: "RETURNS", from: paramP.id, to: call.id });
+  });
 
-    expect(edges).toContainEqual({
-      kind: "RETURNS",
-      from: fn.id,
-      to: paramP.id,
-    });
+  it("una función que nadie llama no genera RETURNS", () => {
+    const { edges } = interOf(`function id(p){ return p; }`);
+    expect(edges.filter((e) => e.kind === "RETURNS")).toHaveLength(0);
   });
 
   it("retorno literal no genera RETURNS", () => {
-    const { edges } = interOf(`function f(){ return 1; }`);
+    const { edges } = interOf(`function f(){ return 1; } function h(){ f(); }`);
     expect(edges.filter((e) => e.kind === "RETURNS")).toHaveLength(0);
   });
 
   it("función sin return no genera RETURNS", () => {
-    const { edges } = interOf(`function f(){ const x = 1; }`);
+    const { edges } = interOf(`function f(){ const x = 1; } function h(){ f(); }`);
     expect(edges.filter((e) => e.kind === "RETURNS")).toHaveLength(0);
   });
 });

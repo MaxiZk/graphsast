@@ -5,7 +5,23 @@
   "sources": [
     "req.query",
     "req.body",
-    "req.params"
+    "req.params",
+    "req.headers",
+    "req.cookies",
+    "request.query",
+    "request.body",
+    "request.params",
+    "request.headers",
+    "ctx.query",
+    "ctx.params",
+    "ctx.request",
+    "ctx.headers",
+    "@Body",
+    "@Param",
+    "@Query",
+    "@Headers",
+    "@Req",
+    "@Request"
   ],
   "sinks": [
     ".save",
@@ -13,12 +29,33 @@
     "findByIdAndUpdate",
     "findByIdAndDelete",
     "insertOne",
-    "updateOne"
+    "updateOne",
+    "findOne",
+    "findOneAndUpdate",
+    "findOneAndDelete",
+    "findOneAndReplace",
+    "updateMany",
+    "deleteOne",
+    "deleteMany",
+    "replaceOne",
+    "insertMany",
+    "countDocuments",
+    "aggregate",
+    ".$where",
+    {
+      "callee": ".find",
+      "receiver": "^[A-Z][A-Za-z0-9_]*$|\\.collection\\(.*\\)$"
+    }
   ],
   "sanitizers": [
     "mongoSanitize",
     "sanitize",
     "validate",
-    "escape"
+    "escape",
+    "String",
+    "ObjectId",
+    "parseInt",
+    "parseFloat",
+    "Number"
   ]
 }

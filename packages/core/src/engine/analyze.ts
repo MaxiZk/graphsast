@@ -1,7 +1,7 @@
 import type { Driver } from "neo4j-driver";
 import { cweForSinkNode } from "../catalog/rules.js";
 import type { IRCall, IRGraph } from "../ir/types.js";
-import { analyzeTaint, getTaintRoles } from "../taint/analyzer.js";
+import { analyzeTaint, annotateTaint, getTaintRoles } from "../taint/analyzer.js";
 import { defaultTaintRules } from "../taint/rules.js";
 import type { TaintConfig, TaintFinding } from "../taint/types.js";
 import { persistGraph, queryTaintPaths } from "../store/neo4j.js";
@@ -41,7 +41,8 @@ export async function analyzeWithEngine(
   }
 
   const roles = getTaintRoles(graph, config);
-  await persistGraph(options.driver, graph, roles, options.database);
+  const annotations = annotateTaint(graph, config.rules ?? defaultTaintRules());
+  await persistGraph(options.driver, graph, roles, options.database, annotations);
   const raw = await queryTaintPaths(options.driver, options.database);
   const rules = config.rules ?? defaultTaintRules();
   const findings = enrichFindings(graph, raw, rules);

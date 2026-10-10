@@ -47,12 +47,23 @@ export interface IRFunction extends IRNodeBase {
   paramIds: string[];
   returnTexts: string[]; // textos de las expresiones retornadas (display)
   returnFlows: FlowRef[]; // raíces de flujo de cada return
+  /** Ámbito de cada return (mismo índice), para resolver sus nombres. */
+  returnScopePaths?: string[][];
+  /**
+   * Contenedor del que la función es miembro: el nombre de la clase
+   * (`class UserService { find() {} }`), de la variable que guarda el objeto
+   * literal (`const svc = { find() {} }`) o del objeto al que se asigna
+   * (`module.exports.find = ...`). Ausente en funciones sueltas.
+   */
+  memberOf?: string;
 }
 
 export interface IRParameter extends IRNodeBase {
   kind: "Parameter";
   index: number;
   ownerFnId: string;
+  /** Nombres de sus decoradores (`@Body() dto` → `["Body"]`), si tiene. */
+  decorators?: string[];
 }
 
 export interface IRVariable extends IRNodeBase {
@@ -75,6 +86,23 @@ export interface IRCall extends IRNodeBase {
   argFlows: FlowRef[];     // raíces de flujo por argumento (mismo índice)
   receiverFlow: FlowRef;   // raíces del receptor (`finance.save()` → `finance`)
   ownerFnId: string | null;
+  /**
+   * Clase u objeto literal que encierra a la llamada: a qué apunta `this` en
+   * `this.find()`. Mismo formato que `IRFunction.memberOf`.
+   */
+  thisOwner?: string;
+  /**
+   * Cómo se resolvió la llamada contra el código analizado, si se resolvió:
+   * `exact` (nombre o contenedor conocidos) o `guess` (método de nombre único).
+   * Lo completa quien arma el grafo, no el builder.
+   */
+  resolution?: "exact" | "guess";
+  /**
+   * El callee escrito con el nombre del paquete del que se importó:
+   * `cp.exec` con `const cp = require("child_process")` → `child_process.exec`.
+   * Permite reconocer un sink aunque el import tenga otro nombre local.
+   */
+  qualifiedCallee?: string;
 }
 
 export type IRNode =
@@ -112,6 +140,11 @@ export interface IREdge {
   kind: IREdgeKind;
   from: string; // id de nodo origen
   to: string;   // id de nodo destino
+  /**
+   * En un `FLOWS_TO` hacia un nodo Call: por qué argumento entra el dato
+   * (desde 0), o -1 si entra por el receptor (`x` en `x.save()`).
+   */
+  arg?: number;
 }
 
 export interface IRGraph {
