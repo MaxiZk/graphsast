@@ -1,22 +1,32 @@
 import * as path from "../util/posix-path.js";
-import { Node, type SourceFile } from "ts-morph";
-import { functionIdOf } from "../ir/builder.js";
+import { Node, SyntaxKind, type SourceFile } from "ts-morph";
+import { functionIdOf, type FunctionLike } from "../ir/builder.js";
 
 /** Un nombre importado o re-exportado: de qué módulo y con qué nombre. */
 export interface ModuleBinding {
   specifier: string;
   /** Nombre exportado por el otro módulo, `default`, o `*` (namespace). */
   imported: string;
+  /**
+   * Viene de `require`: `const f = require("./x")` puede ser la función misma
+   * (`module.exports = f`), así que llamar al binding resuelve el default.
+   */
+  cjs?: boolean;
 }
 
 /**
  * Lo que un archivo importa y exporta, en la medida en que importa para
- * resolver llamadas entre archivos. Solo módulos ES (import/export).
+ * resolver llamadas entre archivos: módulos ES (`import`/`export`) y CommonJS
+ * (`require`, `module.exports`, `exports.f`).
  */
 export interface ModuleLinks {
   /** Nombre local → binding importado. */
   imports: Map<string, ModuleBinding>;
-  /** `function` del nivel superior: nombre local → id del nodo Function. */
+  /**
+   * Funciones del nivel superior: nombre local → id del nodo Function.
+   * Incluye `function f`, `const f = () => {}` y las funciones que se asignan
+   * directamente a un export de CommonJS (con un nombre local sintético).
+   */
   functions: Map<string, string>;
   /** Nombre exportado → nombre local. */
   localExports: Map<string, string>;
@@ -83,12 +93,140 @@ export function extractLinks(sourceFile: SourceFile, file: string): ModuleLinks 
 
   for (const assignment of sourceFile.getExportAssignments()) {
     if (assignment.isExportEquals()) continue;
-    const expr = assignment.getExpression();
+    const expr = unwrap(assignment.getExpression());
     if (Node.isIdentifier(expr)) links.localExports.set("default", expr.getText());
+    else if (isFunctionValue(expr)) {
+      links.functions.set(ANONYMOUS_DEFAULT, functionIdOf(expr, file));
+      links.localExports.set("default", ANONYMOUS_DEFAULT);
+    }
   }
 
+  // `const f = () => {}` / `export const f = function () {}` en el nivel superior.
+  for (const statement of sourceFile.getVariableStatements()) {
+    const exported = statement.hasExportKeyword();
+    for (const decl of statement.getDeclarations()) {
+      const nameNode = decl.getNameNode();
+      const init = decl.getInitializer();
+      if (!Node.isIdentifier(nameNode) || !init) continue;
+      const value = unwrap(init);
+      if (!isFunctionValue(value)) continue;
+      const local = nameNode.getText();
+      links.functions.set(local, functionIdOf(value, file));
+      if (exported) links.localExports.set(local, local);
+    }
+  }
+
+  extractCommonJs(sourceFile, file, links);
   return links;
 }
+
+/** Quita paréntesis y aserciones de tipo: `(x as F)` → `x`. */
+function unwrap(node: Node): Node {
+  let cur = node;
+  while (Node.isParenthesizedExpression(cur) || Node.isAsExpression(cur) || Node.isSatisfiesExpression(cur)) {
+    cur = cur.getExpression();
+  }
+  return cur;
+}
+
+function isFunctionValue(node: Node): node is FunctionLike {
+  return Node.isArrowFunction(node) || Node.isFunctionExpression(node);
+}
+
+/** `require("x")` → `"x"`; cualquier otra expresión → null. */
+function requiredSpecifier(node: Node | undefined): string | null {
+  if (!node) return null;
+  const expr = unwrap(node);
+  if (!Node.isCallExpression(expr)) return null;
+  if (expr.getExpression().getText() !== "require") return null;
+  const [arg] = expr.getArguments();
+  return arg && Node.isStringLiteral(arg) ? arg.getLiteralValue() : null;
+}
+
+/**
+ * Imports y exports de CommonJS:
+ *
+ * - `const repo = require("./repo")` → namespace (`repo.find()` o `repo()`).
+ * - `const { find, save: store } = require("./repo")` → nombres.
+ * - `const find = require("./repo").find` → un nombre.
+ * - `module.exports = f`, `= { f, g: h, k() {} }`, `exports.f = ...` y
+ *   `module.exports.f = ...` → exports.
+ */
+function extractCommonJs(sourceFile: SourceFile, file: string, links: ModuleLinks): void {
+  for (const decl of sourceFile.getDescendantsOfKind(SyntaxKind.VariableDeclaration)) {
+    const init = decl.getInitializer();
+    const nameNode = decl.getNameNode();
+    let specifier = requiredSpecifier(init);
+    let member: string | null = null;
+    if (!specifier && init) {
+      const value = unwrap(init);
+      if (Node.isPropertyAccessExpression(value)) {
+        specifier = requiredSpecifier(value.getExpression());
+        member = value.getName();
+      }
+    }
+    if (!specifier) continue;
+
+    if (Node.isIdentifier(nameNode)) {
+      links.imports.set(nameNode.getText(), member
+        ? { specifier, imported: member }
+        : { specifier, imported: "*", cjs: true });
+      continue;
+    }
+    if (Node.isObjectBindingPattern(nameNode) && !member) {
+      for (const el of nameNode.getElements()) {
+        const local = el.getNameNode();
+        if (!Node.isIdentifier(local)) continue;
+        const imported = el.getPropertyNameNode()?.getText() ?? local.getText();
+        links.imports.set(local.getText(), { specifier, imported });
+      }
+    }
+  }
+
+  for (const statement of sourceFile.getStatements()) {
+    if (!Node.isExpressionStatement(statement)) continue;
+    const expr = statement.getExpression();
+    if (!Node.isBinaryExpression(expr)) continue;
+    if (expr.getOperatorToken().getKind() !== SyntaxKind.EqualsToken) continue;
+    const target = expr.getLeft().getText().replace(/\s+/g, "");
+    const value = unwrap(expr.getRight());
+
+    if (target === "module.exports") {
+      if (Node.isIdentifier(value)) {
+        links.localExports.set("default", value.getText());
+      } else if (isFunctionValue(value)) {
+        links.functions.set(ANONYMOUS_DEFAULT, functionIdOf(value, file));
+        links.localExports.set("default", ANONYMOUS_DEFAULT);
+      } else if (Node.isObjectLiteralExpression(value)) {
+        for (const prop of value.getProperties()) {
+          if (Node.isShorthandPropertyAssignment(prop)) {
+            links.localExports.set(prop.getName(), prop.getName());
+          } else if (Node.isPropertyAssignment(prop)) {
+            exportCommonJs(links, file, prop.getName(), unwrap(prop.getInitializerOrThrow()));
+          } else if (Node.isMethodDeclaration(prop)) {
+            exportCommonJs(links, file, prop.getName(), prop);
+          }
+        }
+      }
+      continue;
+    }
+
+    const named = /^(?:module\.)?exports\.([A-Za-z_$][\w$]*)$/.exec(target);
+    if (named) exportCommonJs(links, file, named[1]!, value);
+  }
+}
+
+/** Registra `exports.<name> = value` (un identificador o una función). */
+function exportCommonJs(links: ModuleLinks, file: string, name: string, value: Node): void {
+  if (Node.isIdentifier(value)) {
+    links.localExports.set(name, value.getText());
+  } else if (isFunctionValue(value) || Node.isMethodDeclaration(value)) {
+    const local = `*exports.${name}*`;
+    links.functions.set(local, functionIdOf(value, file));
+    links.localExports.set(name, local);
+  }
+}
+
 
 /** Extensiones que se prueban al resolver `./x`, en orden. */
 const RESOLVE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
@@ -138,8 +276,8 @@ export function projectIndexOf(modules: LinkedModule[]): ProjectIndex {
 
 /**
  * Sigue exports, alias, re-exports y `export *` hasta la declaración de la
- * función. Devuelve el id del nodo Function o null si no es una `function`
- * del proyecto (arrow, clase, paquete externo, ciclo).
+ * función. Devuelve el id del nodo Function o null si no es una función del
+ * proyecto (clase, paquete externo, ciclo).
  */
 export function resolveExportedFunction(
   index: ProjectIndex,
@@ -204,8 +342,9 @@ export function resolveImportedCallee(
 
   let exported: string;
   if (dot === -1) {
-    if (binding.imported === "*") return null;
-    exported = binding.imported;
+    // Llamar a un namespace ES no es válido; a un `require` es su default.
+    if (binding.imported === "*" && !binding.cjs) return null;
+    exported = binding.imported === "*" ? "default" : binding.imported;
   } else {
     const member = normalized.slice(dot + 1);
     if (binding.imported !== "*" || member.includes(".")) return null;

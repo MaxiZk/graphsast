@@ -138,13 +138,24 @@ function fileOfNodeId(id: string): string {
   return id.slice(0, id.lastIndexOf("#"));
 }
 
-function mergeGraphs(members: ParsedFile[], crossEdges: IREdge[]): IRGraph {
+/**
+ * Une los grafos de un componente con las aristas entre sus archivos. A las
+ * llamadas resueltas con certeza a otro archivo se les quita el atajo
+ * argumento → llamada: su valor ahora sale de lo que la función retorna.
+ */
+function mergeGraphs(
+  members: ParsedFile[],
+  crossEdges: IREdge[],
+  exactCallIds: ReadonlySet<string>,
+): IRGraph {
   const files = new Set(members.map((m) => m.rel));
   return {
     file: members[0]!.rel,
     nodes: members.flatMap((m) => m.graph.nodes),
     edges: [
-      ...members.flatMap((m) => m.graph.edges),
+      ...members.flatMap((m) => m.graph.edges).filter(
+        (e) => !(exactCallIds.has(e.to) && (e.kind === "FLOWS_TO" || e.kind === "SANITIZED_BY")),
+      ),
       ...crossEdges.filter((e) => files.has(fileOfNodeId(e.from))),
     ],
   };
@@ -209,7 +220,7 @@ export function scanFilesWithGraphs(
   // Fase 2: llamadas entre archivos.
   const linkStarted = performance.now();
   const cross = options.crossFile === false
-    ? { edges: [], calls: 0, pairs: [] }
+    ? { edges: [], exactCallIds: new Set<string>(), calls: 0, pairs: [] }
     : buildCrossModuleEdges(projectIndexOf(parsed), parsed);
   const components = connectedComponents(parsed.map((p) => p.abs), cross.pairs);
   const linkMs = performance.now() - linkStarted;
@@ -222,7 +233,7 @@ export function scanFilesWithGraphs(
   for (const component of components) {
     const started = performance.now();
     const members = component.map((abs) => byAbs.get(abs)!);
-    const graph = members.length === 1 ? members[0]!.graph : mergeGraphs(members, cross.edges);
+    const graph = members.length === 1 ? members[0]!.graph : mergeGraphs(members, cross.edges, cross.exactCallIds);
     const raw = filterCwe(analyzeTaint(graph, { maxDepth: options.maxDepth }), options);
     const scanFindings = toScanFindings(members[0]!.rel, graph, raw);
     for (const f of scanFindings) {

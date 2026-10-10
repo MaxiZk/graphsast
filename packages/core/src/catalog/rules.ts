@@ -19,6 +19,12 @@ export function calleeMatchesPattern(callee: string, pattern: string): boolean {
   return callee.endsWith(`.${pattern}`);
 }
 
+/**
+ * Una llamada resuelta con certeza a una función del código analizado no es el
+ * sink de biblioteca que su nombre sugiere: `this.save()` sobre un método
+ * propio no es el `.save` de Mongoose. El dato entra a la función y el sink,
+ * si lo hay, está adentro.
+ */
 function sinkRule(entry: CweCatalogEntry, pattern: string): TaintRule {
   const id = `cwe-${entry.cwe}-sink-${pattern.replace(/[^\w]+/g, "_")}`;
   return {
@@ -27,7 +33,9 @@ function sinkRule(entry: CweCatalogEntry, pattern: string): TaintRule {
     cwe: entry.cwe,
     cweName: entry.name,
     match: (n): n is IRCall =>
-      n.kind === "Call" && calleeMatchesPattern(n.callee, pattern),
+      n.kind === "Call"
+      && n.resolution !== "exact"
+      && calleeMatchesPattern(n.callee, pattern),
   };
 }
 

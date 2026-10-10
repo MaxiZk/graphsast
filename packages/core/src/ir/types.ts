@@ -47,6 +47,13 @@ export interface IRFunction extends IRNodeBase {
   paramIds: string[];
   returnTexts: string[]; // textos de las expresiones retornadas (display)
   returnFlows: FlowRef[]; // raíces de flujo de cada return
+  /**
+   * Contenedor del que la función es miembro: el nombre de la clase
+   * (`class UserService { find() {} }`), de la variable que guarda el objeto
+   * literal (`const svc = { find() {} }`) o del objeto al que se asigna
+   * (`module.exports.find = ...`). Ausente en funciones sueltas.
+   */
+  memberOf?: string;
 }
 
 export interface IRParameter extends IRNodeBase {
@@ -75,6 +82,17 @@ export interface IRCall extends IRNodeBase {
   argFlows: FlowRef[];     // raíces de flujo por argumento (mismo índice)
   receiverFlow: FlowRef;   // raíces del receptor (`finance.save()` → `finance`)
   ownerFnId: string | null;
+  /**
+   * Clase u objeto literal que encierra a la llamada: a qué apunta `this` en
+   * `this.find()`. Mismo formato que `IRFunction.memberOf`.
+   */
+  thisOwner?: string;
+  /**
+   * Cómo se resolvió la llamada contra el código analizado, si se resolvió:
+   * `exact` (nombre o contenedor conocidos) o `guess` (método de nombre único).
+   * Lo completa quien arma el grafo, no el builder.
+   */
+  resolution?: "exact" | "guess";
 }
 
 export type IRNode =

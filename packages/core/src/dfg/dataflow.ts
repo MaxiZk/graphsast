@@ -1,4 +1,5 @@
 import type { IRModule, IRNode, IREdge, FlowRef } from "../ir/types.js";
+import { resolveCalls } from "../cfg/callgraph.js";
 import { defsInScope, nodeOwnerFnId, nodeScopePath } from "./scope.js";
 
 /** Índice de definiciones (variables y parámetros) por nombre. */
@@ -36,8 +37,19 @@ export function flowInputIds(
 /**
  * Construye el data-flow graph intra-procedural (aristas `FLOWS_TO`).
  * Las defs solo conectan con usos dentro de la misma función.
+ *
+ * `exactCallIds` son las llamadas que se resolvieron con certeza a una función
+ * del código analizado. En ellas los argumentos no fluyen directo al nodo
+ * Call: entran a la función por `BINDS_TO` y el valor de la llamada sale de lo
+ * que la función retorna (`RETURNS`, ver `buildInterproc`). Así lo que la
+ * función hace con el dato —sanearlo, descartarlo— decide si el resultado
+ * sigue contaminado. En una llamada que no se resuelve (una biblioteca, un
+ * sink) el valor de retorno se aproxima por sus argumentos y su receptor.
  */
-export function buildDataFlow(mod: IRModule): IREdge[] {
+export function buildDataFlow(
+  mod: IRModule,
+  exactCallIds: ReadonlySet<string> = resolveCalls(mod).exactCallIds,
+): IREdge[] {
   const defsByName = buildDefIndex(mod);
   const edges: IREdge[] = [];
   const seen = new Set<string>();
@@ -61,7 +73,7 @@ export function buildDataFlow(mod: IRModule): IREdge[] {
 
   // Argumentos y receptor de cada llamada fluyen al nodo Call.
   for (const node of mod.nodes) {
-    if (node.kind !== "Call") continue;
+    if (node.kind !== "Call" || exactCallIds.has(node.id)) continue;
     const scope = nodeOwnerFnId(node);
     const path = nodeScopePath(node);
     for (const flow of node.argFlows) linkFlow(flow, node.id, scope, path);

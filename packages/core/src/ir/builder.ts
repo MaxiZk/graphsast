@@ -132,11 +132,114 @@ function declarationScopePathOf(decl: VariableDeclaration, at: Node): string[] {
   return isVar ? functionScopePathOf(at) : scopePathOf(at);
 }
 
-function fnNameOf(fn: FunctionLike): string {
-  if (TsNode.isFunctionDeclaration(fn) || TsNode.isMethodDeclaration(fn)) {
-    return fn.getName() ?? "";
+/** Nombre de una propiedad sin comillas (`"find"` → `find`). */
+function propertyNameText(name: Node): string {
+  if (TsNode.isStringLiteral(name) || TsNode.isNoSubstitutionTemplateLiteral(name)) {
+    return name.getLiteralValue();
   }
+  return TsNode.isIdentifier(name) || TsNode.isPrivateIdentifier(name) ? name.getText() : "";
+}
+
+/**
+ * Nombre con el que se llama a un objeto literal o una clase: la variable que
+ * lo guarda (`const svc = {...}`) o el destino al que se asigna
+ * (`module.exports = {...}`). Vacío si es anónimo.
+ */
+function containerNameOf(node: Node): string {
+  if (TsNode.isClassDeclaration(node)) return node.getName() ?? "";
+  const parent = node.getParent();
+  if (!parent) return "";
+  if (TsNode.isVariableDeclaration(parent)) {
+    const nameNode = parent.getNameNode();
+    return TsNode.isIdentifier(nameNode) ? nameNode.getText() : "";
+  }
+  if (
+    TsNode.isBinaryExpression(parent)
+    && parent.getOperatorToken().getKind() === SyntaxKind.EqualsToken
+    && parent.getRight() === node
+  ) {
+    return parent.getLeft().getText().replace(/\s+/g, "");
+  }
+  if (TsNode.isClassExpression(node)) return node.getName() ?? "";
   return "";
+}
+
+/**
+ * Nombre por el que se invoca la función y el contenedor del que es miembro.
+ *
+ * Una arrow o function expression no tiene nombre propio, pero se la llama por
+ * el de la variable, campo o propiedad que la guarda: `const find = (id) =>
+ * ...` se invoca como `find(id)`. Sin esto, solo las `function` declaradas por
+ * nombre se resolvían, y el código escrito con arrows (la mayoría de Express
+ * moderno) quedaba fuera del call graph.
+ */
+function fnIdentityOf(fn: FunctionLike): { name: string; memberOf?: string } {
+  const parent = fn.getParent();
+
+  if (TsNode.isFunctionDeclaration(fn)) return { name: fn.getName() ?? "" };
+
+  if (TsNode.isMethodDeclaration(fn)) {
+    const owner = parent && (TsNode.isClassDeclaration(parent)
+      || TsNode.isClassExpression(parent)
+      || TsNode.isObjectLiteralExpression(parent))
+      ? containerNameOf(parent)
+      : "";
+    return { name: propertyNameText(fn.getNameNode()), memberOf: owner || undefined };
+  }
+
+  // Arrow o function expression: el nombre viene de donde se la guarda.
+  if (parent && TsNode.isVariableDeclaration(parent)) {
+    const nameNode = parent.getNameNode();
+    if (TsNode.isIdentifier(nameNode)) return { name: nameNode.getText() };
+  }
+  if (parent && TsNode.isPropertyDeclaration(parent)) {
+    const cls = parent.getParent();
+    return {
+      name: propertyNameText(parent.getNameNode()),
+      memberOf: cls ? containerNameOf(cls) || undefined : undefined,
+    };
+  }
+  if (parent && TsNode.isPropertyAssignment(parent)) {
+    const obj = parent.getParent();
+    return {
+      name: propertyNameText(parent.getNameNode()),
+      memberOf: obj ? containerNameOf(obj) || undefined : undefined,
+    };
+  }
+  if (
+    parent
+    && TsNode.isBinaryExpression(parent)
+    && parent.getOperatorToken().getKind() === SyntaxKind.EqualsToken
+    && parent.getRight() === fn
+  ) {
+    const left = parent.getLeft();
+    if (TsNode.isPropertyAccessExpression(left)) {
+      return {
+        name: left.getName(),
+        memberOf: left.getExpression().getText().replace(/\s+/g, ""),
+      };
+    }
+    if (TsNode.isIdentifier(left)) return { name: left.getText() };
+  }
+  if (TsNode.isFunctionExpression(fn)) return { name: fn.getName() ?? "" };
+  return { name: "" };
+}
+
+/**
+ * A qué apunta `this` en el lugar de una llamada: la clase o el objeto
+ * literal con nombre más cercano que la encierra.
+ */
+function thisOwnerOf(node: Node): string | undefined {
+  for (const anc of node.getAncestors()) {
+    if (TsNode.isClassDeclaration(anc) || TsNode.isClassExpression(anc)) {
+      return containerNameOf(anc) || undefined;
+    }
+    if (TsNode.isObjectLiteralExpression(anc)) {
+      const name = containerNameOf(anc);
+      if (name) return name;
+    }
+  }
+  return undefined;
 }
 
 /** Expresiones retornadas por la función (cuerpo conciso de arrow incluido). */
@@ -203,10 +306,12 @@ function emitFunction(fn: FunctionLike, file: string, nodes: IRNode[]): void {
   });
 
   const returns = returnExpressionsOf(fn);
+  const { name, memberOf } = fnIdentityOf(fn);
   const irFn: IRFunction = {
     id: fnId,
     kind: "Function",
-    name: fnNameOf(fn),
+    name,
+    ...(memberOf ? { memberOf } : {}),
     code: fn.getText(),
     loc: fnLoc,
     scopePath: scopePathOf(fn),
@@ -430,6 +535,8 @@ export function buildIR(sourceFile: SourceFile, fileName?: string): IRModule {
       receiverFlow: receiverFlowOf(call, file),
       ownerFnId: ownerFnIdOf(call, file),
     };
+    const owner = thisOwnerOf(call);
+    if (owner) irCall.thisOwner = owner;
     nodes.push(irCall);
   }
 

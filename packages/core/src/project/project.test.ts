@@ -141,9 +141,9 @@ describe("analisis entre archivos: se comporta como dentro de un archivo", () =>
     expect(scanPaths([root], { crossFile: false }).findings).toHaveLength(1);
   });
 
-  it("un sanitizer dentro de la funcion llamada no corta el camino, igual que en un archivo", () => {
-    // Limitación previa del motor, no del cruce: CALLS + RETURNS llevan el
-    // dato del argumento a lo que la función retorna sin pasar por `escape`.
+  it("un sanitizer dentro de la funcion llamada corta el camino, igual que en un archivo", () => {
+    // El valor de getUser(...) sale de lo que getUser retorna (RETURNS), y eso
+    // ya pasó por escape: no hay camino sin sanear hasta el sink.
     const service = [
       "export function getUser(id: string) {",
       "  const safe = escape(id);",
@@ -161,8 +161,9 @@ describe("analisis entre archivos: se comporta como dentro de un archivo", () =>
         THREE_LAYERS["src/controller.ts"].split("\n").slice(1).join("\n"),
       ].join("\n"),
     })]);
-    expect(cross.findings).toHaveLength(1);
-    expect(single.findings).toHaveLength(1);
+    expect(cross.totals.crossFileCalls).toBe(2);
+    expect(cross.findings).toEqual([]);
+    expect(single.findings).toEqual([]);
   });
 });
 
@@ -233,19 +234,65 @@ describe("formas de import y export soportadas", () => {
   });
 });
 
-describe("fuera del alcance: no se liga (y no se simula)", () => {
-  const unsupported: [string, Record<string, string>][] = [
+describe("arrows, CommonJS y métodos de clase entre archivos", () => {
+  const supported: [string, Record<string, string>][] = [
     ["arrow function exportada", {
       "repository.ts": "export const findById = (userId: string) => db.query(`SELECT ${userId}`);\n",
       "controller.ts": 'import { findById } from "./repository";\nexport function show(req: any) { findById(req.params.id); }\n',
     }],
-    ["CommonJS", {
+    ["arrow exportada con export { }", {
+      "repository.ts": "const findById = function (userId: string) { return db.query(`SELECT ${userId}`); };\nexport { findById };\n",
+      "controller.ts": 'import { findById } from "./repository";\nexport const show = (req: any) => findById(req.params.id);\n',
+    }],
+    ["CommonJS con destructuring", {
       "repository.js": "function findById(userId) { return db.query(`SELECT ${userId}`); }\nmodule.exports = { findById };\n",
       "controller.js": 'const { findById } = require("./repository");\nfunction show(req) { findById(req.params.id); }\n',
+    }],
+    ["CommonJS con namespace y exports.f", {
+      "repository.js": "exports.findById = (userId) => db.query(`SELECT ${userId}`);\n",
+      "controller.js": 'const repo = require("./repository");\nfunction show(req) { repo.findById(req.params.id); }\n',
+    }],
+    ["CommonJS con module.exports = función", {
+      "repository.js": "module.exports = function (userId) { return db.query(`SELECT ${userId}`); };\n",
+      "controller.js": 'const findById = require("./repository");\nfunction show(req) { findById(req.params.id); }\n',
     }],
     ["metodo de clase", {
       "repository.ts": "export class Repo { findById(userId: string) { return db.query(`SELECT ${userId}`); } }\n",
       "controller.ts": 'import { Repo } from "./repository";\nexport function show(req: any) { new Repo().findById(req.params.id); }\n',
+    }],
+    ["servicio inyectado (this.repo.m())", {
+      "repository.ts": "export class UserRepository { findByEmail(email: string) { return db.query(`SELECT ${email}`); } }\n",
+      "controller.ts": [
+        "export class UserController {",
+        "  constructor(private readonly repo: any) {}",
+        "  show(req: any) { return this.repo.findByEmail(req.query.email); }",
+        "}",
+        "",
+      ].join("\n"),
+    }],
+  ];
+
+  for (const [name, files] of supported) {
+    it(name, () => {
+      const r = scanPaths([project(files)]);
+      expect(r.totals.crossFileCalls).toBe(1);
+      expect(r.findings).toHaveLength(1);
+      const [f] = r.findings;
+      expect(f!.source.file).not.toBe(f!.file);
+      expect(f!.source.name).toBe("req");
+    });
+  }
+});
+
+describe("fuera del alcance: no se liga (y no se simula)", () => {
+  const unsupported: [string, Record<string, string>][] = [
+    ["alias de tsconfig", {
+      "src/repository.ts": "export function findById(userId: string) { return db.query(`SELECT ${userId}`); }\n",
+      "src/controller.ts": 'import { findById } from "@/repository";\nexport function show(req: any) { findById(req.params.id); }\n',
+    }],
+    ["import() dinámico", {
+      "repository.ts": "export function findById(userId: string) { return db.query(`SELECT ${userId}`); }\n",
+      "controller.ts": 'export async function show(req: any) { const m = await import("./repository"); m.findById(req.params.id); }\n',
     }],
   ];
 
