@@ -488,6 +488,75 @@ function emitPropertyWriteSinks(
   }
 }
 
+/** Nombre local → de qué paquete y con qué nombre se importó. */
+type PackageBindings = Map<string, { module: string; imported: string }>;
+
+/** `node:child_process` → `child_process`. Las rutas relativas no son paquetes. */
+function packageNameOf(specifier: string): string | null {
+  if (specifier.startsWith(".") || specifier.startsWith("/")) return null;
+  return specifier.replace(/^node:/, "");
+}
+
+/** `require("x")` → `"x"`. */
+function requireTarget(node: Node | undefined): string | null {
+  if (!node || !TsNode.isCallExpression(node)) return null;
+  if (node.getExpression().getText() !== "require") return null;
+  const [arg] = node.getArguments();
+  return arg && TsNode.isStringLiteral(arg) ? arg.getLiteralValue() : null;
+}
+
+/**
+ * Nombres locales que vienen de un paquete, por `import` o `require`:
+ * `import { exec } from "child_process"`, `import * as cp from "node:child_process"`,
+ * `const { execSync: run } = require("child_process")`.
+ */
+function packageBindingsOf(sourceFile: SourceFile): PackageBindings {
+  const out: PackageBindings = new Map();
+  for (const decl of sourceFile.getImportDeclarations()) {
+    const module = packageNameOf(decl.getModuleSpecifierValue());
+    if (!module) continue;
+    const def = decl.getDefaultImport();
+    if (def) out.set(def.getText(), { module, imported: "*" });
+    const ns = decl.getNamespaceImport();
+    if (ns) out.set(ns.getText(), { module, imported: "*" });
+    for (const spec of decl.getNamedImports()) {
+      const local = spec.getAliasNode()?.getText() ?? spec.getName();
+      out.set(local, { module, imported: spec.getName() });
+    }
+  }
+  for (const decl of sourceFile.getDescendantsOfKind(SyntaxKind.VariableDeclaration)) {
+    const target = requireTarget(decl.getInitializer());
+    const module = target ? packageNameOf(target) : null;
+    if (!module) continue;
+    const nameNode = decl.getNameNode();
+    if (TsNode.isIdentifier(nameNode)) {
+      out.set(nameNode.getText(), { module, imported: "*" });
+    } else if (TsNode.isObjectBindingPattern(nameNode)) {
+      for (const el of nameNode.getElements()) {
+        const local = el.getNameNode();
+        if (!TsNode.isIdentifier(local)) continue;
+        out.set(local.getText(), {
+          module,
+          imported: el.getPropertyNameNode()?.getText() ?? local.getText(),
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/** `cp.exec` con `cp` = `child_process` → `child_process.exec`. */
+function qualifiedCalleeOf(callee: string, bindings: PackageBindings): string | undefined {
+  const normalized = callee.replace(/\s+/g, "").replace(/\?\./g, ".");
+  const dot = normalized.indexOf(".");
+  const head = dot === -1 ? normalized : normalized.slice(0, dot);
+  const rest = dot === -1 ? "" : normalized.slice(dot);
+  const binding = bindings.get(head);
+  if (!binding) return undefined;
+  const base = binding.imported === "*" ? binding.module : `${binding.module}.${binding.imported}`;
+  return base + rest;
+}
+
 /**
  * `fileName` permite conservar la ruta relativa al escanear un proyecto
  * (`src/routes/users.ts` en vez de `users.ts`), de modo que los ids de nodo
@@ -520,6 +589,7 @@ export function buildIR(sourceFile: SourceFile, fileName?: string): IRModule {
     nodes.push(irLit);
   }
 
+  const packages = packageBindingsOf(sourceFile);
   for (const call of sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
     const cLoc = locOf(call, file);
     const args = call.getArguments();
@@ -538,6 +608,8 @@ export function buildIR(sourceFile: SourceFile, fileName?: string): IRModule {
     };
     const owner = thisOwnerOf(call);
     if (owner) irCall.thisOwner = owner;
+    const qualified = qualifiedCalleeOf(irCall.callee, packages);
+    if (qualified) irCall.qualifiedCallee = qualified;
     nodes.push(irCall);
   }
 

@@ -95,6 +95,12 @@ export interface IRCall extends IRNodeBase {
    * Lo completa quien arma el grafo, no el builder.
    */
   resolution?: "exact" | "guess";
+  /**
+   * El callee escrito con el nombre del paquete del que se importó:
+   * `cp.exec` con `const cp = require("child_process")` → `child_process.exec`.
+   * Permite reconocer un sink aunque el import tenga otro nombre local.
+   */
+  qualifiedCallee?: string;
 }
 
 export type IRNode =
@@ -132,6 +138,11 @@ export interface IREdge {
   kind: IREdgeKind;
   from: string; // id de nodo origen
   to: string;   // id de nodo destino
+  /**
+   * En un `FLOWS_TO` hacia un nodo Call: por qué argumento entra el dato
+   * (desde 0), o -1 si entra por el receptor (`x` en `x.save()`).
+   */
+  arg?: number;
 }
 
 export interface IRGraph {

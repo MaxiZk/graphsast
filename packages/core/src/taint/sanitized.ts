@@ -11,10 +11,10 @@ import type { TaintRule } from "./types.js";
  * el grafo no distinguía un camino saneado de uno que no lo está: ambos se
  * dibujaban como FLOWS_TO y solo el color del nodo sanitizer lo delataba.
  *
- * No cambia los hallazgos. El analizador ya saca los nodos sanitizer del
- * recorrido (ver `analyzeTaint`), y `SANITIZED_BY` tampoco está en
- * `DEFAULT_TAINT_PROPAGATE_EDGES`: el corte queda expresado dos veces, en el
- * nodo y en la arista, y el grafo lo muestra.
+ * No cambia los hallazgos: es la vista. `SANITIZED_BY` propaga igual que
+ * `FLOWS_TO`, porque un sanitizer protege solo los sinks de su CWE; el corte
+ * lo hace `analyzeTaint`, que saca del recorrido los sanitizers que valen para
+ * la CWE de cada sink.
  */
 export function markSanitizedEdges(
   nodes: readonly IRNode[],

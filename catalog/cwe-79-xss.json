@@ -5,21 +5,73 @@
   "sources": [
     "req.query",
     "req.body",
-    "req.params"
+    "req.params",
+    "req.headers",
+    "req.cookies"
   ],
   "sinks": [
     "document.write",
+    "document.writeln",
     "innerHTML",
     "outerHTML",
-    "insertAdjacentHTML",
+    {
+      "callee": "insertAdjacentHTML",
+      "args": [
+        1
+      ]
+    },
     "dangerouslySetInnerHTML",
-    "res.send"
+    "srcdoc",
+    {
+      "callee": "res.send",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "res.write",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "res.end",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".html",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "createContextualFragment",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "setHTMLUnsafe",
+      "args": [
+        0
+      ]
+    }
   ],
   "sanitizers": [
     "sanitize",
     "escape",
     "validate",
     "DOMPurify.sanitize",
-    "xss"
+    "xss",
+    "escapeHtml",
+    "sanitizeHtml",
+    "filterXSS",
+    "he.encode",
+    "he.escape",
+    "parseInt",
+    "parseFloat",
+    "Number"
   ]
 }

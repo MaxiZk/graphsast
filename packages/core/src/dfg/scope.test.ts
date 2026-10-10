@@ -9,7 +9,8 @@ import type { IRNode, IRVariable, IRCall } from "../ir/types.js";
 
 function dfgOf(code: string, file = "t.ts") {
   const mod = buildIR(loadSource(code, file));
-  return { mod, edges: buildDataFlow(mod) };
+  // Estos tests miran qué fluye adónde; el índice de argumento tiene el suyo.
+  return { mod, edges: buildDataFlow(mod).map(({ kind, from, to }) => ({ kind, from, to })) };
 }
 
 function varsNamed(nodes: IRNode[], name: string): IRVariable[] {

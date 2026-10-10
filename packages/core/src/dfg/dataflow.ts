@@ -54,12 +54,12 @@ export function buildDataFlow(
   const edges: IREdge[] = [];
   const seen = new Set<string>();
 
-  const link = (from: string, to: string): void => {
+  const link = (from: string, to: string, arg?: number): void => {
     if (from === to) return;
-    const key = `${from}\t${to}`;
+    const key = `${from}\t${to}\t${arg ?? ""}`;
     if (seen.has(key)) return;
     seen.add(key);
-    edges.push({ kind: "FLOWS_TO", from, to });
+    edges.push(arg === undefined ? { kind: "FLOWS_TO", from, to } : { kind: "FLOWS_TO", from, to, arg });
   };
 
   const linkFlow = (
@@ -67,17 +67,20 @@ export function buildDataFlow(
     to: string,
     scope: string | null,
     scopePath?: string[],
+    arg?: number,
   ): void => {
-    for (const from of flowInputIds(flow, scope, defsByName, scopePath)) link(from, to);
+    for (const from of flowInputIds(flow, scope, defsByName, scopePath)) link(from, to, arg);
   };
 
-  // Argumentos y receptor de cada llamada fluyen al nodo Call.
+  // Argumentos y receptor de cada llamada fluyen al nodo Call. La arista
+  // recuerda por qué argumento entra (-1: receptor), para los sinks que solo
+  // son peligrosos en algunos (`db.query(sql, [id])`).
   for (const node of mod.nodes) {
     if (node.kind !== "Call" || exactCallIds.has(node.id)) continue;
     const scope = nodeOwnerFnId(node);
     const path = nodeScopePath(node);
-    for (const flow of node.argFlows) linkFlow(flow, node.id, scope, path);
-    linkFlow(node.receiverFlow, node.id, scope, path);
+    node.argFlows.forEach((flow, i) => linkFlow(flow, node.id, scope, path, i));
+    linkFlow(node.receiverFlow, node.id, scope, path, -1);
   }
 
   // El inicializador fluye a la variable declarada.
