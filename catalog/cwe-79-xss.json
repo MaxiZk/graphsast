@@ -1,19 +1,79 @@
 {
   "cwe": 79,
   "name": "Cross-Site Scripting (XSS)",
-  "sources": ["req.query", "req.body", "req.params"],
+  "description": "El dato del usuario se devuelve dentro del HTML sin escapar, y el navegador de otra persona lo ejecuta como código. Sirve para robar sesiones o actuar en nombre de quien mira la página.",
+  "sources": [
+    "req.query",
+    "req.body",
+    "req.params",
+    "req.headers",
+    "req.cookies",
+    "request.query",
+    "request.body",
+    "request.params",
+    "request.headers",
+    "ctx.query",
+    "ctx.params",
+    "ctx.request",
+    "ctx.headers",
+    "@Body",
+    "@Param",
+    "@Query",
+    "@Headers",
+    "@Req",
+    "@Request"
+  ],
   "sinks": [
     "document.write",
+    "document.writeln",
     "innerHTML",
     "outerHTML",
-    "insertAdjacentHTML",
-    "res.send"
+    {
+      "callee": "insertAdjacentHTML",
+      "args": [
+        1
+      ]
+    },
+    "dangerouslySetInnerHTML",
+    "srcdoc",
+    {
+      "callee": "res.send",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".html",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "createContextualFragment",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "setHTMLUnsafe",
+      "args": [
+        0
+      ]
+    }
   ],
   "sanitizers": [
     "sanitize",
     "escape",
     "validate",
     "DOMPurify.sanitize",
-    "xss"
+    "xss",
+    "escapeHtml",
+    "sanitizeHtml",
+    "filterXSS",
+    "he.encode",
+    "he.escape",
+    "parseInt",
+    "parseFloat",
+    "Number"
   ]
 }

@@ -1,20 +1,9 @@
-import type {
-  IRModule, IRNode, IREdge, IRCall, IRVariable,
-} from "../ir/types.js";
-import {
-  isFlowOperand,
-  parseCallInit,
-  parseNewInit,
-  receiverOfCallee,
-  resolveFlowDefs,
-} from "./identifiers.js";
-import { defsInScope, nodeOwnerFnId } from "./scope.js";
+import type { IRModule, IRNode, IREdge, FlowRef } from "../ir/types.js";
+import { resolveCalls } from "../cfg/callgraph.js";
+import { defsInScope, nodeOwnerFnId, nodeScopePath } from "./scope.js";
 
-/**
- * Construye el data-flow graph intra-procedural (aristas `FLOWS_TO`).
- * Las defs solo conectan con usos dentro de la misma función.
- */
-export function buildDataFlow(mod: IRModule): IREdge[] {
+/** Índice de definiciones (variables y parámetros) por nombre. */
+export function buildDefIndex(mod: IRModule): Map<string, IRNode[]> {
   const defsByName = new Map<string, IRNode[]>();
   for (const node of mod.nodes) {
     if (node.kind !== "Variable" && node.kind !== "Parameter") continue;
@@ -22,69 +11,93 @@ export function buildDataFlow(mod: IRModule): IREdge[] {
     if (list) list.push(node);
     else defsByName.set(node.name, [node]);
   }
+  return defsByName;
+}
 
+/**
+ * Ids que alimentan una referencia de flujo dentro de un ámbito:
+ * defs de los identificadores raíz + nodos Call cuyo retorno se consume.
+ */
+export function flowInputIds(
+  flow: FlowRef,
+  scope: string | null,
+  defsByName: Map<string, IRNode[]>,
+  scopePath?: string[],
+): string[] {
+  const out: string[] = [];
+  for (const name of flow.names) {
+    for (const def of defsInScope(defsByName.get(name) ?? [], scope, scopePath)) {
+      out.push(def.id);
+    }
+  }
+  out.push(...flow.callIds);
+  return out;
+}
+
+/**
+ * Construye el data-flow graph intra-procedural (aristas `FLOWS_TO`).
+ * Las defs solo conectan con usos dentro de la misma función.
+ *
+ * `exactCallIds` son las llamadas que se resolvieron con certeza a una función
+ * del código analizado. En ellas los argumentos no fluyen directo al nodo
+ * Call: entran a la función por `BINDS_TO` y el valor de la llamada sale de lo
+ * que la función retorna (`RETURNS`, ver `buildInterproc`). Así lo que la
+ * función hace con el dato —sanearlo, descartarlo— decide si el resultado
+ * sigue contaminado. En una llamada que no se resuelve (una biblioteca, un
+ * sink) el valor de retorno se aproxima por sus argumentos y su receptor.
+ */
+export function buildDataFlow(
+  mod: IRModule,
+  exactCallIds: ReadonlySet<string> = resolveCalls(mod).exactCallIds,
+): IREdge[] {
+  const defsByName = buildDefIndex(mod);
   const edges: IREdge[] = [];
+  const seen = new Set<string>();
 
+  const link = (from: string, to: string, arg?: number): void => {
+    if (from === to) return;
+    const key = `${from}\t${to}\t${arg ?? ""}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    edges.push(arg === undefined ? { kind: "FLOWS_TO", from, to } : { kind: "FLOWS_TO", from, to, arg });
+  };
+
+  const linkFlow = (
+    flow: FlowRef,
+    to: string,
+    scope: string | null,
+    scopePath?: string[],
+    arg?: number,
+  ): void => {
+    for (const from of flowInputIds(flow, scope, defsByName, scopePath)) link(from, to, arg);
+  };
+
+  // Argumentos y receptor de cada llamada fluyen al nodo Call. La arista
+  // recuerda por qué argumento entra (-1: receptor), para los sinks que solo
+  // son peligrosos en algunos (`db.query(sql, [id])`).
   for (const node of mod.nodes) {
-    if (node.kind !== "Call") continue;
-    const call = node as IRCall;
-    const scope = nodeOwnerFnId(call);
-    for (const arg of call.argTexts) {
-      if (!isFlowOperand(arg)) continue;
-      const defs = defsInScope(resolveFlowDefs(arg, defsByName), scope);
-      for (const def of defs) {
-        edges.push({ kind: "FLOWS_TO", from: def.id, to: call.id });
-      }
-    }
-    const recv = receiverOfCallee(call.callee);
-    if (recv) {
-      const defs = defsInScope(resolveFlowDefs(recv, defsByName), scope);
-      for (const def of defs) {
-        edges.push({ kind: "FLOWS_TO", from: def.id, to: call.id });
-      }
-    }
+    if (node.kind !== "Call" || exactCallIds.has(node.id)) continue;
+    const scope = nodeOwnerFnId(node);
+    const path = nodeScopePath(node);
+    node.argFlows.forEach((flow, i) => linkFlow(flow, node.id, scope, path, i));
+    linkFlow(node.receiverFlow, node.id, scope, path, -1);
   }
 
+  // El inicializador fluye a la variable declarada.
   for (const node of mod.nodes) {
     if (node.kind !== "Variable") continue;
-    const variable = node as IRVariable;
-    const init = variable.initText;
-    if (!init) continue;
-    const scope = nodeOwnerFnId(variable);
+    linkFlow(node.initFlow, node.id, nodeOwnerFnId(node), nodeScopePath(node));
+  }
 
-    const newArg = parseNewInit(init);
-    if (newArg) {
-      const defs = defsInScope(resolveFlowDefs(newArg, defsByName), scope);
-      for (const def of defs) {
-        if (def.id === variable.id) continue;
-        edges.push({ kind: "FLOWS_TO", from: def.id, to: variable.id });
-      }
-      continue;
-    }
-
-    if (!isFlowOperand(init)) continue;
-    const defs = defsInScope(resolveFlowDefs(init, defsByName), scope);
+  // `q = expr` alimenta la def existente de `q` en el mismo ámbito.
+  for (const assign of mod.assignments) {
+    const defs = defsInScope(
+      defsByName.get(assign.target) ?? [],
+      assign.ownerFnId,
+      assign.scopePath,
+    );
     for (const def of defs) {
-      if (def.id === variable.id) continue;
-      edges.push({ kind: "FLOWS_TO", from: def.id, to: variable.id });
-    }
-  }
-
-  for (const node of mod.nodes) {
-    if (node.kind !== "Variable") continue;
-    const variable = node as IRVariable;
-    const init = variable.initText;
-    if (!init) continue;
-    const parsed = parseCallInit(init);
-    if (!parsed) continue;
-    const scope = nodeOwnerFnId(variable);
-    for (const callNode of mod.nodes) {
-      if (callNode.kind !== "Call") continue;
-      const call = callNode as IRCall;
-      if (nodeOwnerFnId(call) !== scope) continue;
-      if (call.callee !== parsed.callee) continue;
-      if (call.argTexts.length !== 1 || call.argTexts[0] !== parsed.arg) continue;
-      edges.push({ kind: "FLOWS_TO", from: call.id, to: variable.id });
+      linkFlow(assign.flow, def.id, assign.ownerFnId, assign.scopePath);
     }
   }
 

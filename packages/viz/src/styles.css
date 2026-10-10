@@ -1,10 +1,16 @@
 :root {
-  --bg: #0b0f14;
-  --surface: #121820;
-  --border: #243044;
-  --text: #e8edf4;
-  --muted: #8b9cb3;
-  --accent: #3b82f6;
+  --bg: #070a10;
+  /* Paneles translúcidos sobre el fondo con degradado; --inset para lo que va
+     hundido dentro de un panel (editor, código, grafo, listas). */
+  --surface: rgba(15, 21, 32, 0.72);
+  --inset: rgba(4, 7, 12, 0.7);
+  --border: rgba(148, 163, 184, 0.14);
+  --border-strong: rgba(148, 163, 184, 0.28);
+  --text: #e6ebf3;
+  --muted: #8a9ab2;
+  --accent: #4f8cff;
+  --accent-2: #8b5cf6;
+  --radius: 14px;
   --source: #14b8a6;
   --sink: #ef4444;
   --risk: #f97316;
@@ -13,30 +19,73 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Alto fijo de viewport con scroll por panel: el panel derecho creció con los
+   bloques explicativos y, estirando el grid, empujaba el grafo abajo del
+   pliegue. Ahora cada columna scrollea sola y el grafo siempre se ve entero. */
 body {
   margin: 0;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  background: var(--bg);
+  font-family: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(1100px 600px at 0% -10%, rgba(79, 140, 255, 0.16), transparent 60%),
+    radial-gradient(900px 520px at 100% -5%, rgba(139, 92, 246, 0.14), transparent 60%),
+    radial-gradient(800px 500px at 50% 120%, rgba(20, 184, 166, 0.08), transparent 60%),
+    var(--bg);
   color: var(--text);
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.9rem 1.25rem;
+  padding: 0.85rem 1.4rem;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: rgba(7, 10, 16, 0.55);
+  backdrop-filter: blur(14px);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  padding: 7px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(79, 140, 255, 0.22), rgba(139, 92, 246, 0.22));
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.22);
+}
+
+.brand-name {
+  background: linear-gradient(90deg, #ffffff, #b8c6ff 60%, #d3bdff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: 650;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -73,6 +122,88 @@ body {
   color: var(--muted);
 }
 
+/* Bloques explicativos del panel derecho: para quien abre la app sin saber
+   qué mira. Los colores de las muestras replican los del grafo (cytoscapeStyle
+   en main.ts); si cambian allá, cambiar acá. */
+.reading {
+  margin: 0 0 0.55rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text);
+  border-left: 3px solid var(--risk);
+  padding-left: 0.6rem;
+}
+
+.reading:empty {
+  display: none;
+}
+
+.explain-text {
+  margin: 0 0 0.6rem;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.explainer-head {
+  margin: 0.55rem 0 0.35rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.glossary {
+  margin: 0 0 0.6rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.glossary > div {
+  margin-bottom: 0.4rem;
+}
+
+.glossary dt {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: var(--text);
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 0.72rem;
+}
+
+.glossary dd {
+  margin: 0.1rem 0 0 1.35rem;
+  color: var(--muted);
+}
+
+.node-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  border: 2px solid;
+}
+
+.node-swatch.parameter { background: #0f766e; border-color: #5eead4; }
+.node-swatch.variable { background: #334155; border-color: #94a3b8; }
+.node-swatch.call { background: #4c1d95; border-color: #c4b5fd; }
+.node-swatch.function { background: #475569; border-color: #64748b; opacity: 0.45; }
+
+.edge-swatch {
+  width: 18px;
+  height: 0;
+  flex-shrink: 0;
+  border-top: 3px solid #64748b;
+}
+
+.edge-swatch.flows-to { border-top-color: #38bdf8; }
+.edge-swatch.calls { border-top-color: #64748b; }
+.edge-swatch.binds-to { border-top-color: #a78bfa; }
+.edge-swatch.returns { border-top-color: #64748b; }
+.edge-swatch.sanitized-by { border-top-color: #22c55e; border-top-style: dashed; }
+
 .catalog-list {
   list-style: none;
   margin: 0 0 0.5rem;
@@ -82,9 +213,30 @@ body {
 }
 
 .catalog-list li {
-  margin-bottom: 0.35rem;
-  padding-bottom: 0.35rem;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.55rem;
   border-bottom: 1px solid var(--border);
+}
+
+.catalog-title {
+  margin: 0;
+  color: var(--text);
+}
+
+.catalog-title strong {
+  color: var(--text);
+}
+
+/* Qué es la debilidad, no qué es un catálogo: es lo que hay que poder leer
+   sin que nadie lo explique de palabra. */
+.catalog-desc {
+  margin: 0.2rem 0 0;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.catalog-count {
+  margin: 0.25rem 0 0;
 }
 
 .catalog-list .muted {
@@ -98,29 +250,38 @@ body {
   font-size: 0.82rem;
 }
 
+/* Leyenda del encabezado: se lee proyectada, así que va a tamaño de titular
+   y en color pleno, no en gris de anotación. */
 .legend {
   display: flex;
-  gap: 1rem;
+  gap: 0.6rem;
   margin: 0;
+  flex-wrap: wrap;
 }
 
 .legend div {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.6rem;
+  padding: 0.3rem 0.85rem 0.3rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .legend dd {
   margin: 0;
-  font-size: 0.75rem;
-  color: var(--muted);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .swatch {
-  width: 12px;
-  height: 12px;
+  width: 20px;
+  height: 20px;
   border-radius: 999px;
   margin: 0;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
 }
 
 .swatch.source { background: var(--source); }
@@ -130,16 +291,23 @@ body {
 .layout {
   display: grid;
   grid-template-columns: minmax(300px, 1fr) 2.2fr minmax(260px, 0.9fr);
-  min-height: calc(100vh - 64px);
+  gap: 14px;
+  padding: 14px;
+  flex: 1;
+  min-height: 0;
 }
 
 .panel {
-  border-right: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 1rem;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow-y: auto;
   background: var(--surface);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .panel h2 {
@@ -160,16 +328,24 @@ body {
 
 .btn-primary,
 .btn-ghost {
-  border-radius: 6px;
-  padding: 0.42rem 0.85rem;
+  border-radius: 9px;
+  padding: 0.48rem 0.95rem;
   font-size: 0.82rem;
+  font-weight: 550;
   cursor: pointer;
+  transition: transform 0.12s, filter 0.12s, background 0.12s, border-color 0.12s, color 0.12s;
 }
 
 .btn-primary {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #fff;
   border: none;
+  box-shadow: 0 6px 18px rgba(79, 140, 255, 0.28);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
 .btn-primary:disabled {
@@ -178,9 +354,14 @@ body {
 }
 
 .btn-ghost {
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+
+.btn-ghost:hover {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.4);
 }
 
 .btn-row {
@@ -189,12 +370,15 @@ body {
   flex-wrap: wrap;
 }
 
+/* 200px: entran las 8 líneas de los ejemplos sin scroll. Sin flex: none, el
+   editor de la columna (flex: 1) lo achica por debajo de ese alto. */
 .code-lines {
-  max-height: 140px;
+  flex: none;
+  max-height: 200px;
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #0a0e13;
+  background: var(--inset);
   margin-bottom: 0.65rem;
   font-family: "Cascadia Code", "Consolas", monospace;
   font-size: 0.75rem;
@@ -222,6 +406,12 @@ body {
 .code-line.risk .ln,
 .code-line.risk .text {
   color: #fdba74;
+}
+
+/* `display: grid` le gana a `[hidden]` de la hoja del navegador; sin esto el
+   panel sigue visible después de statsEl.hidden = true. */
+.stats[hidden] {
+  display: none;
 }
 
 .stats {
@@ -268,14 +458,38 @@ body {
   cursor: pointer;
 }
 
+.graph-note {
+  margin: 0 0 0.65rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.rules-details {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.65rem;
+}
+
+.rules-details summary {
+  cursor: pointer;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.rules-details[open] summary {
+  margin-bottom: 0.5rem;
+}
+
 .rules-list {
   list-style: none;
-  margin: 0 0 0.75rem;
+  margin: 0;
   padding: 0;
   font-size: 0.72rem;
   color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.65rem;
+  max-height: 40vh;
+  overflow-y: auto;
 }
 
 .rules-list li {
@@ -297,11 +511,11 @@ body {
 
 .select {
   width: 100%;
-  background: #0a0e13;
+  background: var(--inset);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.45rem 0.55rem;
+  border-radius: 9px;
+  padding: 0.5rem 0.6rem;
   font-size: 0.82rem;
   margin-bottom: 0.45rem;
 }
@@ -320,10 +534,10 @@ body {
   font-family: "Cascadia Code", "Consolas", monospace;
   font-size: 0.8rem;
   line-height: 1.45;
-  background: #0a0e13;
+  background: var(--inset);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0.75rem;
 }
 
@@ -339,12 +553,15 @@ body {
   color: #5f6f86;
 }
 
+/* Grilla de puntos: da referencia de escala al mover y hacer zoom. */
 .cy {
   flex: 1;
   min-height: 420px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #0a0e13;
+  border-radius: 12px;
+  background:
+    radial-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1.3px) 0 0 / 22px 22px,
+    var(--inset);
 }
 
 .node-detail {
@@ -376,12 +593,41 @@ body {
   color: #fdba74;
 }
 
+/* Ámbar: se analizó, pero el resultado no sostiene una afirmación de seguridad. */
+.verdict.unknown {
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  color: #fde68a;
+}
+
+/* Rojo: no se pudo analizar. No es un veredicto de seguridad. */
+.verdict.error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.verdict strong {
+  display: block;
+  font-size: 0.86rem;
+}
+
+.verdict-detail {
+  margin: 0.3rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  opacity: 0.85;
+}
+
+.findings-panel {
+  overflow-y: auto;
+}
+
 .findings-list {
   list-style: none;
-  margin: 0;
+  margin: 0 0 0.25rem;
   padding: 0;
-  overflow-y: auto;
-  flex: 1;
+  flex: none;
 }
 
 .findings-list li {
@@ -391,7 +637,7 @@ body {
 .findings-list button {
   width: 100%;
   text-align: left;
-  background: #0a0e13;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
@@ -407,6 +653,10 @@ body {
   font-size: 0.8rem;
 }
 
+.findings-list button:hover {
+  border-color: var(--border-strong);
+}
+
 .findings-list button.active {
   border-color: var(--risk);
   box-shadow: 0 0 0 1px var(--risk);
@@ -418,9 +668,233 @@ body {
   padding: 0.25rem 0;
 }
 
+/* Pestañas «Tu proyecto» / «Ejemplos». */
+.mode-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--inset);
+}
+
+/* Pestañas y exportación no entran en una fila con la columna angosta. */
+.editor-panel .panel-head {
+  flex-wrap: wrap;
+}
+
+.mode-tab {
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--muted);
+  padding: 0.42rem 0.9rem;
+  transition: background 0.12s, color 0.12s;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mode-tab:hover {
+  color: var(--text);
+}
+
+.mode-tab[aria-selected="true"] {
+  color: var(--text);
+  background: linear-gradient(135deg, rgba(79, 140, 255, 0.3), rgba(139, 92, 246, 0.26));
+  box-shadow: inset 0 0 0 1px rgba(79, 140, 255, 0.45);
+}
+
+/* `display: flex` le gana a `[hidden]`, igual que en .stats. */
+.examples-mode[hidden],
+#project-mode[hidden],
+#project-files[hidden] {
+  display: none;
+}
+
+/* Crece para que el editor ocupe el alto libre, pero nunca por debajo de su
+   contenido: con min-height: 0 las líneas del camino se desbordaban sobre las
+   estadísticas. Si no entra, la columna scrollea. */
+.examples-mode {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+
+/* Altura natural: si se estira como .examples-mode, el visor de código se
+   desborda sobre las estadísticas. La columna scrollea sola. */
+#project-mode {
+  display: flex;
+  flex-direction: column;
+}
+
+.analyze-row {
+  align-items: center;
+  margin: 0.55rem 0 0.65rem;
+}
+
+.analyze-row .hint {
+  margin: 0;
+}
+
+.drop-zone {
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 1.4rem 1rem;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(79, 140, 255, 0.07), rgba(139, 92, 246, 0.04));
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.drop-zone:hover,
+.drop-zone.dragging {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(79, 140, 255, 0.12), rgba(139, 92, 246, 0.08));
+}
+
+.drop-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 0.6rem;
+  padding: 10px;
+  border-radius: 12px;
+  color: #cdd8ff;
+  background: linear-gradient(135deg, rgba(79, 140, 255, 0.3), rgba(139, 92, 246, 0.3));
+}
+
+.drop-zone.busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.drop-title {
+  margin: 0 0 0.7rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.drop-actions {
+  justify-content: center;
+}
+
+.file-btn {
+  display: inline-block;
+}
+
+.privacy {
+  margin: 0.75rem 0 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.selection-summary {
+  margin: 0.6rem 0 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.scan-progress {
+  width: 100%;
+  margin-top: 0.5rem;
+  accent-color: var(--accent);
+}
+
+#project-files {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.8rem;
+}
+
+.file-list {
+  flex: none;
+  list-style: none;
+  margin: 0 0 0.65rem;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--inset);
+}
+
+.file-list button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  color: var(--text);
+  padding: 0.3rem 0.55rem;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 0.74rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.file-list button.active {
+  border-left-color: var(--accent);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.file-list button.vulnerable .file-badge {
+  color: #fdba74;
+  font-weight: 700;
+}
+
+.file-list button.failed {
+  color: #5f6f86;
+  cursor: default;
+}
+
+.file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-badge {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+/* El archivo entero, no solo un fragmento: necesita más alto que el de ejemplos. */
+.code-view {
+  min-height: 200px;
+  max-height: 55vh;
+}
+
+.findings-list .finding-location,
+.findings-list .finding-path {
+  display: block;
+  word-break: break-word;
+}
+
+.findings-list .finding-location {
+  font-family: "Cascadia Code", "Consolas", monospace;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.findings-list .finding-path {
+  margin-top: 0.2rem;
+}
+
 @media (max-width: 1100px) {
+  body {
+    height: auto;
+    overflow: visible;
+  }
+
   .layout {
     grid-template-columns: 1fr;
+  }
+
+  .panel {
+    overflow-y: visible;
   }
 
   .header {

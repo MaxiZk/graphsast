@@ -1,14 +1,166 @@
 {
   "cwe": 78,
   "name": "OS Command Injection",
-  "sources": ["req.query", "req.body", "req.params"],
-  "sinks": [
-    "eval",
-    "exec",
-    "child_process.exec",
-    "child_process.execSync",
-    "spawn",
-    "execSync"
+  "description": "El dato del usuario termina en un comando del sistema operativo. El shell ejecuta lo que el atacante agregue, con los permisos del proceso que corre la aplicación.",
+  "sources": [
+    "req.query",
+    "req.body",
+    "req.params",
+    "req.headers",
+    "req.cookies",
+    "request.query",
+    "request.body",
+    "request.params",
+    "request.headers",
+    "ctx.query",
+    "ctx.params",
+    "ctx.request",
+    "ctx.headers",
+    "@Body",
+    "@Param",
+    "@Query",
+    "@Headers",
+    "@Req",
+    "@Request"
   ],
-  "sanitizers": ["sanitize", "escape", "validate", "shellEscape"]
+  "sinks": [
+    {
+      "callee": "eval",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "exec",
+      "bare": true,
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "execSync",
+      "bare": true,
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "spawn",
+      "bare": true,
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "spawnSync",
+      "bare": true,
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "execFile",
+      "bare": true,
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "execFileSync",
+      "bare": true,
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "child_process.exec",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "child_process.execSync",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "child_process.spawn",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "child_process.spawnSync",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "child_process.execFile",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "child_process.execFileSync",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "shell.exec",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "Bun.spawn",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "Bun.spawnSync",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "vm.runInNewContext",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "vm.runInThisContext",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "vm.runInContext",
+      "args": [
+        0
+      ]
+    }
+  ],
+  "sanitizers": [
+    "sanitize",
+    "escape",
+    "validate",
+    "shellEscape",
+    "shellescape",
+    "parseInt",
+    "parseFloat",
+    "Number"
+  ]
 }

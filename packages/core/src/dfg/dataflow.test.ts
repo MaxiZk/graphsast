@@ -6,7 +6,8 @@ import type { IRNode, IRCall } from "../ir/types.js";
 
 function dfgOf(code: string, file = "t.ts") {
   const mod = buildIR(loadSource(code, file));
-  return { mod, edges: buildDataFlow(mod) };
+  // Estos tests miran qué fluye adónde; el índice de argumento tiene el suyo.
+  return { mod, edges: buildDataFlow(mod).map(({ kind, from, to }) => ({ kind, from, to })) };
 }
 
 function nodeByName(nodes: IRNode[], kind: IRNode["kind"], name: string) {
@@ -47,9 +48,45 @@ describe("buildDataFlow — R1 (uso en llamada)", () => {
     expect(edges.filter((e) => e.kind === "FLOWS_TO")).toHaveLength(0);
   });
 
-  it("argumento que no es identificador simple no genera arista", () => {
-    const { edges } = dfgOf(`const x = 1; db.query(x + 1);`);
+  it("argumento compuesto propaga la raíz del identificador", () => {
+    const { mod, edges } = dfgOf(`const x = 1; db.query(x + 1);`);
+
+    const variable = nodeByName(mod.nodes, "Variable", "x");
+    const call = mod.nodes.find(
+      (n): n is IRCall => n.kind === "Call" && n.callee === "db.query",
+    )!;
+    expect(edges.filter((e) => e.kind === "FLOWS_TO")).toContainEqual({
+      kind: "FLOWS_TO",
+      from: variable.id,
+      to: call.id,
+    });
+  });
+
+  it("argumento sin identificadores no genera arista", () => {
+    const { edges } = dfgOf(`db.query("a" + "b");`);
     expect(edges.filter((e) => e.kind === "FLOWS_TO")).toHaveLength(0);
+  });
+
+  it("template literal propaga la raíz interpolada", () => {
+    const { mod, edges } = dfgOf(
+      "function h(req){ db.query(`SELECT * FROM u WHERE id=${req.params.id}`); }",
+    );
+    const param = nodeByName(mod.nodes, "Parameter", "req");
+    const call = mod.nodes.find(
+      (n): n is IRCall => n.kind === "Call" && n.callee === "db.query",
+    )!;
+    expect(edges).toContainEqual({ kind: "FLOWS_TO", from: param.id, to: call.id });
+  });
+
+  it("asignación posterior alimenta la def declarada", () => {
+    const { mod, edges } = dfgOf(`function h(req){ let q; q = req.body; db.query(q); }`);
+    const param = nodeByName(mod.nodes, "Parameter", "req");
+    const variable = nodeByName(mod.nodes, "Variable", "q");
+    expect(edges).toContainEqual({
+      kind: "FLOWS_TO",
+      from: param.id,
+      to: variable.id,
+    });
   });
 });
 
@@ -138,5 +175,20 @@ describe("buildDataFlow — req.body (operando miembro)", () => {
       from: param.id,
       to: call.id,
     });
+  });
+});
+
+describe("buildDataFlow — por qué argumento entra el dato", () => {
+  it("cada FLOWS_TO hacia una llamada lleva la posición del argumento, o -1 si es el receptor", () => {
+    const mod = buildIR(loadSource(
+      `function h(sql, id, conn) { conn.query(sql, [id]); }`,
+      "t.ts",
+    ));
+    const edges = buildDataFlow(mod);
+    const call = mod.nodes.find((n) => n.kind === "Call" && n.name === "conn.query")!;
+    const param = (name: string) => mod.nodes.find((n) => n.kind === "Parameter" && n.name === name)!.id;
+    expect(edges).toContainEqual({ kind: "FLOWS_TO", from: param("sql"), to: call.id, arg: 0 });
+    expect(edges).toContainEqual({ kind: "FLOWS_TO", from: param("id"), to: call.id, arg: 1 });
+    expect(edges).toContainEqual({ kind: "FLOWS_TO", from: param("conn"), to: call.id, arg: -1 });
   });
 });

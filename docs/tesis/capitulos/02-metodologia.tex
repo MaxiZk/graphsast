@@ -1,0 +1,175 @@
+%!TEX root = ../main.tex
+% =============================================================
+%  CAPÍTULO 2 — METODOLOGÍA             (Entrega 2 · 5 % · 5/5)
+% =============================================================
+
+\chapter{Metodología y procedimientos}\label{cap:metodologia}
+
+\begin{guia}[Guía de la cátedra: qué se evalúa en este capítulo]
+La cátedra exige \textbf{dos metodologías}. El error más común es
+entregar solo una.
+\begin{enumerate}
+    \item \textbf{Metodología de la investigación}: área temática,
+          planteamiento y delimitación del problema, marco teórico
+          previsto, diseño concreto (fases), indicadores medibles con
+          fuente y umbral, técnicas de recolección, instrumentos, datos,
+          procesamiento, análisis crítico y síntesis. Tipo de
+          investigación: en general, aplicada.
+    \item \textbf{Metodología de dirección del proyecto}: marco de trabajo
+          justificado, alcance y entregables, cronograma con fechas reales
+          (Gantt con hitos que coinciden con las entregas), costos, riesgos
+          (referencia al capítulo~\ref{cap:riesgos}), calidad, recursos y
+          satisfacción de las partes interesadas.
+    \item \textbf{Declaración de uso de IA}: qué tareas fueron asistidas y
+          cómo se verificaron. Los prompts se guardan en una carpeta
+          compartida con la cátedra.
+\end{enumerate}
+Extensión orientativa: 6 a 10 páginas. Referencias habituales:
+Hernández Sampieri et al. (2014) para investigación y \citet{pmi2021}
+para gestión.
+\end{guia}
+
+\section{Metodología de la investigación}\label{sec:n2.1}
+
+\subsection{Área temática}\label{sec:n2.1.1}
+
+Ciberseguridad aplicada y análisis de programas: análisis estático de código (SAST), representación del programa mediante grafos y análisis de flujo de datos (taint analysis).
+
+\subsection{Planteamiento del problema}\label{sec:n2.1.2}
+
+¿Puede un analizador basado en grafos de flujo de datos detectar vulnerabilidades de arquitectura con mayor precisión y menos falsos positivos que las herramientas basadas en coincidencia de patrones de texto?
+
+\subsection{Delimitación de la investigación}\label{sec:n2.1.3}
+
+El motor se enfoca en el lenguaje base TypeScript/JavaScript y en tres patrones de riesgo definidos según el catálogo CWE (CWE-89 Inyección SQL, CWE-79 Cross-Site Scripting y CWE-78 Inyección de Comandos). No se incluyen la corrección automática de código ni la integración como complemento (plugin) de entornos de desarrollo comerciales.
+
+\section{Marco teórico}\label{sec:n2.2}
+
+El proyecto se apoya en la teoría de grafos, en los métodos de compilación (análisis sintáctico y árboles de sintaxis abstracta) y en el análisis de flujo de control y de datos. El concepto central es el análisis de taint: el seguimiento de los datos no confiables desde su punto de entrada (source) hasta los puntos críticos donde se utilizan (sink), verificando si fueron sanitizados en el trayecto. Bajo este planteo, la seguridad se formaliza como un problema de accesibilidad sobre un grafo dirigido: existe una vulnerabilidad cuando hay un camino desde un source hasta un sink que no atraviesa un sanitizer.
+
+\section{Diseño concreto de investigación}\label{sec:n2.3}
+
+\subsection{Indicadores}\label{sec:n2.3.1}
+
+\begin{table}[H]
+    \centering
+    \caption{Indicadores de evaluación del prototipo}
+    \label{tab:indicadores}
+    \small
+    \begin{tabularx}{\textwidth}{l L L}
+        \toprule
+        \tb{Indicador} & \tb{Definición operativa} & \tb{Medición prevista} \\
+        \midrule
+        Precisión (Precision) & Proporción de vulnerabilidades reales sobre el total de alertas emitidas. & TP / (TP + FP) \\
+        Exhaustividad (Recall) & Proporción de vulnerabilidades reales detectadas sobre el total existente. & TP / (TP + FN) \\
+        Falsos positivos (FP) & Alertas generadas sobre código seguro o sanitizado. & Conteo de instancias marcadas erróneamente. \\
+        Falsos negativos (FN) & Vulnerabilidades reales presentes que el sistema no detecta. & Conteo de omisiones. \\
+        Tiempo de análisis & Tiempo de cómputo para procesar el AST, construir el grafo y ejecutar las consultas por cada 1.000 líneas de código (KLOC). & Medición en segundos mediante scripts de benchmarking. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Técnicas de recolección de datos}\label{sec:n2.3.2}
+
+Selección de repositorios públicos con vulnerabilidades documentadas y construcción de casos sintéticos con fallas controladas.
+
+\subsection{Instrumentos de recolección de datos}\label{sec:n2.3.3}
+
+Banco de pruebas versionado, scripts de evaluación automatizada y planilla de registro de resultados por caso.
+
+\subsection{Datos}\label{sec:n2.3.4}
+
+Código fuente de los proyectos de prueba, etiquetas de las vulnerabilidades esperadas y mediciones de desempeño del analizador.
+
+\subsection{Procesamiento de los datos}\label{sec:n2.3.5}
+
+Ejecución del analizador sobre cada caso, generación del grafo, ejecución de las consultas de detección y registro de aciertos, falsos positivos y falsos negativos.
+
+\subsection{Análisis de los datos}\label{sec:n2.3.6}
+
+Cálculo de las métricas de desempeño, comparación contra la herramienta de referencia y análisis de los tiempos de cómputo en función del tamaño del código.
+
+\subsection{Síntesis y conclusiones}\label{sec:n2.3.7}
+
+Se evaluarán las hipótesis H1-H3 a partir de los resultados, determinando si el enfoque por grafos mejora la detección y reduce el ruido respecto del análisis por patrones.
+
+\section{Detalle del proyecto}\label{sec:n2.4}
+
+\subsection{Alcance}\label{sec:n2.4.1}
+
+Incluye: motor para el lenguaje base TypeScript/JavaScript, detección de tres patrones de riesgo arquitectónico (CWE-89, CWE-79 y CWE-78), persistencia del grafo, visualización interactiva y banco de pruebas con evaluación reproducible.
+
+No incluye: corrección o refactorización automática del código, ni integración nativa como complemento de entornos de desarrollo comerciales.
+
+\subsection{Tiempos}\label{sec:n2.4.2}
+
+El cronograma se organiza en etapas de desarrollo, validación y redacción, ajustables al calendario académico.
+
+\begin{table}[H]
+    \centering
+    \caption{Cronograma de desarrollo e implementación}
+    \label{tab:hitos}
+    \small
+    \begin{tabularx}{\textwidth}{l L l}
+        \toprule
+        \tb{Etapa / Hito} & \tb{Entregable} & \tb{Período estimado} \\
+        \midrule
+        Hito 1 & Analizador y extracción del Árbol de Sintaxis Abstracta (AST). & Mes 1-2 \\
+        Hito 2 & Algoritmo de construcción del grafo de flujo de datos. & Mes 3-4 \\
+        Hito 3 & Motor de consultas (taint analysis) e integración con la base de datos de grafos. & Mes 5-6 \\
+        Hito 4 & Interfaz web interactiva de visualización. & Mes 7-8 \\
+        Hito 5 & Validación con proyectos reales, benchmarking y redacción de la memoria final. & Mes 9-10 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Costos}\label{sec:n2.4.3}
+
+El proyecto se plantea como un prototipo académico de bajo costo, priorizando herramientas libres, documentación pública y recursos propios.
+
+\begin{table}[H]
+    \centering
+    \caption{Costos estimados del proyecto}
+    \label{tab:costos}
+    \small
+    \begin{tabularx}{\textwidth}{l L L}
+        \toprule
+        \tb{Recurso} & \tb{Tipo} & \tb{Costo estimado} \\
+        \midrule
+        Hardware & Equipo de cómputo personal de desarrollo. & Sin costo adicional \\
+        Software y base de datos & ts-morph, Neo4j Community, Cytoscape.js, Vite, Vitest. & Licencias open source / gratuitas \\
+        Datos de prueba & Repositorios públicos (OWASP, NIST SARD, GitHub). & Acceso público sin costo \\
+        Total estimado & — & USD 0,00 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Riesgos}\label{sec:n2.4.4}
+
+\begin{table}[H]
+    \centering
+    \caption{Riesgos principales y mitigación}
+    \label{tab:riesgos-iniciales}
+    \small
+    \begin{tabularx}{\textwidth}{L l l L}
+        \toprule
+        \tb{Riesgo} & \tb{Probabilidad} & \tb{Impacto} & \tb{Mitigación} \\
+        \midrule
+        Complejidad excesiva en el análisis del lenguaje & Media & Alto & Emplear bibliotecas de parsing maduras y acotar las construcciones sintácticas soportadas a un subconjunto documentado. \\
+        Degradación del rendimiento al escalar el grafo & Media & Medio & Optimizar los índices en la base de datos, acotar la profundidad de búsqueda en los recorridos y limitar el análisis de dependencias externas. \\
+        Generación elevada de falsos positivos & Media & Alto & Refinar la definición de sources, sinks y sanitizadores en el catálogo, e incorporar verificaciones de contexto en el motor de consultas. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Calidad}\label{sec:n2.4.5}
+
+La calidad se asegura mediante un banco de pruebas versionado, una evaluación automatizada y reproducible, y pruebas unitarias del software (Vitest) por módulo.
+
+\subsection{Recursos}\label{sec:n2.4.6}
+
+Humanos: el alumno. Tecnológicos: biblioteca de parsing (ts-morph), base de datos de grafos (Neo4j), biblioteca de visualización (Cytoscape.js) y entorno de testing (Vitest). Materiales: equipo de desarrollo personal.
+
+\subsection{Satisfacción}\label{sec:n2.4.7}
+
+El grado de satisfacción se mide por la precisión alcanzada y la reducción de falsos positivos respecto de la herramienta de referencia, y por la claridad de la visualización para identificar el recorrido del riesgo.

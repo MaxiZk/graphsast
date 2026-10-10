@@ -6,124 +6,44 @@ export interface DemoExample {
   expectFinding: boolean;
 }
 
-export const DEMO_EXAMPLES: DemoExample[] = [
-  {
-    id: "intra",
-    title: "A · SQLi intra-procedural",
-    description: "input fluye a db.query sin sanitizar.",
-    expectFinding: true,
-    code: `function handler(input) {
-  const q = input;
-  db.query(q);
-}`,
-  },
-  {
-    id: "inter",
-    title: "B · SQLi inter-procedural",
-    description: "El dato cruza funciones vía BINDS_TO.",
-    expectFinding: true,
-    code: `function sink(q) {
-  db.query(q);
+/**
+ * La misma función en dos versiones que difieren en una línea: el id de la URL
+ * llega a la consulta pasando por otra función, y en la segunda versión pasa
+ * antes por sanitize(). Comparar los dos grafos muestra dónde se corta el
+ * camino, que es lo que la demo tiene que enseñar.
+ */
+const CONSULTA = `function buscarUsuario(req) {
+  const id = req.params.id;
+  return consultarUsuario(id);
 }
 
-function handler(input) {
-  sink(input);
-}`,
-  },
+function consultarUsuario(id) {
+  return db.query("SELECT * FROM usuarios WHERE id = " + id);
+}`;
+
+export const DEMO_EXAMPLES: DemoExample[] = [
   {
-    id: "safe-literal",
-    title: "C · Sin vulnerabilidad",
-    description: "El sink usa un literal, no el dato tainted.",
-    expectFinding: false,
-    code: `function handler(input) {
-  db.query("SELECT 1");
-}`,
+    id: "vulnerable",
+    title: "Con vulnerabilidad (SQL Injection)",
+    description:
+      "El id de la URL pasa a otra función y llega a db.query concatenado en "
+      + "la consulta, sin sanitizar.",
+    expectFinding: true,
+    code: CONSULTA,
   },
   {
     id: "sanitized",
-    title: "D · Sanitizado",
-    description: "sanitize() en el camino bloquea el hallazgo.",
+    title: "Sanitizado",
+    description:
+      "El mismo código, pero el id pasa por sanitize() antes de la consulta: "
+      + "el camino se corta y no hay hallazgo.",
     expectFinding: false,
-    code: `function handler(input) {
-  const safe = sanitize(input);
-  db.query(safe);
-}`,
-  },
-  {
-    id: "req-body",
-    title: "E · req.body (Express)",
-    description: "Entrada HTTP vía req.body hasta db.query.",
-    expectFinding: true,
-    code: `function handler(req) {
-  const q = req.body;
-  db.query(q);
-}`,
-  },
-  {
-    id: "eval-sink",
-    title: "F · eval (command injection)",
-    description: "Parámetro de función llega a eval().",
-    expectFinding: true,
-    code: `function handler(input) {
-  eval(input);
-}`,
-  },
-  {
-    id: "finance-app",
-    title: "G · Finance App (Express)",
-    description: "Modelo de tu API: req.body → persistencia Mongoose sin validar.",
-    expectFinding: true,
-    code: `function postFinances(req, res) {
-  const data = req.body;
-  Finance.create(data);
-}
-
-function putFinance(req, res) {
-  const id = req.params.id;
-  const data = req.body;
-  Finance.findByIdAndUpdate(id, data);
-}`,
-  },
-  {
-    id: "express-arrow",
-    title: "H · Express arrow callback",
-    description: "app.post con async (req, res) => … — patrón real de rutas.",
-    expectFinding: true,
-    code: `app.post('/finances', async (req, res) => {
-  const data = req.body;
-  Finance.create(data);
-});`,
-  },
-  {
-    id: "xss",
-    title: "I · XSS document.write",
-    description: "CWE-79: salida HTML sin sanitizar.",
-    expectFinding: true,
-    code: `function render(msg) {
-  document.write(msg);
-}`,
-  },
-  {
-    id: "finance-full",
-    title: "G+ · Finance App completa",
-    description: "Tres handlers Mongoose con scoping por función.",
-    expectFinding: true,
-    code: `function postFinances(req, res) {
-  const data = req.body;
-  Finance.create(data);
-}
-function putFinance(req, res) {
-  const id = req.params.id;
-  const data = req.body;
-  Finance.findByIdAndUpdate(id, data);
-}
-function deleteFinance(req, res) {
-  Finance.findByIdAndDelete(req.params.id);
-}`,
+    code: CONSULTA.replace("const id = req.params.id;", "const id = sanitize(req.params.id);"),
   },
 ];
 
-export const DEFAULT_EXAMPLE_ID = "intra";
+/** Arranca en la versión vulnerable: sin hallazgo no hay camino que mirar. */
+export const DEFAULT_EXAMPLE_ID = "vulnerable";
 
 export function getExample(id: string): DemoExample {
   return DEMO_EXAMPLES.find((e) => e.id === id) ?? DEMO_EXAMPLES[0]!;

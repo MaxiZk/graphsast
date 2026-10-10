@@ -1,0 +1,146 @@
+%!TEX root = ../main.tex
+% APÉNDICE A — Encuesta de validación
+% Fuente: docs/validacion/h3/protocolo.md del repositorio de código.
+
+\chapter{Encuesta de validación}\label{apx:encuesta}
+
+\begin{guia}
+Los apéndices contienen material producido por el autor que respalda
+el cuerpo pero lo interrumpiría. Acá va la encuesta completa: para qué
+se hizo, cómo se diseñó y distribuyó, a cuántas personas llegó y el
+cuestionario tal como lo vieron quienes respondieron. Los resultados
+se analizan en el capítulo~\ref{cap:resultados}.
+\end{guia}
+
+\section{Introducción}
+
+La encuesta forma parte de la validación de la hipótesis H3: la
+visualización del recorrido de los datos facilita al desarrollador la
+comprensión del riesgo frente a un listado de errores en texto. Se
+aplica dentro de una sesión en la que cada participante resuelve dos
+tareas, una con el reporte de texto de la línea de comandos y otra con
+la visualización del grafo, y responde las mismas preguntas en ambas.
+Incluye además una pregunta sobre la disposición a pagar el precio
+definido en el capítulo~\ref{cap:economica}, que da seguimiento al
+riesgo R-07.
+
+\section{Metodología}
+
+\paragraph{Diseño.} Estudio intra-sujeto con dos casos equivalentes y
+orden contrabalanceado. El caso A contiene una inyección SQL y el caso B
+una inyección de comandos; ambos tienen dos archivos, un camino
+vulnerable que los cruza pasando por tres funciones y un endpoint
+saneado que funciona como distractor. Cada participante recibe uno de
+cuatro órdenes (tabla~\ref{tab:ordenes}), asignados en forma rotativa.
+
+\begin{table}[H]
+    \centering
+    \caption{Órdenes de presentación de las condiciones y los casos}
+    \label{tab:ordenes}
+    \small
+    \begin{tabular}{l l l}
+        \toprule
+        \tb{Orden} & \tb{Primera tarea} & \tb{Segunda tarea} \\
+        \midrule
+        O1 & Texto, caso A & Grafo, caso B \\
+        O2 & Grafo, caso A & Texto, caso B \\
+        O3 & Texto, caso B & Grafo, caso A \\
+        O4 & Grafo, caso B & Texto, caso A \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Población y canal.} Personas que programan en JavaScript o
+TypeScript con regularidad y que no participaron del desarrollo del
+sistema. La convocatoria se realizó por mensaje directo, con sesiones
+remotas de veinte minutos. \completar{Período de aplicación, cantidad de
+personas convocadas y cantidad de sesiones realizadas.}
+
+\paragraph{Registro.} Por cada tarea se registran el acierto en las
+preguntas P1 a P4 (de 0 a 4, según una clave de corrección fijada antes
+de las sesiones), el tiempo hasta responder P4, con un límite de seis
+minutos, y las valoraciones L1 y L2.
+
+\section{Presentación de la encuesta}
+
+Texto leído al inicio de cada sesión:
+
+\begin{quote}
+La sesión dura veinte minutos. Vas a mirar dos fragmentos de código con
+los resultados de una herramienta y responder cuatro preguntas sobre
+cada uno. Se evalúa la herramienta, no a vos. Registro el tiempo y tus
+respuestas sin tu nombre, y los resultados se usan solo en mi proyecto
+final. Podés dejar la sesión cuando quieras. ¿Estás de acuerdo?
+\end{quote}
+
+\section{Cuestionario}
+
+\paragraph{Preguntas de cada tarea} (abiertas; entre corchetes, el
+nombre que corresponde a cada caso):
+\begin{enumerate}
+    \item[P1.] ¿Qué dato ingresado por el usuario llega a la operación
+          peligrosa?
+    \item[P2.] ¿Por qué funciones pasa ese dato, en orden, hasta llegar a
+          ella?
+    \item[P3.] ¿El endpoint [\texttt{verCliente} / \texttt{diagnostico}]
+          tiene la misma vulnerabilidad? ¿Por qué?
+    \item[P4.] Si tuvieras que corregir la vulnerabilidad con un solo
+          cambio, ¿en qué archivo y línea lo harías?
+\end{enumerate}
+
+\paragraph{Valoración de cada tarea} (escala de 1, totalmente en
+desacuerdo, a 5, totalmente de acuerdo):
+\begin{enumerate}
+    \item[L1.] Entendí por dónde viaja el dato desde la entrada hasta la
+          operación peligrosa.
+    \item[L2.] Tengo claro dónde aplicar la corrección.
+\end{enumerate}
+
+\paragraph{Preguntas finales:}
+\begin{enumerate}
+    \item[F1.] ¿Con cuál de las dos formas preferirías trabajar: texto,
+          grafo o indistinto? ¿Por qué? (opción única y abierta)
+    \item[F2.] Una herramienta así, que corre en el navegador sin enviar
+          tu código a un servidor, ¿la pagarías a USD 8 por mes? Sí / No /
+          Solo con otras funciones, ¿cuáles? (opción única y abierta)
+    \item[F3.] ¿Algo que te haya costado o que agregarías? (abierta)
+\end{enumerate}
+
+\section{Casos utilizados}
+
+\begin{lstlisting}[caption={Caso A, archivo \texttt{rutas.js}}, label={lst:caso-a-rutas}]
+import { buscarPedidos, buscarCliente } from "./pedidos.js";
+
+export function listarPedidos(req, res) {
+  const estado = req.query.estado;
+  const filtro = armarFiltro(estado);
+  res.json(buscarPedidos(filtro));
+}
+
+export function verCliente(req, res) {
+  const id = sanitize(req.params.id);
+  res.json(buscarCliente(id));
+}
+
+function armarFiltro(valor) {
+  return "estado = '" + valor + "'";
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Caso A, archivo \texttt{pedidos.js}}, label={lst:caso-a-pedidos}]
+export function buscarPedidos(filtro) {
+  return db.query("SELECT * FROM pedidos WHERE " + filtro);
+}
+
+export function buscarCliente(id) {
+  return db.query("SELECT * FROM clientes WHERE id = " + id);
+}
+\end{lstlisting}
+
+El caso B tiene la misma estructura: \texttt{exportarReporte} recibe
+\texttt{req.body.carpeta}, la pasa por \texttt{armarRuta} y llega a
+\texttt{execSync} en \texttt{comprimirCarpeta}; el distractor
+\texttt{diagnostico} pasa el host por \texttt{validate}. Los archivos de
+ambos casos y los reportes de texto entregados a los participantes se
+encuentran en la carpeta \texttt{docs/validacion/h3/} del repositorio
+(anexo~\ref{anx:repositorios}).

@@ -40,3 +40,36 @@ describe("analyzeGraph (fachada)", () => {
     ).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe("SANITIZED_BY", () => {
+  it("marca la arista que sale de la llamada de saneamiento", () => {
+    const graph = analyzeGraph(
+      `function handler(input) {
+  const safe = sanitize(input);
+  db.query(safe);
+}`,
+      "a.ts",
+    );
+    const sanitizeCall = graph.nodes.find(
+      (n) => n.kind === "Call" && n.name === "sanitize",
+    )!;
+    const out = graph.edges.filter((e) => e.from === sanitizeCall.id);
+    expect(out).not.toHaveLength(0);
+    expect(out.every((e) => e.kind === "SANITIZED_BY")).toBe(true);
+
+    // La entrada al sanitizer sigue siendo flujo normal.
+    expect(
+      graph.edges.some((e) => e.to === sanitizeCall.id && e.kind === "FLOWS_TO"),
+    ).toBe(true);
+  });
+
+  it("no altera un grafo sin sanitizers", () => {
+    const graph = analyzeGraph(
+      `function handler(input) {
+  db.query(input);
+}`,
+      "a.ts",
+    );
+    expect(graph.edges.some((e) => e.kind === "SANITIZED_BY")).toBe(false);
+  });
+});

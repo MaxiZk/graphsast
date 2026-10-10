@@ -1,16 +1,20 @@
 import { loadSource } from "./parser/parser.js";
 import { buildIR } from "./ir/builder.js";
-import { buildCallGraph } from "./cfg/callgraph.js";
-import { buildDataFlow } from "./dfg/dataflow.js";
-import { buildInterproc } from "./dfg/interproc.js";
+import { analyzeGraph } from "./ir/graph.js";
 import { analyzeTaint } from "./taint/analyzer.js";
-import type { IRModule, IRGraph } from "./ir/types.js";
+import type { IRModule } from "./ir/types.js";
 
 export * from "./ir/types.js";
+export { analyzeGraph, graphFromSourceFile } from "./ir/graph.js";
 export { buildCallGraph } from "./cfg/callgraph.js";
 export { buildDataFlow } from "./dfg/dataflow.js";
 export { buildInterproc } from "./dfg/interproc.js";
 export { analyzeTaint, getTaintRoles } from "./taint/analyzer.js";
+export { markSanitizedEdges } from "./taint/sanitized.js";
+export { parseSource, loadSource } from "./parser/parser.js";
+export type { ParseResult, Dialect } from "./parser/parser.js";
+export { buildVerdict } from "./engine/verdict.js";
+export type { Verdict, VerdictKind, VerdictInput } from "./engine/verdict.js";
 export { defaultTaintRules, getRuleLabels, getCatalogBundle, RULE_LABELS } from "./taint/rules.js";
 export { findPath, reaches, DEFAULT_TAINT_PROPAGATE_EDGES } from "./taint/reach.js";
 export type { TaintConfig, TaintFinding, TaintRule, TaintRoles } from "./taint/types.js";
@@ -42,6 +46,46 @@ export { buildAnalysisReport, reportToJson } from "./report/json.js";
 export { reportToHtml } from "./report/html.js";
 export type { AnalysisReport } from "./report/json.js";
 
+export { scanPaths, scanSource, toScanFindings } from "./scan/scan.js";
+export { scanFiles, scanFilesWithGraphs } from "./scan/scan-files.js";
+export type { ScanInput, ScanGraph, ScanFilesOutput } from "./scan/scan-files.js";
+export {
+  discoverFiles,
+  commonRoot,
+  assertReadableTarget,
+  ScanInputError,
+} from "./scan/files.js";
+export { reportToText } from "./scan/reporters/text.js";
+export { reportToSarif } from "./scan/reporters/sarif.js";
+export {
+  API_HOST,
+  DEFAULT_API_PORT,
+  MAX_BODY_BYTES,
+  createApiHandler,
+  isLoopbackUri,
+  resolveLocalNeo4j,
+  startApiServer,
+} from "./server/server.js";
+export { analyzeCode } from "./server/analyze-code.js";
+export { analyzeSource } from "./engine/payload.js";
+export type { AnalysisPayload } from "./engine/payload.js";
+export { resolveInsideRoot, PathRejectedError } from "./server/paths.js";
+export { VERSION } from "./version.js";
+export {
+  ALWAYS_IGNORE,
+  DEFAULT_EXTENSIONS,
+  DEFAULT_IGNORE,
+  DEFAULT_MAX_FILE_BYTES,
+} from "./scan/types.js";
+export type {
+  ScanResult,
+  ScanFileResult,
+  ScanFinding,
+  ScanStep,
+  ScanOptions,
+  ScanTotals,
+} from "./scan/types.js";
+
 export { runBenchmark, formatReportTable } from "./eval/run-benchmark.js";
 export { BENCHMARK_CORPUS, corpusStats } from "./eval/benchmark/corpus.js";
 export type {
@@ -53,21 +97,7 @@ export type {
 
 /** Punto de entrada del core: texto fuente -> IRModule. */
 export function analyze(code: string, file = "input.ts"): IRModule {
-  return buildIR(loadSource(code, file));
-}
-
-/**
- * Texto fuente -> IRGraph: nodos + aristas CALLS (call graph), FLOWS_TO
- * (def-use intra-procedural) y BINDS_TO/RETURNS (cruce inter-procedural).
- */
-export function analyzeGraph(code: string, file = "input.ts"): IRGraph {
-  const mod = buildIR(loadSource(code, file));
-  const edges = [
-    ...buildCallGraph(mod),
-    ...buildDataFlow(mod),
-    ...buildInterproc(mod),
-  ];
-  return { file: mod.file, nodes: mod.nodes, edges };
+  return buildIR(loadSource(code, file), file);
 }
 
 /** Texto fuente → findings de taint sobre el grafo completo. */
