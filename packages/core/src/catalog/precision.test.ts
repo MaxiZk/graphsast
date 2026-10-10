@@ -82,13 +82,18 @@ describe("sanitizers por CWE", () => {
   });
 });
 
+describe("respuestas de bajo nivel", () => {
+  it("res.end(JSON.stringify(x)) no se marca como XSS: suele ser una respuesta JSON", () => {
+    expect(cwesOf(`function h(req, res) { res.end(JSON.stringify(req.body)); }`)).toEqual([]);
+  });
+});
+
 describe("sinks nuevos del catálogo", () => {
   it.each([
     [`function h(req) { knex.raw("SELECT * FROM t WHERE a = " + req.query.a); }`, 89],
     [`function h(req) { qb.whereRaw("a = " + req.query.a); }`, 89],
     [`function h(req) { prisma.$queryRawUnsafe("SELECT " + req.query.a); }`, 89],
     [`function h(req) { db.prepare("SELECT * FROM t WHERE a = " + req.query.a).get(); }`, 89],
-    [`function h(req) { res.write(req.query.q); }`, 79],
     [`function h(req) { $("#out").html(req.query.q); }`, 79],
     [`function h(req) { frame.srcdoc = req.query.q; }`, 79],
     [`function h(req) { User.findOneAndUpdate({ _id: req.params.id }, req.body); }`, 943],

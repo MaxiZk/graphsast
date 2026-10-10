@@ -43,18 +43,6 @@
       ]
     },
     {
-      "callee": "res.write",
-      "args": [
-        0
-      ]
-    },
-    {
-      "callee": "res.end",
-      "args": [
-        0
-      ]
-    },
-    {
       "callee": ".html",
       "args": [
         0
