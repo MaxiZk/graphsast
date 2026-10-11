@@ -26,11 +26,15 @@ COPY packages/viz/package.json packages/viz/
 RUN npm ci --omit=dev --workspace @graphsast/core --include-workspace-root
 
 FROM gcr.io/distroless/nodejs22-debian12:nonroot
+LABEL org.opencontainers.image.source="https://github.com/MaxiZk/graphsast" \
+      org.opencontainers.image.description="GraphSAST: análisis de flujo de datos (taint) para JavaScript y TypeScript" \
+      org.opencontainers.image.licenses="MIT"
 WORKDIR /app
 COPY --from=deps /app/node_modules node_modules
 COPY --from=build /app/packages/core/package.json packages/core/package.json
 COPY --from=build /app/packages/core/dist packages/core/dist
 COPY catalog catalog
+COPY LICENSE LICENSE
 WORKDIR /src
 ENTRYPOINT ["/nodejs/bin/node", "/app/packages/core/dist/cli/graphsast.cli.js"]
 CMD ["--help"]

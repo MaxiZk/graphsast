@@ -22,3 +22,7 @@ for (const f of result.findings) console.log(`CWE-${f.cwe}`, `${f.file}:${f.sink
 
 El código no sale de la máquina. Documentación completa, versión web y
 limitaciones: https://github.com/MaxiZk/graphsast
+
+## Licencia
+
+MIT.
