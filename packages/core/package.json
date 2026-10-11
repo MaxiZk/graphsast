@@ -1,6 +1,6 @@
 {
   "name": "@graphsast/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Análisis estático de flujo de datos (taint) para JavaScript y TypeScript: SQLi, inyección de comandos, XSS y NoSQLi, con salida SARIF.",
   "license": "MIT",
   "keywords": [

@@ -106,7 +106,7 @@ con código 2 en vez de reportar «sin hallazgos».
 paquete (`graphsast-core-<versión>.tgz`), que se instala igual:
 
 ```bash
-npm install -g ./graphsast-core-0.1.0.tgz   # o la URL del asset del release
+npm install -g ./graphsast-core-0.1.1.tgz   # o la URL del asset del release
 graphsast scan .
 ```
 
