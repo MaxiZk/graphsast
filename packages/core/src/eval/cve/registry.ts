@@ -48,7 +48,7 @@ export async function fetchPackageVersions(
   name: string,
   options: FetchOptions = {},
 ): Promise<PackageVersions> {
-  const url = `https://registry.npmjs.org/${name.replace("/", "%2F")}`;
+  const url = `https://registry.npmjs.org/${encodeURIComponent(name)}`;
   // Formato abreviado: omite READMEs y metadatos por versión. Para paquetes
   // populares la diferencia es de megabytes.
   const doc = await getJson<{
