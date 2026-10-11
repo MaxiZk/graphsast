@@ -76,6 +76,22 @@ export async function resolveLocalNeo4j(): Promise<{ driver: Driver | null; warn
   return { driver: null, warning: `No se pudo conectar a Neo4j en ${uri}; se usa el motor en memoria.` };
 }
 
+/** Cuánto espera `/api/health` a Neo4j antes de darlo por caído. */
+const NEO4J_HEALTH_TIMEOUT_MS = 2_000;
+
+/** Estado de Neo4j en el momento de la consulta, no al arrancar la API. */
+async function neo4jState(driver: Driver): Promise<"connected" | "unreachable"> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<boolean>((resolve) => {
+    timer = setTimeout(() => resolve(false), NEO4J_HEALTH_TIMEOUT_MS);
+  });
+  try {
+    return (await Promise.race([verifyNeo4j(driver), timeout])) ? "connected" : "unreachable";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function hostnameOf(hostHeader: string | undefined): string | null {
   if (!hostHeader) return null;
   const match = /^(\[[^\]]+\]|[^:]+)(?::\d+)?$/.exec(hostHeader.trim().toLowerCase());
@@ -196,11 +212,12 @@ export function createApiHandler(options: ApiOptions) {
   const routes: Record<string, Route> = {
     "/api/health": {
       method: "GET",
-      handle: () => ({
+      handle: async () => ({
         status: "ok",
         service: "graphsast",
         version: VERSION,
         engine: driver ? "neo4j" : "memory",
+        neo4j: driver ? await neo4jState(driver) : "disabled",
         root,
       }),
     },

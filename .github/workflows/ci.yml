@@ -33,6 +33,36 @@ jobs:
       - name: Build de la versión web
         run: npm run viz:build
 
+  neo4j:
+    name: Motor Neo4j
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: neo4j:5-community
+        env:
+          NEO4J_AUTH: neo4j/graphsast-dev
+        ports:
+          - 7687:7687
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p graphsast-dev 'RETURN 1'"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Mismos hallazgos que el motor en memoria, contra una base real
+        run: npx vitest run src/store/neo4j.integration.test.ts
+        working-directory: packages/core
+        env:
+          NEO4J_URI: bolt://localhost:7687
+
   cve:
     name: Benchmark sobre CVEs reales
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

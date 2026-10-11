@@ -29,6 +29,8 @@ export {
 } from "./store/cypher.js";
 export {
   createNeo4jDriver,
+  deleteRun,
+  ensureSchema,
   persistGraph,
   queryTaintPaths,
   verifyNeo4j,

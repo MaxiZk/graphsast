@@ -4,7 +4,7 @@ import type { IRCall, IRGraph } from "../ir/types.js";
 import { analyzeTaint, annotateTaint, getTaintRoles } from "../taint/analyzer.js";
 import { defaultTaintRules } from "../taint/rules.js";
 import type { TaintConfig, TaintFinding } from "../taint/types.js";
-import { persistGraph, queryTaintPaths } from "../store/neo4j.js";
+import { deleteRun, persistGraph, queryTaintPaths } from "../store/neo4j.js";
 
 export type TaintEngine = "memory" | "neo4j";
 
@@ -28,8 +28,8 @@ export function analyzeInMemory(
 }
 
 /**
- * Persiste el grafo en Neo4j y ejecuta la consulta Cypher de taint.
- * Si no hay driver, usa el motor en memoria.
+ * Persiste el grafo en Neo4j, ejecuta la consulta Cypher de taint y borra el
+ * grafo persistido. Si no hay driver, usa el motor en memoria.
  */
 export async function analyzeWithEngine(
   graph: IRGraph,
@@ -42,8 +42,13 @@ export async function analyzeWithEngine(
 
   const roles = getTaintRoles(graph, config);
   const annotations = annotateTaint(graph, config.rules ?? defaultTaintRules());
-  await persistGraph(options.driver, graph, roles, options.database, annotations);
-  const raw = await queryTaintPaths(options.driver, options.database);
+  const run = await persistGraph(options.driver, graph, roles, options.database, annotations);
+  let raw: TaintFinding[];
+  try {
+    raw = await queryTaintPaths(options.driver, options.database, run);
+  } finally {
+    await deleteRun(options.driver, run, options.database);
+  }
   const rules = config.rules ?? defaultTaintRules();
   const findings = enrichFindings(graph, raw, rules);
   return { engine: "neo4j", findings };

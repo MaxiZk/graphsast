@@ -2,7 +2,7 @@ import type { IREdgeKind, IRGraph, IRNode } from "../ir/types.js";
 import type { TaintAnnotations } from "../taint/analyzer.js";
 import type { TaintRoles } from "../taint/types.js";
 
-const EDGE_KINDS: IREdgeKind[] = [
+export const EDGE_KINDS: IREdgeKind[] = [
   "FLOWS_TO",
   "SANITIZED_BY",
   "CALLS",
@@ -91,8 +91,9 @@ function cypherProps(json: string): string {
 }
 
 /**
- * Plantilla Cypher del motor de taint (arquitectura §7). Aplica las mismas
- * reglas que `analyzeTaint`:
+ * Plantilla Cypher del motor de taint (arquitectura §7). `$run` limita la
+ * consulta a un análisis (`null`: todo el grafo). Aplica las mismas reglas que
+ * `analyzeTaint`:
  *
  * - un nodo intermedio corta el camino si es un sanitizer que vale para la CWE
  *   del sink (`sanitizerApplies`);
@@ -100,8 +101,8 @@ function cypherProps(json: string): string {
  *   uno de ellos (`entersSink`).
  */
 export const TAINT_PATH_CYPHER = `
-MATCH (s:GSNode {taintRole: 'source'})
-MATCH (k:GSNode) WHERE k.sinkCwe IS NOT NULL
+MATCH (s:GSNode {taintRole: 'source'}) WHERE $run IS NULL OR s.run = $run
+MATCH (k:GSNode) WHERE k.sinkCwe IS NOT NULL AND ($run IS NULL OR k.run = $run)
 MATCH p = (s)-[:FLOWS_TO|SANITIZED_BY|CALLS|BINDS_TO|RETURNS*1..15]->(k)
 WHERE NONE(n IN nodes(p)[1..-1] WHERE n.sanitizerCwes IS NOT NULL
         AND (k.sinkCwe = -1 OR -1 IN n.sanitizerCwes OR k.sinkCwe IN n.sanitizerCwes))

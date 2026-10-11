@@ -84,7 +84,7 @@ describe("API local", () => {
   it("GET /api/health", async () => {
     const r = await request("GET", "/api/health");
     expect(r.status).toBe(200);
-    expect(r.body).toMatchObject({ status: "ok", service: "graphsast", engine: "memory" });
+    expect(r.body).toMatchObject({ status: "ok", service: "graphsast", engine: "memory", neo4j: "disabled" });
     expect(r.headers["content-type"]).toMatch(/application\/json/);
   });
 

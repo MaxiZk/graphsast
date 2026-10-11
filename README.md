@@ -208,7 +208,7 @@ se puede analizar por ruta (default: el directorio actual).
 
 | Endpoint | Descripción |
 |---|---|
-| `GET /api/health` | Estado del servicio, versión y motor (`memory` o `neo4j`) |
+| `GET /api/health` | Estado del servicio, versión, motor (`memory` o `neo4j`) y estado de Neo4j en ese momento (`connected`, `unreachable` o `disabled`) |
 | `GET /api/catalog` | Familias CWE activas con la cantidad de sinks y sanitizers de cada una |
 | `POST /api/analyze` | Cuerpo JSON `{"code": "...", "file": "a.ts"}` o `{"path": "src"}` |
 
@@ -364,6 +364,19 @@ NEO4J_URI=bolt://localhost:7687 npm start
 Con `NEO4J_URI` definida y apuntando a esta máquina, `graphsast serve`
 persiste el grafo y ejecuta la detección como consulta Cypher en vez del motor
 en memoria. El CLI `scan` y la versión web usan siempre el motor en memoria.
+
+Cada análisis se guarda con su propio id (`run`) y se borra al terminar la
+consulta, así que dos peticiones simultáneas no se pisan. La primera crea el
+índice `gsnode_run_id` sobre `(run, id)`.
+
+Los tests del motor Neo4j (`packages/core/src/store/neo4j.integration.test.ts`)
+corren contra una base real solo si `NEO4J_URI` está definida. Comparan los
+hallazgos con los del motor en memoria en todo el benchmark:
+
+```bash
+npm run neo4j:up
+NEO4J_URI=bolt://localhost:7687 npm test -w @graphsast/core
+```
 
 ## Desarrollo
 
