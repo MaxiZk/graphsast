@@ -2,6 +2,7 @@
   "name": "@graphsast/core",
   "version": "0.1.0",
   "description": "Análisis estático de flujo de datos (taint) para JavaScript y TypeScript: SQLi, inyección de comandos, XSS y NoSQLi, con salida SARIF.",
+  "license": "MIT",
   "keywords": [
     "sast",
     "security",
@@ -34,7 +35,8 @@
   "files": [
     "dist",
     "!dist/**/*.tsbuildinfo",
-    "catalog"
+    "catalog",
+    "LICENSE"
   ],
   "sideEffects": false,
   "publishConfig": {
@@ -51,8 +53,8 @@
     "cve:run": "npm run build && node dist/eval/cve/run-cve.cli.js",
     "baseline": "npm run build && node dist/eval/baseline/run-baseline.cli.js",
     "nodegoat": "npm run build && node dist/eval/nodegoat/run-nodegoat.cli.js",
-    "prepack": "npm run build && node -e \"require('node:fs').cpSync('../../catalog', 'catalog', { recursive: true })\"",
-    "postpack": "node -e \"require('node:fs').rmSync('catalog', { recursive: true, force: true })\""
+    "prepack": "npm run build && node -e \"const fs = require('node:fs'); fs.cpSync('../../catalog', 'catalog', { recursive: true }); fs.copyFileSync('../../LICENSE', 'LICENSE')\"",
+    "postpack": "node -e \"const fs = require('node:fs'); fs.rmSync('catalog', { recursive: true, force: true }); fs.rmSync('LICENSE', { force: true })\""
   },
   "dependencies": {
     "ignore": "^7.0.10",

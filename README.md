@@ -496,3 +496,7 @@ autenticación (la protegen el bind a `127.0.0.1` y el chequeo de `Host`) y
 analiza de forma sincrónica, una petición por vez.
 
 Más detalle en [`docs/validacion/`](docs/validacion/).
+
+## Licencia
+
+[MIT](LICENSE).
