@@ -1,8 +1,10 @@
+import ignore from "ignore";
 import {
   ALWAYS_IGNORE,
   DEFAULT_EXTENSIONS,
   DEFAULT_IGNORE,
   DEFAULT_MAX_FILE_BYTES,
+  isProjectConfigName,
 } from "@graphsast/core/browser";
 import { plural } from "./labels.js";
 import type { UploadedFile } from "./protocol.js";
@@ -10,8 +12,15 @@ import type { UploadedFile } from "./protocol.js";
 /** Por qué quedaron afuera los archivos que no se analizan. */
 export interface UploadSelection {
   accepted: UploadedFile[];
+  /**
+   * tsconfig/jsconfig: no se analizan, pero aportan los alias de imports
+   * (`@/x`) para seguir llamadas entre archivos.
+   */
+  configs: UploadedFile[];
   /** Dentro de una carpeta excluida (node_modules, dist, .git…). */
   ignored: number;
+  /** Excluidos por un `.gitignore` del proyecto. */
+  gitignored: number;
   /** Extensión que no es JavaScript/TypeScript. */
   otherLanguage: number;
   tooLarge: number;
@@ -30,18 +39,55 @@ function extensionOf(p: string): string {
   return i <= 0 ? "" : base.slice(i);
 }
 
+/** ¿Excluye algún `.gitignore` esta ruta? (ver `gitignoreFilter`) */
+export type GitignoreFilter = (path: string) => boolean;
+
+/**
+ * Lee los `.gitignore` subidos y devuelve un filtro con sus reglas. Cada uno
+ * vale para su carpeta y las de adentro, igual que en git y en el CLI.
+ */
+export async function gitignoreFilter(files: UploadedFile[]): Promise<GitignoreFilter> {
+  const scopes: { dir: string; rules: ReturnType<typeof ignore> }[] = [];
+  for (const upload of files) {
+    const path = normalizeUploadPath(upload.path);
+    if (path !== ".gitignore" && !path.endsWith("/.gitignore")) continue;
+    const dir = path.slice(0, path.length - ".gitignore".length);
+    try {
+      scopes.push({ dir, rules: ignore().add(await upload.file.text()) });
+    } catch {
+      // Un .gitignore ilegible no excluye nada.
+    }
+  }
+  if (scopes.length === 0) return () => false;
+  return (path) =>
+    scopes.some(({ dir, rules }) => path.startsWith(dir) && rules.ignores(path.slice(dir.length)));
+}
+
 /**
  * Mismos criterios que el descubrimiento de archivos del CLI: extensiones
- * JS/TS, carpetas excluidas por defecto y tamaño máximo. Los `.gitignore` del
- * proyecto no se leen.
+ * JS/TS, carpetas excluidas por defecto, `.gitignore` del proyecto (si se pasa
+ * el filtro) y tamaño máximo.
  */
-export function selectUploads(files: UploadedFile[]): UploadSelection {
-  const selection: UploadSelection = { accepted: [], ignored: 0, otherLanguage: 0, tooLarge: 0 };
+export function selectUploads(
+  files: UploadedFile[],
+  gitignored: GitignoreFilter = () => false,
+): UploadSelection {
+  const selection: UploadSelection = {
+    accepted: [],
+    configs: [],
+    ignored: 0,
+    gitignored: 0,
+    otherLanguage: 0,
+    tooLarge: 0,
+  };
   const seen = new Set<string>();
   for (const upload of files) {
     const path = normalizeUploadPath(upload.path);
     const dirs = path.split("/").slice(0, -1);
+    const name = path.slice(path.lastIndexOf("/") + 1);
     if (dirs.some((d) => IGNORED_DIRS.has(d))) selection.ignored++;
+    else if (gitignored(path)) selection.gitignored++;
+    else if (isProjectConfigName(name)) selection.configs.push({ path, file: upload.file });
     else if (!DEFAULT_EXTENSIONS.includes(extensionOf(path))) selection.otherLanguage++;
     else if (upload.file.size > DEFAULT_MAX_FILE_BYTES) selection.tooLarge++;
     else if (!seen.has(path)) {
@@ -60,6 +106,9 @@ export function describeSelection(selection: UploadSelection): string {
   ];
   if (selection.ignored) {
     parts.push(`${selection.ignored} en node_modules u otras carpetas excluidas`);
+  }
+  if (selection.gitignored) {
+    parts.push(`${selection.gitignored} excluidos por .gitignore`);
   }
   if (selection.otherLanguage) {
     parts.push(`${selection.otherLanguage} de otros tipos`);

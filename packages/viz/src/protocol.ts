@@ -29,7 +29,7 @@ export interface ProjectAnalysis {
 
 export type WorkerRequest =
   | { id: number; kind: "snippet"; code: string; file: string }
-  | { id: number; kind: "project"; files: UploadedFile[] };
+  | { id: number; kind: "project"; files: UploadedFile[]; configs: UploadedFile[] };
 
 export type WorkerResponse =
   | { id: number; kind: "progress"; done: number; total: number; file: string }

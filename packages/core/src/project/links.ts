@@ -1,6 +1,7 @@
 import * as path from "../util/posix-path.js";
 import { Node, SyntaxKind, type SourceFile } from "ts-morph";
 import { functionIdOf, type FunctionLike } from "../ir/builder.js";
+import type { AliasResolver } from "./tsconfig.js";
 
 /** Un nombre importado o re-exportado: de qué módulo y con qué nombre. */
 export interface ModuleBinding {
@@ -143,8 +144,20 @@ function requiredSpecifier(node: Node | undefined): string | null {
   return arg && Node.isStringLiteral(arg) ? arg.getLiteralValue() : null;
 }
 
+/** `await import("x")` o `import("x")` → `"x"`; cualquier otra expresión → null. */
+function dynamicImportSpecifier(node: Node | undefined): string | null {
+  if (!node) return null;
+  let expr = unwrap(node);
+  if (Node.isAwaitExpression(expr)) expr = unwrap(expr.getExpression());
+  if (!Node.isCallExpression(expr)) return null;
+  if (expr.getExpression().getKind() !== SyntaxKind.ImportKeyword) return null;
+  const [arg] = expr.getArguments();
+  return arg && Node.isStringLiteral(arg) ? arg.getLiteralValue() : null;
+}
+
 /**
- * Imports y exports de CommonJS:
+ * Imports y exports de CommonJS, más `import()` dinámico asignado a una
+ * variable (`const m = await import("./x")`):
  *
  * - `const repo = require("./repo")` → namespace (`repo.find()` o `repo()`).
  * - `const { find, save: store } = require("./repo")` → nombres.
@@ -165,7 +178,22 @@ function extractCommonJs(sourceFile: SourceFile, file: string, links: ModuleLink
         member = value.getName();
       }
     }
-    if (!specifier) continue;
+    if (!specifier) {
+      // `const m = await import("./x")`: un namespace ES, no un require.
+      const dynamic = dynamicImportSpecifier(init);
+      if (!dynamic) continue;
+      if (Node.isIdentifier(nameNode)) {
+        links.imports.set(nameNode.getText(), { specifier: dynamic, imported: "*" });
+      } else if (Node.isObjectBindingPattern(nameNode)) {
+        for (const el of nameNode.getElements()) {
+          const local = el.getNameNode();
+          if (!Node.isIdentifier(local)) continue;
+          const imported = el.getPropertyNameNode()?.getText() ?? local.getText();
+          links.imports.set(local.getText(), { specifier: dynamic, imported });
+        }
+      }
+      continue;
+    }
 
     if (Node.isIdentifier(nameNode)) {
       links.imports.set(nameNode.getText(), member
@@ -238,24 +266,35 @@ const JS_TO_TS: Record<string, string[]> = {
   ".cjs": [".cts"],
 };
 
-/**
- * Resuelve un specifier relativo contra los archivos del escaneo. Los
- * specifiers de paquete (`express`) y los alias de tsconfig no se resuelven:
- * lo que no está en `known` queda afuera del análisis.
- */
-export function resolveSpecifier(
-  fromAbs: string,
-  specifier: string,
-  known: ReadonlySet<string>,
-): string | null {
-  if (!specifier.startsWith("./") && !specifier.startsWith("../")) return null;
-  const base = path.resolve(path.dirname(fromAbs), specifier);
+/** Rutas a probar para una base sin extensión: `.js`→`.ts`, extensiones, index. */
+function candidatesFor(base: string): string[] {
   const candidates = [base];
   const ext = path.extname(base);
   for (const alt of JS_TO_TS[ext] ?? []) candidates.push(base.slice(0, -ext.length) + alt);
   for (const e of RESOLVE_EXTENSIONS) candidates.push(base + e);
   for (const e of RESOLVE_EXTENSIONS) candidates.push(path.join(base, `index${e}`));
-  return candidates.find((c) => known.has(c)) ?? null;
+  return candidates;
+}
+
+/**
+ * Resuelve un specifier contra los archivos del escaneo: relativo (`./x`) o
+ * alias de `tsconfig`/`jsconfig` (`@/x`, o desde `baseUrl`). Un paquete
+ * (`express`) no se resuelve: lo que no está en `known` queda afuera.
+ */
+export function resolveSpecifier(
+  fromAbs: string,
+  specifier: string,
+  known: ReadonlySet<string>,
+  aliases?: AliasResolver,
+): string | null {
+  const bases = specifier.startsWith("./") || specifier.startsWith("../")
+    ? [path.resolve(path.dirname(fromAbs), specifier)]
+    : aliases?.(fromAbs, specifier) ?? [];
+  for (const base of bases) {
+    const hit = candidatesFor(base).find((c) => known.has(c));
+    if (hit) return hit;
+  }
+  return null;
 }
 
 export interface LinkedModule {
@@ -267,11 +306,13 @@ export interface LinkedModule {
 export interface ProjectIndex {
   modules: ReadonlyMap<string, LinkedModule>;
   known: ReadonlySet<string>;
+  /** Alias de tsconfig/jsconfig, en el mismo espacio de rutas que `modules`. */
+  aliases?: AliasResolver;
 }
 
-export function projectIndexOf(modules: LinkedModule[]): ProjectIndex {
+export function projectIndexOf(modules: LinkedModule[], aliases?: AliasResolver): ProjectIndex {
   const byAbs = new Map(modules.map((m) => [m.abs, m]));
-  return { modules: byAbs, known: new Set(byAbs.keys()) };
+  return { modules: byAbs, known: new Set(byAbs.keys()), aliases };
 }
 
 /**
@@ -301,7 +342,7 @@ export function resolveExportedFunction(
     // `import { f } from "./y"; export { f }`
     const imported = links.imports.get(local);
     if (imported && imported.imported !== "*") {
-      const target = resolveSpecifier(abs, imported.specifier, known);
+      const target = resolveSpecifier(abs, imported.specifier, known, index.aliases);
       return target ? resolveExportedFunction(index, target, imported.imported, seen) : null;
     }
     return null;
@@ -309,13 +350,13 @@ export function resolveExportedFunction(
 
   const re = links.reExports.get(name);
   if (re) {
-    const target = resolveSpecifier(abs, re.specifier, known);
+    const target = resolveSpecifier(abs, re.specifier, known, index.aliases);
     return target ? resolveExportedFunction(index, target, re.imported, seen) : null;
   }
 
   if (name === "default") return null; // `export *` no re-exporta el default
   for (const specifier of links.starExports) {
-    const target = resolveSpecifier(abs, specifier, known);
+    const target = resolveSpecifier(abs, specifier, known, index.aliases);
     const hit = target ? resolveExportedFunction(index, target, name, seen) : null;
     if (hit) return hit;
   }
@@ -351,6 +392,6 @@ export function resolveImportedCallee(
     exported = member;
   }
 
-  const target = resolveSpecifier(abs, binding.specifier, index.known);
+  const target = resolveSpecifier(abs, binding.specifier, index.known, index.aliases);
   return target ? resolveExportedFunction(index, target, exported) : null;
 }

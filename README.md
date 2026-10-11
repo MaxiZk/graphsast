@@ -257,9 +257,13 @@ en una línea: una consulta SQL vulnerable y la misma consulta con `sanitize()`.
 El análisis corre en el navegador, en un Web Worker, con el mismo motor que el
 CLI (`@graphsast/core/browser`, sin Neo4j): se analizan los mismos archivos
 (`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx` de hasta 1 MB, fuera de
-`node_modules`, `dist`, `build` y demás carpetas excluidas) y se siguen las
-llamadas entre archivos igual que en `scan`. Los `.gitignore` del proyecto no se
-leen.
+`node_modules`, `dist`, `build` y demás carpetas excluidas, respetando los
+`.gitignore` subidos) y se siguen las llamadas entre archivos igual que en
+`scan`, con los alias de los `tsconfig.json`/`jsconfig.json` subidos.
+
+Sobre el grafo: búsqueda de nodos por nombre, código o `archivo:línea` (Enter
+encuadra la primera coincidencia), y exportación a PNG (lo dibujado) y a JSON
+(el grafo completo con los hallazgos).
 
 Como el sitio es estático, se despliega en Vercel sin funciones de servidor:
 `vercel.json` compila el core y la página (`npm run viz:build`) y publica
@@ -368,6 +372,9 @@ npm test          # tests de core y viz
 npm run build     # tsc -b
 ```
 
+Cómo está armado: [`ARCHITECTURE.md`](ARCHITECTURE.md). Cómo agregar sinks,
+familias CWE o casos al benchmark, y el flujo de PRs: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 Estructura:
 
 ```
@@ -391,13 +398,15 @@ packages/viz/  versión web (Vite + Cytoscape.js); el análisis corre en un Web 
 
 **Análisis entre archivos.** GraphSAST sigue el dato de un archivo a otro
 cuando una llamada apunta a una función de otro archivo del mismo escaneo:
-importada con `import` de ES y ruta relativa (nombrada, con alias, default o
-namespace, directa o a través de re-exports y `export *`), con `require`
-(`module.exports`, `exports.f`), declarada como `function` o como `const` con
-una arrow. **No** lo sigue a través de alias de `tsconfig` (`@/x`), paquetes de
-`node_modules` ni `import()` dinámico. En esos casos el hallazgo, si lo hay,
-arranca en el parámetro de la función que contiene el sink en vez de en el
-controlador.
+importada con `import` de ES (nombrada, con alias, default o namespace, directa
+o a través de re-exports y `export *`), con `require` (`module.exports`,
+`exports.f`) o con `import()` asignado a una variable; por ruta relativa o por
+un alias de `tsconfig`/`jsconfig` (`paths`, `baseUrl`, con `extends` relativo);
+declarada como `function` o como `const` con una arrow. **No** lo sigue hacia
+paquetes de `node_modules`, ni a través de `extends` hacia un paquete
+(`@tsconfig/...`), `import()` con una ruta calculada o `import("./x").then(...)`.
+En esos casos el hallazgo, si lo hay, arranca en el parámetro de la función que
+contiene el sink en vez de en el controlador.
 
 **Métodos sobre receptores desconocidos.** Sin tipos, `this.repo.save()` o
 `svc.findOne()` no dicen qué clase hay detrás. Se resuelven al único método

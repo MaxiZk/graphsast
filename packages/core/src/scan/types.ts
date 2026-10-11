@@ -1,4 +1,5 @@
 import type { IRNodeKind } from "../ir/types.js";
+import type { AliasResolver } from "../project/tsconfig.js";
 
 /** Un paso del camino de taint, ya resuelto a ubicación y código fuente. */
 export interface ScanStep {
@@ -75,6 +76,12 @@ export interface ScanOptions {
   cwe?: number[];
   /** Qué parámetros son entradas no confiables (default: `params`). */
   sources?: "params" | "catalog";
+  /**
+   * Alias de imports (`@/x`) en el espacio de rutas del escaneo (`/` + ruta
+   * relativa). `scanPaths` lo arma con los tsconfig del disco; sin esto se
+   * usan los tsconfig/jsconfig que vengan entre los archivos.
+   */
+  aliases?: AliasResolver;
 }
 
 export const DEFAULT_EXTENSIONS = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"];

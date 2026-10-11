@@ -64,6 +64,7 @@ export function analyzeSnippet(code: string, file: string): Promise<AnalysisPayl
 export function analyzeProject(
   files: UploadedFile[],
   onProgress?: Progress,
+  configs: UploadedFile[] = [],
 ): Promise<ProjectAnalysis> {
-  return request({ id: nextId++, kind: "project", files }, onProgress);
+  return request({ id: nextId++, kind: "project", files, configs }, onProgress);
 }

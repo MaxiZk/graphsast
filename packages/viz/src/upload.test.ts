@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { describeSelection, normalizeUploadPath, selectUploads } from "./upload.js";
+import { describeSelection, gitignoreFilter, normalizeUploadPath, selectUploads } from "./upload.js";
 import type { UploadedFile } from "./protocol.js";
 
 /** Solo importa el tamaño: el contenido se lee recién en el worker. */
@@ -67,5 +67,45 @@ describe("describeSelection", () => {
       "1 archivo JavaScript/TypeScript para analizar · 1 en node_modules u otras "
       + "carpetas excluidas · 1 de otros tipos · 1 demasiado grande (más de 1 MB)",
     );
+  });
+});
+
+/** Archivo con contenido legible, como los .gitignore que se leen antes de seleccionar. */
+function withText(path: string, text: string): UploadedFile {
+  return { path, file: { size: text.length, text: async () => text } as File };
+}
+
+describe("tsconfig y .gitignore del proyecto", () => {
+  it("los tsconfig/jsconfig van aparte: aportan alias, no se cuentan como archivos", () => {
+    const selection = selectUploads([
+      upload("app/tsconfig.json"),
+      upload("app/packages/web/jsconfig.json"),
+      upload("app/package.json"),
+      upload("app/src/a.ts"),
+    ]);
+    expect(selection.accepted.map((u) => u.path)).toEqual(["app/src/a.ts"]);
+    expect(selection.configs.map((u) => u.path)).toEqual(["app/tsconfig.json", "app/packages/web/jsconfig.json"]);
+    expect(selection.otherLanguage).toBe(1);
+  });
+
+  it("un .gitignore excluye lo que ignora, desde su carpeta", async () => {
+    const files = [
+      withText("app/.gitignore", "generated/\n*.gen.ts\n"),
+      withText("app/legacy/.gitignore", "old.js\n"),
+      upload("app/src/a.ts"),
+      upload("app/src/b.gen.ts"),
+      upload("app/generated/client.ts"),
+      upload("app/legacy/old.js"),
+      upload("app/old.js"),
+    ];
+    const selection = selectUploads(files, await gitignoreFilter(files));
+    expect(selection.accepted.map((u) => u.path)).toEqual(["app/old.js", "app/src/a.ts"]);
+    expect(selection.gitignored).toBe(3);
+    expect(describeSelection(selection)).toContain("3 excluidos por .gitignore");
+  });
+
+  it("sin .gitignore no se excluye nada", async () => {
+    const files = [upload("app/src/a.ts")];
+    expect(selectUploads(files, await gitignoreFilter(files)).gitignored).toBe(0);
   });
 });

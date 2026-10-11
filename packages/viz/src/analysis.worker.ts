@@ -46,9 +46,15 @@ async function readAll(files: UploadedFile[]): Promise<ScanInput[]> {
   );
 }
 
-async function analyzeProject(id: number, files: UploadedFile[]): Promise<ProjectAnalysis> {
+async function analyzeProject(
+  id: number,
+  files: UploadedFile[],
+  configs: UploadedFile[],
+): Promise<ProjectAnalysis> {
   const inputs = await readAll(files);
-  const output = scanFilesWithGraphs(inputs, {}, "", (done, total, file) =>
+  // Los tsconfig van entre los archivos: el escaneo los separa y usa sus alias.
+  const configInputs = (await readAll(configs)).filter((c) => "content" in c);
+  const output = scanFilesWithGraphs([...inputs, ...configInputs], {}, "", (done, total, file) =>
     reply({ id, kind: "progress", done, total, file }),
   );
   const roles = output.graphs.map(({ graph }) => getTaintRoles(graph));
@@ -75,7 +81,7 @@ self.addEventListener("message", async (event: MessageEvent<WorkerRequest>) => {
     if (request.kind === "snippet") {
       reply({ id: request.id, kind: "snippet", payload: analyzeSource(request.code, request.file) });
     } else {
-      reply({ id: request.id, kind: "project", analysis: await analyzeProject(request.id, request.files) });
+      reply({ id: request.id, kind: "project", analysis: await analyzeProject(request.id, request.files, request.configs) });
     }
   } catch (err) {
     reply({ id: request.id, kind: "error", message: err instanceof Error ? err.message : String(err) });
