@@ -102,13 +102,16 @@ con código 2 en vez de reportar «sin hallazgos».
 
 ### Como paquete
 
-`@graphsast/core` todavía no está en npm. Cada release de GitHub trae el
-paquete (`graphsast-core-<versión>.tgz`), que se instala igual:
+Desde la versión 0.1.2, en npm:
 
 ```bash
-npm install -g ./graphsast-core-0.1.1.tgz   # o la URL del asset del release
+npm install -g @graphsast/core
 graphsast scan .
 ```
+
+Cada release de GitHub también trae el paquete
+(`graphsast-core-<versión>.tgz`), que se instala igual:
+`npm install -g ./graphsast-core-0.1.2.tgz`.
 
 El paquete lleva su copia del catálogo y la API de Node (`scanPaths`,
 `analyzeGraph`...). Para armarlo desde el repositorio: `npm pack -w @graphsast/core`.
