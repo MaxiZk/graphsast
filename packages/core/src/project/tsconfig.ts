@@ -156,7 +156,7 @@ export function aliasResolverFor(configs: readonly ProjectConfig[]): AliasResolv
         captured = specifier.slice(p.prefix.length, specifier.length - p.suffix.length);
       }
       if (captured === null) continue;
-      return p.targets.map((t) => path.resolve(aliases.pathsBase, t.replace("*", captured!)));
+      return p.targets.map((t) => path.resolve(aliases.pathsBase, t.replace(/\*/g, captured!)));
     }
 
     // Con baseUrl, `services/user` también se busca desde baseUrl.
