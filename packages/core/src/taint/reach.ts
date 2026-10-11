@@ -30,6 +30,9 @@ function buildAdjacency(
   return adj;
 }
 
+/** Largo máximo de un camino (en aristas) si nada lo fija. */
+export const DEFAULT_MAX_DEPTH = 15;
+
 /**
  * BFS dirigido acotado. Devuelve un camino `from → to` o `null` si no hay
  * alcanzabilidad dentro de `maxDepth`.
@@ -49,7 +52,7 @@ export function findPath(
   blocked: ReadonlySet<string> = new Set(),
   enters: (edge: IREdge) => boolean = () => true,
 ): string[] | null {
-  const maxDepth = config.maxDepth ?? 15;
+  const maxDepth = config.maxDepth ?? DEFAULT_MAX_DEPTH;
   const propagate = new Set(
     config.propagateEdges ?? DEFAULT_TAINT_PROPAGATE_EDGES,
   );

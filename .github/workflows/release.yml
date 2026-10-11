@@ -1,0 +1,54 @@
+name: Release
+
+# Al pushear un tag vX.Y.Z: verifica, publica el paquete como asset del
+# release, sube la imagen a GitHub Container Registry y, si el repositorio
+# tiene el secret NPM_TOKEN, publica en npm.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - name: El tag coincide con la versión del paquete
+        run: |
+          version=$(node -p 'require("./packages/core/package.json").version')
+          test "$GITHUB_REF_NAME" = "v$version" || { echo "Tag $GITHUB_REF_NAME, paquete $version"; exit 1; }
+      - run: npm run build
+      - run: npm test
+      - run: npm run benchmark
+      - name: npm pack
+        run: npm pack -w @graphsast/core
+      - name: Imagen en GitHub Container Registry
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/graphsast"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build -t "$image:${GITHUB_REF_NAME#v}" -t "$image:latest" .
+          docker push "$image:${GITHUB_REF_NAME#v}"
+          docker push "$image:latest"
+      - name: Release en GitHub con el paquete
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" graphsast-core-*.tgz --generate-notes --verify-tag
+      - name: Publicar en npm
+        if: env.NPM_TOKEN != ''
+        run: npm publish -w @graphsast/core
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

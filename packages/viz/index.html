@@ -6,6 +6,16 @@
     <title>GraphSAST</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M8 8L24 16L8 24' stroke='%23f97316' stroke-width='3' fill='none'/%3E%3Ccircle cx='8' cy='8' r='5' fill='%2314b8a6'/%3E%3Ccircle cx='24' cy='16' r='5' fill='%23f97316'/%3E%3Ccircle cx='8' cy='24' r='5' fill='%23ef4444'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/src/styles.css" />
+    <script>
+      // Tema antes del primer pintado, para no mostrar el oscuro un instante.
+      // main.ts lo vuelve a resolver con la misma regla (preferences.ts).
+      try {
+        const saved = localStorage.getItem("graphsast-theme");
+        document.documentElement.dataset.theme = saved === "light" || saved === "dark"
+          ? saved
+          : matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      } catch {}
+    </script>
   </head>
   <body>
     <header class="header">
@@ -26,6 +36,7 @@
         <div><dt class="swatch sink"></dt><dd>Sink</dd></div>
         <div><dt class="swatch risk"></dt><dd>Camino de riesgo</dd></div>
       </dl>
+      <button type="button" id="theme-toggle" class="btn-ghost theme-toggle" title="Cambiar el tema (t)"></button>
     </header>
 
     <main class="layout">
@@ -95,6 +106,16 @@
         <div class="graph-search">
           <input type="search" id="graph-search" class="graph-search-input" placeholder="Buscar nodo: nombre, código o archivo:línea" aria-label="Buscar nodo en el grafo" />
           <span id="graph-search-count" class="graph-search-count" aria-live="polite"></span>
+          <label class="node-limit" title="Cuántos nodos se dibujan del grafo de un proyecto. El análisis recorre siempre el grafo completo.">
+            Nodos
+            <select id="node-limit" class="select node-limit-select">
+              <option value="100">100</option>
+              <option value="250">250</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+              <option value="all">Todos</option>
+            </select>
+          </label>
         </div>
 
         <fieldset id="edge-filters" class="edge-filters">
@@ -108,8 +129,15 @@
         </fieldset>
 
         <p id="graph-note" class="graph-note" hidden></p>
-        <div id="cy" class="cy"></div>
+        <div class="cy-wrap">
+          <div id="cy" class="cy"></div>
+          <div id="node-tooltip" class="node-tooltip" role="tooltip" hidden></div>
+        </div>
         <pre id="node-detail" class="node-detail"></pre>
+        <p class="hint shortcuts">
+          Atajos: <kbd>n</kbd>/<kbd>p</kbd> hallazgo siguiente o anterior · <kbd>f</kbd> centrar ·
+          <kbd>/</kbd> buscar · <kbd>h</kbd> atenuar · <kbd>t</kbd> tema
+        </p>
       </section>
 
       <aside class="panel findings-panel">

@@ -77,12 +77,16 @@ restricciones:
 - Un patrón `paquete.f` coincide aunque el import tenga otro nombre local
   (`const cp = require("child_process"); cp.exec(x)`).
 
+Una familia puede fijar `"maxDepth": n`, el largo máximo (en aristas) de un
+camino hasta sus sinks; sin esto es 15. `--max-depth` lo reemplaza para todas
+las familias. Los dos motores lo respetan.
+
 En `sources`, `req.body` aporta la raíz `req`, y `@Body` los parámetros
 decorados con `@Body()`. Solo se usan con `--sources catalog`.
 
 ## Instalación
 
-Requiere Node.js (probado con 24 y 26) y npm.
+Requiere Node.js 22 o superior (el CI usa 22) y npm.
 
 ```bash
 git clone https://github.com/MaxiZk/graphsast.git
@@ -91,11 +95,36 @@ npm install
 npm run build
 ```
 
-El paquete no está publicado en npm. El CLI queda disponible como
-`npx graphsast` dentro del repositorio, o como
+El CLI queda disponible como `npx graphsast` dentro del repositorio, o como
 `node packages/core/dist/cli/graphsast.cli.js` desde cualquier lugar. Busca el
 catálogo CWE en `catalog/` del propio repositorio; si no lo encuentra, termina
 con código 2 en vez de reportar «sin hallazgos».
+
+### Como paquete
+
+`@graphsast/core` todavía no está en npm. Cada release de GitHub trae el
+paquete (`graphsast-core-<versión>.tgz`), que se instala igual:
+
+```bash
+npm install -g ./graphsast-core-0.1.0.tgz   # o la URL del asset del release
+graphsast scan .
+```
+
+El paquete lleva su copia del catálogo y la API de Node (`scanPaths`,
+`analyzeGraph`...). Para armarlo desde el repositorio: `npm pack -w @graphsast/core`.
+
+### Con Docker
+
+```bash
+docker build -t graphsast .
+docker run --rm -v "$PWD:/src:ro" graphsast scan .
+docker run --rm -v "$PWD:/src:ro" graphsast scan . --format sarif > graphsast.sarif
+```
+
+La imagen trae solo el CLI y el catálogo, sobre `distroless` y con un usuario
+sin privilegios. El proyecto se monta en `/src` de solo lectura, así que el
+reporte se saca redirigiendo la salida en vez de con `--out`. `graphsast serve`
+no sirve desde un contenedor: la API solo acepta conexiones de `127.0.0.1`.
 
 ## CLI
 
@@ -208,7 +237,7 @@ se puede analizar por ruta (default: el directorio actual).
 
 | Endpoint | Descripción |
 |---|---|
-| `GET /api/health` | Estado del servicio, versión y motor (`memory` o `neo4j`) |
+| `GET /api/health` | Estado del servicio, versión, motor (`memory` o `neo4j`) y estado de Neo4j en ese momento (`connected`, `unreachable` o `disabled`) |
 | `GET /api/catalog` | Familias CWE activas con la cantidad de sinks y sanitizers de cada una |
 | `POST /api/analyze` | Cuerpo JSON `{"code": "...", "file": "a.ts"}` o `{"path": "src"}` |
 
@@ -263,7 +292,14 @@ CLI (`@graphsast/core/browser`, sin Neo4j): se analizan los mismos archivos
 
 Sobre el grafo: búsqueda de nodos por nombre, código o `archivo:línea` (Enter
 encuadra la primera coincidencia), y exportación a PNG (lo dibujado) y a JSON
-(el grafo completo con los hallazgos).
+(el grafo completo con los hallazgos). Al pasar el puntero por un nodo se ve
+su código completo. En un proyecto, el grafo dibujado se recorta alrededor del
+hallazgo elegido; el selector «Nodos» fija cuántos se dibujan (de 100 a todos).
+
+Tema claro u oscuro (por defecto, el del sistema) y atajos de teclado: `n`/`p`
+hallazgo siguiente o anterior, `f` centrar, `/` buscar, `h` atenuar lo que no
+está en el camino y `t` cambiar el tema. El tema y el límite de nodos se
+guardan en el navegador.
 
 Como el sitio es estático, se despliega en Vercel sin funciones de servidor:
 `vercel.json` compila el core y la página (`npm run viz:build`) y publica
@@ -364,6 +400,19 @@ NEO4J_URI=bolt://localhost:7687 npm start
 Con `NEO4J_URI` definida y apuntando a esta máquina, `graphsast serve`
 persiste el grafo y ejecuta la detección como consulta Cypher en vez del motor
 en memoria. El CLI `scan` y la versión web usan siempre el motor en memoria.
+
+Cada análisis se guarda con su propio id (`run`) y se borra al terminar la
+consulta, así que dos peticiones simultáneas no se pisan. La primera crea el
+índice `gsnode_run_id` sobre `(run, id)`.
+
+Los tests del motor Neo4j (`packages/core/src/store/neo4j.integration.test.ts`)
+corren contra una base real solo si `NEO4J_URI` está definida. Comparan los
+hallazgos con los del motor en memoria en todo el benchmark:
+
+```bash
+npm run neo4j:up
+NEO4J_URI=bolt://localhost:7687 npm test -w @graphsast/core
+```
 
 ## Desarrollo
 

@@ -33,6 +33,78 @@ jobs:
       - name: Build de la versión web
         run: npm run viz:build
 
+  neo4j:
+    name: Motor Neo4j
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    services:
+      neo4j:
+        image: neo4j:5-community
+        env:
+          NEO4J_AUTH: neo4j/graphsast-dev
+        ports:
+          - 7687:7687
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p graphsast-dev 'RETURN 1'"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Mismos hallazgos que el motor en memoria, contra una base real
+        run: npx vitest run src/store/neo4j.integration.test.ts
+        working-directory: packages/core
+        env:
+          NEO4J_URI: bolt://localhost:7687
+
+  docker:
+    name: Imagen Docker
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t graphsast .
+      - name: Escanear un proyecto vulnerable (sale 1) y uno limpio (sale 0)
+        run: |
+          mkdir -p /tmp/vuln /tmp/clean
+          printf 'export function show(req) {\n  db.query("SELECT * FROM u WHERE id = " + req.params.id);\n}\n' > /tmp/vuln/a.js
+          printf 'export function show(req) {\n  return db.query("SELECT * FROM u WHERE id = ?", [req.params.id]);\n}\n' > /tmp/clean/a.js
+          code=0; docker run --rm -v /tmp/vuln:/src:ro graphsast scan . || code=$?
+          test "$code" -eq 1
+          docker run --rm -v /tmp/clean:/src:ro graphsast scan .
+          docker run --rm -v /tmp/vuln:/src:ro graphsast scan . --format sarif --exit-zero > out.sarif
+          grep -q '"version": "2.1.0"' out.sarif
+
+  package:
+    name: Paquete npm
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: npm pack (compila y mete el catálogo en el paquete)
+        run: npm pack -w @graphsast/core --pack-destination "$RUNNER_TEMP"
+      - name: Instalar el paquete en un proyecto vacío y escanear
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir consumer vuln && cd consumer
+          npm init -y > /dev/null
+          npm install ../graphsast-core-*.tgz
+          printf 'export function show(req) {\n  db.query("SELECT * FROM u WHERE id = " + req.params.id);\n}\n' > ../vuln/a.js
+          code=0; npx graphsast scan ../vuln || code=$?
+          test "$code" -eq 1
+          node --input-type=module -e 'import { scanPaths } from "@graphsast/core"; if (scanPaths(["../vuln"]).findings.length !== 1) process.exit(1)'
+
   cve:
     name: Benchmark sobre CVEs reales
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

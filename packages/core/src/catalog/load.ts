@@ -5,9 +5,20 @@ import type { CatalogBundle, CatalogManifest, CweCatalogEntry } from "./types.js
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
-/** Raíz del monorepo: packages/core/src/catalog → ../../../../ */
+/**
+ * Dónde está el catálogo. En el repositorio, `catalog/` de la raíz
+ * (dist/catalog → ../../../../); instalado desde npm, la copia que `prepack`
+ * mete en el paquete (dist/catalog → ../../catalog). Se prefiere el del
+ * repositorio solo si es el monorepo de verdad: una copia vieja que haya
+ * quedado en packages/core no puede tapar las ediciones del catálogo.
+ */
 export function defaultCatalogDir(): string {
-  return path.resolve(MODULE_DIR, "../../../../catalog");
+  const repoRoot = path.resolve(MODULE_DIR, "../../../..");
+  const inRepo = path.join(repoRoot, "catalog");
+  if (existsSync(path.join(inRepo, "index.json")) && existsSync(path.join(repoRoot, "packages/core/package.json"))) {
+    return inRepo;
+  }
+  return path.resolve(MODULE_DIR, "../../catalog");
 }
 
 export function loadCatalogEntry(filePath: string): CweCatalogEntry {

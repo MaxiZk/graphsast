@@ -16,7 +16,7 @@ export type { ParseResult, Dialect } from "./parser/parser.js";
 export { buildVerdict } from "./engine/verdict.js";
 export type { Verdict, VerdictKind, VerdictInput } from "./engine/verdict.js";
 export { defaultTaintRules, getRuleLabels, getCatalogBundle, RULE_LABELS } from "./taint/rules.js";
-export { findPath, reaches, DEFAULT_TAINT_PROPAGATE_EDGES } from "./taint/reach.js";
+export { findPath, reaches, DEFAULT_MAX_DEPTH, DEFAULT_TAINT_PROPAGATE_EDGES } from "./taint/reach.js";
 export type { TaintConfig, TaintFinding, TaintRule, TaintRoles } from "./taint/types.js";
 
 export { loadCatalogBundle, defaultCatalogDir } from "./catalog/load.js";
@@ -25,10 +25,13 @@ export type { CweCatalogEntry, CatalogBundle } from "./catalog/types.js";
 
 export {
   buildPersistStatements,
+  taintPathCypher,
   TAINT_PATH_CYPHER,
 } from "./store/cypher.js";
 export {
   createNeo4jDriver,
+  deleteRun,
+  ensureSchema,
   persistGraph,
   queryTaintPaths,
   verifyNeo4j,

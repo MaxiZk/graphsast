@@ -21,8 +21,11 @@ function rootSources(graph: IRGraph, sources: IRNode[]): IRNode[] {
 
 /** Cómo participa cada nodo en el taint, según las reglas. */
 export interface TaintAnnotations {
-  /** Sinks: CWE de la primera regla que los reconoce y argumentos peligrosos. */
-  sinks: Map<string, { cwe?: number; args?: readonly number[] }>;
+  /**
+   * Sinks: CWE de la primera regla que los reconoce, argumentos peligrosos y
+   * largo máximo del camino si la familia lo fija.
+   */
+  sinks: Map<string, { cwe?: number; args?: readonly number[]; maxDepth?: number }>;
   /**
    * Sanitizers: CWE de cada regla que los reconoce (`undefined` = regla sin
    * CWE, vale para todos los sinks).
@@ -43,7 +46,13 @@ export function annotateTaint(graph: IRGraph, rules: TaintRule[]): TaintAnnotati
   const sanitizers: TaintAnnotations["sanitizers"] = new Map();
   for (const node of graph.nodes) {
     const sink = sinkRules.find((r) => r.match(node));
-    if (sink) sinks.set(node.id, { cwe: sink.cwe, ...(sink.args ? { args: sink.args } : {}) });
+    if (sink) {
+      sinks.set(node.id, {
+        cwe: sink.cwe,
+        ...(sink.args ? { args: sink.args } : {}),
+        ...(sink.maxDepth !== undefined ? { maxDepth: sink.maxDepth } : {}),
+      });
+    }
     const cwes = sanitizerRules.filter((r) => r.match(node)).map((r) => r.cwe);
     if (cwes.length > 0) sanitizers.set(node.id, cwes);
   }
@@ -115,14 +124,14 @@ export function analyzeTaint(
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
 
   const findings: TaintFinding[] = [];
-  const reachConfig = {
-    maxDepth: config.maxDepth,
-    propagateEdges: config.propagateEdges,
-  };
 
   for (const [sinkId, spec] of annotations.sinks) {
     const sink = byId.get(sinkId)!;
     const enters = entersSink(spec.args);
+    const reachConfig = {
+      maxDepth: config.maxDepth ?? spec.maxDepth,
+      propagateEdges: config.propagateEdges,
+    };
     for (const source of sources) {
       const path = findPath(
         graph,

@@ -74,6 +74,25 @@ mínimo. Si un caso nuevo falla, primero confirmá que la etiqueta es correcta;
 si lo es, el caso documenta una limitación y conviene arreglar el motor antes
 de mergearlo.
 
+## Publicar una versión
+
+1. Subí la versión en `packages/core/package.json`, en
+   `packages/core/src/version.ts` (un test exige que coincidan) y en la
+   dependencia de `packages/viz/package.json`; después `npm install` para
+   actualizar el lock. Entra por PR, como todo.
+2. Con el PR mergeado, creá el tag sobre `main`:
+   `git tag v0.2.0 && git push origin v0.2.0`.
+3. `.github/workflows/release.yml` verifica que el tag coincida con la versión,
+   corre build, tests y benchmark, y publica:
+   - el release de GitHub con `graphsast-core-<versión>.tgz`;
+   - la imagen `ghcr.io/<dueño>/graphsast:<versión>` y `:latest` (el primer
+     push la crea privada: se hace pública desde la configuración del paquete
+     en GitHub);
+   - el paquete en npm, solo si el repositorio tiene el secret `NPM_TOKEN`.
+     El scope `@graphsast` no existe todavía en npm: hay que crear la
+     organización `graphsast` (gratis para paquetes públicos) o cambiar el
+     nombre del paquete.
+
 ## Tests
 
 - Tests unitarios junto al código (`*.test.ts`, vitest).
