@@ -77,6 +77,10 @@ restricciones:
 - Un patrón `paquete.f` coincide aunque el import tenga otro nombre local
   (`const cp = require("child_process"); cp.exec(x)`).
 
+Una familia puede fijar `"maxDepth": n`, el largo máximo (en aristas) de un
+camino hasta sus sinks; sin esto es 15. `--max-depth` lo reemplaza para todas
+las familias. Los dos motores lo respetan.
+
 En `sources`, `req.body` aporta la raíz `req`, y `@Body` los parámetros
 decorados con `@Body()`. Solo se usan con `--sources catalog`.
 

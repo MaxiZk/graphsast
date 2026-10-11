@@ -2,6 +2,7 @@ import type { Driver } from "neo4j-driver";
 import { cweForSinkNode } from "../catalog/rules.js";
 import type { IRCall, IRGraph } from "../ir/types.js";
 import { analyzeTaint, annotateTaint, getTaintRoles } from "../taint/analyzer.js";
+import { DEFAULT_MAX_DEPTH } from "../taint/reach.js";
 import { defaultTaintRules } from "../taint/rules.js";
 import type { TaintConfig, TaintFinding } from "../taint/types.js";
 import { deleteRun, persistGraph, queryTaintPaths } from "../store/neo4j.js";
@@ -45,7 +46,11 @@ export async function analyzeWithEngine(
   const run = await persistGraph(options.driver, graph, roles, options.database, annotations);
   let raw: TaintFinding[];
   try {
-    raw = await queryTaintPaths(options.driver, options.database, run);
+    const familyDepths = [...annotations.sinks.values()].map((s) => s.maxDepth ?? DEFAULT_MAX_DEPTH);
+    raw = await queryTaintPaths(options.driver, options.database, run, {
+      maxDepth: config.maxDepth,
+      maxHops: Math.max(DEFAULT_MAX_DEPTH, ...familyDepths),
+    });
   } finally {
     await deleteRun(options.driver, run, options.database);
   }

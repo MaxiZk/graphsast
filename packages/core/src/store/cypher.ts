@@ -1,5 +1,6 @@
 import type { IREdgeKind, IRGraph, IRNode } from "../ir/types.js";
 import type { TaintAnnotations } from "../taint/analyzer.js";
+import { DEFAULT_MAX_DEPTH } from "../taint/reach.js";
 import type { TaintRoles } from "../taint/types.js";
 
 export const EDGE_KINDS: IREdgeKind[] = [
@@ -25,8 +26,9 @@ export function taintRoleFor(
 
 /**
  * Propiedades de un nodo en Neo4j. Además del rol, lleva las decisiones de
- * `annotateTaint` que la consulta necesita: CWE y argumentos del sink
- * (`sinkCwe`, `sinkArgs`) y para qué CWE vale el sanitizer (`sanitizerCwes`).
+ * `annotateTaint` que la consulta necesita: CWE, argumentos y largo máximo del
+ * camino del sink (`sinkCwe`, `sinkArgs`, `sinkMaxDepth`) y para qué CWE vale
+ * el sanitizer (`sanitizerCwes`).
  */
 export function nodeProperties(
   node: IRNode,
@@ -46,6 +48,7 @@ export function nodeProperties(
     taintRole: taintRoleFor(node.id, roles),
     sinkCwe: sink ? sink.cwe ?? NO_CWE : null,
     sinkArgs: sink?.args ? [...sink.args] : null,
+    sinkMaxDepth: sink?.maxDepth ?? null,
     sanitizerCwes: sanitizer ? sanitizer.map((c) => c ?? NO_CWE) : null,
   };
   if (node.kind === "Call") {
@@ -91,26 +94,40 @@ function cypherProps(json: string): string {
 }
 
 /**
- * Plantilla Cypher del motor de taint (arquitectura §7). `$run` limita la
+ * Consulta Cypher del motor de taint (arquitectura §7). `$run` limita la
  * consulta a un análisis (`null`: todo el grafo). Aplica las mismas reglas que
  * `analyzeTaint`:
  *
  * - un nodo intermedio corta el camino si es un sanitizer que vale para la CWE
  *   del sink (`sanitizerApplies`);
  * - si el sink restringe argumentos, la última arista tiene que entrar por
- *   uno de ellos (`entersSink`).
+ *   uno de ellos (`entersSink`);
+ * - el camino no supera `$maxDepth` si está fijado, o si no el largo máximo de
+ *   la familia del sink.
+ *
+ * El largo de un patrón variable no puede ser un parámetro: `maxHops` es la
+ * cota del patrón, y tiene que cubrir el mayor de esos largos.
  */
-export const TAINT_PATH_CYPHER = `
+export function taintPathCypher(maxHops: number = DEFAULT_MAX_DEPTH): string {
+  if (!Number.isInteger(maxHops) || maxHops < 1) {
+    throw new RangeError(`maxHops debe ser un entero positivo (${maxHops}).`);
+  }
+  return `
 MATCH (s:GSNode {taintRole: 'source'}) WHERE $run IS NULL OR s.run = $run
 MATCH (k:GSNode) WHERE k.sinkCwe IS NOT NULL AND ($run IS NULL OR k.run = $run)
-MATCH p = (s)-[:FLOWS_TO|SANITIZED_BY|CALLS|BINDS_TO|RETURNS*1..15]->(k)
-WHERE NONE(n IN nodes(p)[1..-1] WHERE n.sanitizerCwes IS NOT NULL
+MATCH p = (s)-[:FLOWS_TO|SANITIZED_BY|CALLS|BINDS_TO|RETURNS*1..${maxHops}]->(k)
+WHERE length(p) <= coalesce($maxDepth, k.sinkMaxDepth, ${DEFAULT_MAX_DEPTH})
+  AND NONE(n IN nodes(p)[1..-1] WHERE n.sanitizerCwes IS NOT NULL
         AND (k.sinkCwe = -1 OR -1 IN n.sanitizerCwes OR k.sinkCwe IN n.sanitizerCwes))
   AND (k.sinkArgs IS NULL
        OR (type(last(relationships(p))) IN ['FLOWS_TO', 'SANITIZED_BY']
            AND last(relationships(p)).arg IN k.sinkArgs))
 RETURN s.id AS sourceId, k.id AS sinkId, [n IN nodes(p) | n.id] AS path
 `.trim();
+}
+
+/** La consulta con el largo por defecto (15). */
+export const TAINT_PATH_CYPHER = taintPathCypher();
 
 export function parseTaintRows(
   records: { get: (key: string) => unknown }[],

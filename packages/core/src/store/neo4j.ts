@@ -7,8 +7,9 @@ import {
   EDGE_KINDS,
   nodeProperties,
   parseTaintRows,
-  TAINT_PATH_CYPHER,
+  taintPathCypher,
 } from "./cypher.js";
+import { DEFAULT_MAX_DEPTH } from "../taint/reach.js";
 
 export interface Neo4jConfig {
   uri?: string;
@@ -127,15 +128,21 @@ export async function deleteRun(driver: Driver, run: string, database?: string):
   }
 }
 
-/** Caminos source → sink de un análisis (`run`), o de todo el grafo si se omite. */
+/**
+ * Caminos source → sink de un análisis (`run`), o de todo el grafo si se
+ * omite. `maxDepth` fija el largo para todas las familias; `maxHops` es la
+ * cota del patrón (ver `taintPathCypher`).
+ */
 export async function queryTaintPaths(
   driver: Driver,
   database?: string,
   run?: string,
+  depth: { maxDepth?: number; maxHops?: number } = {},
 ): Promise<TaintFinding[]> {
   const session = driver.session({ database });
   try {
-    const result = await session.run(TAINT_PATH_CYPHER, { run: run ?? null });
+    const cypher = taintPathCypher(depth.maxDepth ?? depth.maxHops ?? DEFAULT_MAX_DEPTH);
+    const result = await session.run(cypher, { run: run ?? null, maxDepth: depth.maxDepth ?? null });
     return parseTaintRows(result.records).map((row) => ({
       ...row,
       sanitized: false,

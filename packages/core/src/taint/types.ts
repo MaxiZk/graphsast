@@ -11,6 +11,8 @@ export interface TaintRule {
    * esto cuentan todos y el receptor (ver `SinkSpec.args`).
    */
   args?: readonly number[];
+  /** Solo sinks: largo máximo del camino para esta familia (`CweCatalogEntry.maxDepth`). */
+  maxDepth?: number;
 }
 
 export interface TaintFinding {
@@ -25,6 +27,7 @@ export interface TaintFinding {
 
 export interface TaintConfig {
   rules?: TaintRule[];
+  /** Largo máximo de un camino, para todas las familias (ignora `TaintRule.maxDepth`). */
   maxDepth?: number;
   propagateEdges?: readonly IREdgeKind[];
 }

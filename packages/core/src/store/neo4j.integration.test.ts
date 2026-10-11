@@ -3,7 +3,9 @@ import type { Driver } from "neo4j-driver";
 import { analyzeGraph } from "../index.js";
 import { analyzeWithEngine } from "../engine/analyze.js";
 import { BENCHMARK_CORPUS } from "../eval/benchmark/corpus.js";
+import { rulesFromCatalog } from "../catalog/rules.js";
 import { analyzeTaint } from "../taint/analyzer.js";
+import { getCatalogBundle } from "../taint/rules.js";
 import type { TaintFinding } from "../taint/types.js";
 import { createNeo4jDriver } from "./neo4j.js";
 
@@ -61,6 +63,23 @@ describe.skipIf(!enabled)("motor Neo4j (base real)", () => {
       expect(b.findings).toEqual([]);
     }
   }, 60_000);
+
+  it("respeta --max-depth y el maxDepth de la familia, como el motor en memoria", async () => {
+    const graph = analyzeGraph(
+      `function h(req) { const a = req.query.id; const b = a; db.query("SELECT " + b); }`,
+      "depth.ts",
+    );
+    const length = analyzeTaint(graph)[0]!.path.length - 1;
+    const shortSql = rulesFromCatalog({
+      ...getCatalogBundle(),
+      entries: getCatalogBundle().entries.map((e) => (e.cwe === 89 ? { ...e, maxDepth: length - 1 } : e)),
+    });
+    for (const taint of [{ maxDepth: length - 1 }, { maxDepth: length }, { rules: shortSql }]) {
+      const neo = await analyzeWithEngine(graph, { driver, taint });
+      expect(pairs(neo.findings), JSON.stringify(taint)).toEqual(pairs(analyzeTaint(graph, taint)));
+    }
+    expect((await analyzeWithEngine(graph, { driver, taint: { rules: shortSql } })).findings).toEqual([]);
+  });
 
   it("no deja nodos del análisis en la base", async () => {
     const graph = analyzeGraph("function h(req) { db.query(req.body.q); }", "left.ts");

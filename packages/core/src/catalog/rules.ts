@@ -69,6 +69,7 @@ function sinkRule(entry: CweCatalogEntry, sink: string | SinkSpec): TaintRule {
     cwe: entry.cwe,
     cweName: entry.name,
     ...(spec.args ? { args: spec.args } : {}),
+    ...(entry.maxDepth !== undefined ? { maxDepth: entry.maxDepth } : {}),
     match: (n): n is IRCall =>
       n.kind === "Call"
       && n.resolution !== "exact"

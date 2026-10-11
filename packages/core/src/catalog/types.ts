@@ -30,6 +30,11 @@ export interface CweCatalogEntry {
   sources: string[];
   sinks: (string | SinkSpec)[];
   sanitizers: string[];
+  /**
+   * Largo máximo (en aristas) de un camino hasta un sink de esta familia.
+   * Sin esto, 15. `--max-depth` lo reemplaza para todas las familias.
+   */
+  maxDepth?: number;
 }
 
 export interface CatalogManifest {
