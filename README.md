@@ -86,7 +86,7 @@ decorados con `@Body()`. Solo se usan con `--sources catalog`.
 
 ## Instalación
 
-Requiere Node.js (probado con 24 y 26) y npm.
+Requiere Node.js 22 o superior (el CI usa 22) y npm.
 
 ```bash
 git clone https://github.com/MaxiZk/graphsast.git
@@ -95,11 +95,23 @@ npm install
 npm run build
 ```
 
-El paquete no está publicado en npm. El CLI queda disponible como
-`npx graphsast` dentro del repositorio, o como
+El CLI queda disponible como `npx graphsast` dentro del repositorio, o como
 `node packages/core/dist/cli/graphsast.cli.js` desde cualquier lugar. Busca el
 catálogo CWE en `catalog/` del propio repositorio; si no lo encuentra, termina
 con código 2 en vez de reportar «sin hallazgos».
+
+### Como paquete
+
+`@graphsast/core` todavía no está en npm. Cada release de GitHub trae el
+paquete (`graphsast-core-<versión>.tgz`), que se instala igual:
+
+```bash
+npm install -g ./graphsast-core-0.1.0.tgz   # o la URL del asset del release
+graphsast scan .
+```
+
+El paquete lleva su copia del catálogo y la API de Node (`scanPaths`,
+`analyzeGraph`...). Para armarlo desde el repositorio: `npm pack -w @graphsast/core`.
 
 ### Con Docker
 

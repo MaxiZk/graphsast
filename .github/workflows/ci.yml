@@ -81,6 +81,30 @@ jobs:
           docker run --rm -v /tmp/vuln:/src:ro graphsast scan . --format sarif --exit-zero > out.sarif
           grep -q '"version": "2.1.0"' out.sarif
 
+  package:
+    name: Paquete npm
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: npm pack (compila y mete el catálogo en el paquete)
+        run: npm pack -w @graphsast/core --pack-destination "$RUNNER_TEMP"
+      - name: Instalar el paquete en un proyecto vacío y escanear
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir consumer vuln && cd consumer
+          npm init -y > /dev/null
+          npm install ../graphsast-core-*.tgz
+          printf 'export function show(req) {\n  db.query("SELECT * FROM u WHERE id = " + req.params.id);\n}\n' > ../vuln/a.js
+          code=0; npx graphsast scan ../vuln || code=$?
+          test "$code" -eq 1
+          node --input-type=module -e 'import { scanPaths } from "@graphsast/core"; if (scanPaths(["../vuln"]).findings.length !== 1) process.exit(1)'
+
   cve:
     name: Benchmark sobre CVEs reales
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
