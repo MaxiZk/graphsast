@@ -63,6 +63,24 @@ jobs:
         env:
           NEO4J_URI: bolt://localhost:7687
 
+  docker:
+    name: Imagen Docker
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t graphsast .
+      - name: Escanear un proyecto vulnerable (sale 1) y uno limpio (sale 0)
+        run: |
+          mkdir -p /tmp/vuln /tmp/clean
+          printf 'export function show(req) {\n  db.query("SELECT * FROM u WHERE id = " + req.params.id);\n}\n' > /tmp/vuln/a.js
+          printf 'export function show(req) {\n  return db.query("SELECT * FROM u WHERE id = ?", [req.params.id]);\n}\n' > /tmp/clean/a.js
+          code=0; docker run --rm -v /tmp/vuln:/src:ro graphsast scan . || code=$?
+          test "$code" -eq 1
+          docker run --rm -v /tmp/clean:/src:ro graphsast scan .
+          docker run --rm -v /tmp/vuln:/src:ro graphsast scan . --format sarif --exit-zero > out.sarif
+          grep -q '"version": "2.1.0"' out.sarif
+
   cve:
     name: Benchmark sobre CVEs reales
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

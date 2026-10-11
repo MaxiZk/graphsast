@@ -97,6 +97,19 @@ El paquete no está publicado en npm. El CLI queda disponible como
 catálogo CWE en `catalog/` del propio repositorio; si no lo encuentra, termina
 con código 2 en vez de reportar «sin hallazgos».
 
+### Con Docker
+
+```bash
+docker build -t graphsast .
+docker run --rm -v "$PWD:/src:ro" graphsast scan .
+docker run --rm -v "$PWD:/src:ro" graphsast scan . --format sarif > graphsast.sarif
+```
+
+La imagen trae solo el CLI y el catálogo, sobre `distroless` y con un usuario
+sin privilegios. El proyecto se monta en `/src` de solo lectura, así que el
+reporte se saca redirigiendo la salida en vez de con `--out`. `graphsast serve`
+no sirve desde un contenedor: la API solo acepta conexiones de `127.0.0.1`.
+
 ## CLI
 
 ### Archivo o carpeta

@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+.git
+.github
+docs
+notas
+packages/viz/src
+packages/viz/public
+packages/viz/index.html
+eval-*.json
+*.md
+*.stackdump
+Dockerfile
