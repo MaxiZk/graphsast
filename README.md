@@ -280,7 +280,14 @@ CLI (`@graphsast/core/browser`, sin Neo4j): se analizan los mismos archivos
 
 Sobre el grafo: búsqueda de nodos por nombre, código o `archivo:línea` (Enter
 encuadra la primera coincidencia), y exportación a PNG (lo dibujado) y a JSON
-(el grafo completo con los hallazgos).
+(el grafo completo con los hallazgos). Al pasar el puntero por un nodo se ve
+su código completo. En un proyecto, el grafo dibujado se recorta alrededor del
+hallazgo elegido; el selector «Nodos» fija cuántos se dibujan (de 100 a todos).
+
+Tema claro u oscuro (por defecto, el del sistema) y atajos de teclado: `n`/`p`
+hallazgo siguiente o anterior, `f` centrar, `/` buscar, `h` atenuar lo que no
+está en el camino y `t` cambiar el tema. El tema y el límite de nodos se
+guardan en el navegador.
 
 Como el sitio es estático, se despliega en Vercel sin funciones de servidor:
 `vercel.json` compila el core y la página (`npm run viz:build`) y publica

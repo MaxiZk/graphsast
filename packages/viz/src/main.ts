@@ -33,6 +33,16 @@ import {
   projectVerdict,
   type ProjectFinding,
 } from "./project-view.js";
+import {
+  graphPalette,
+  nodeLimitValue,
+  resolveNodeLimit,
+  resolveTheme,
+  shortcutFor,
+  stepIndex,
+  type ShortcutAction,
+  type Theme,
+} from "./preferences.js";
 import type { CatalogSummary, ProjectAnalysis, UploadedFile } from "./protocol.js";
 import {
   describeSelection,
@@ -83,6 +93,38 @@ const projectFilesEl = document.querySelector<HTMLDivElement>("#project-files")!
 const fileList = document.querySelector<HTMLUListElement>("#file-list")!;
 const fileViewLabel = document.querySelector<HTMLParagraphElement>("#file-view-label")!;
 const projectCode = document.querySelector<HTMLDivElement>("#project-code")!;
+const themeToggle = document.querySelector<HTMLButtonElement>("#theme-toggle")!;
+const nodeLimitSelect = document.querySelector<HTMLSelectElement>("#node-limit")!;
+const nodeTooltip = document.querySelector<HTMLDivElement>("#node-tooltip")!;
+
+/**
+ * Preferencias guardadas en el navegador. Puede no haber almacenamiento
+ * (modo privado, bloqueado): entonces valen las de siempre.
+ */
+function readPref(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writePref(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* sin almacenamiento, la preferencia dura lo que la pestaña */
+  }
+}
+
+const THEME_KEY = "graphsast-theme";
+const NODE_LIMIT_KEY = "graphsast-node-limit";
+let theme: Theme = resolveTheme(
+  readPref(THEME_KEY),
+  window.matchMedia?.("(prefers-color-scheme: light)").matches ?? false,
+);
+/** Nodos a partir de los cuales el grafo de un proyecto se recorta. */
+let nodeLimit = resolveNodeLimit(readPref(NODE_LIMIT_KEY));
 
 let cy: Core | null = null;
 let graph: IRGraph | null = null;
@@ -122,6 +164,7 @@ const ALL_EDGE_KINDS = [
 type IREdgeKind = (typeof ALL_EDGE_KINDS)[number];
 
 function cytoscapeStyle(): cytoscape.StylesheetJson {
+  const palette = graphPalette(theme);
   return [
     {
       selector: "node",
@@ -132,6 +175,8 @@ function cytoscapeStyle(): cytoscape.StylesheetJson {
         "text-max-width": "110px",
         "background-color": "#475569",
         color: "#f8fafc",
+        "text-outline-color": "#1e293b",
+        "text-outline-width": palette.nodeLabelOutline,
         "text-valign": "center",
         "text-halign": "center",
         width: 58,
@@ -200,13 +245,13 @@ function cytoscapeStyle(): cytoscape.StylesheetJson {
       selector: "edge",
       style: {
         width: 2,
-        "line-color": "#64748b",
-        "target-arrow-color": "#64748b",
+        "line-color": palette.edge,
+        "target-arrow-color": palette.edge,
         "target-arrow-shape": "triangle",
         "curve-style": "bezier",
         label: "data(label)",
         "font-size": 9,
-        color: "#cbd5e1",
+        color: palette.edgeLabel,
       },
     },
     {
@@ -235,7 +280,7 @@ function cytoscapeStyle(): cytoscape.StylesheetJson {
         width: 5,
         "line-color": "#f97316",
         "target-arrow-color": "#f97316",
-        color: "#fdba74",
+        color: palette.riskLabel,
       },
     },
   ];
@@ -257,6 +302,13 @@ function ensureCy(): Core {
       ]
         .filter(Boolean)
         .join("\n");
+    });
+    cy.on("mouseover", "node", (evt) => showNodeTooltip(evt.target));
+    cy.on("mouseout", "node", () => {
+      nodeTooltip.hidden = true;
+    });
+    cy.on("viewport", () => {
+      nodeTooltip.hidden = true;
     });
   }
   return cy;
@@ -326,17 +378,37 @@ function fitGraph(instance: Core, hasHighlight: boolean) {
 }
 
 /**
- * Nodos a partir de los cuales el grafo de un proyecto se recorta. El
- * breadthfirst con unos cientos todavía se lee; con los miles que junta un
- * proyecto real el zoom de encuadre queda en 0,001 y el panel se ve vacío.
+ * Código completo del nodo bajo el puntero: la etiqueta del grafo es solo el
+ * nombre o el callee. Texto, no HTML: es código del usuario.
  */
-const MAX_PROJECT_NODES = 250;
+function showNodeTooltip(node: cytoscape.NodeSingular) {
+  const d = node.data() as { kind?: string; code?: string; file?: string; line?: number };
+  const head = document.createElement("strong");
+  head.textContent = [d.kind, d.file && d.line ? `${d.file}:${d.line}` : d.line ? `línea ${d.line}` : ""]
+    .filter(Boolean)
+    .join(" · ");
+  const code = document.createElement("code");
+  code.textContent = d.code ?? "";
+  nodeTooltip.replaceChildren(head, code);
+  nodeTooltip.hidden = false;
+
+  // Al lado del nodo, sin salirse del grafo.
+  const pos = node.renderedPosition();
+  const wrap = nodeTooltip.parentElement!.getBoundingClientRect();
+  const box = nodeTooltip.getBoundingClientRect();
+  const offset = node.renderedOuterWidth() / 2 + 8;
+  let left = pos.x + offset;
+  if (left + box.width > wrap.width) left = Math.max(0, pos.x - offset - box.width);
+  const top = Math.min(Math.max(0, pos.y - box.height / 2), Math.max(0, wrap.height - box.height));
+  nodeTooltip.style.left = `${left}px`;
+  nodeTooltip.style.top = `${top}px`;
+}
 
 function renderGraph() {
   if (!graph) return;
   const finding = currentHighlight();
   const view = mode === "project"
-    ? focusGraph(graph, { path: finding?.path, file: selectedFile }, MAX_PROJECT_NODES)
+    ? focusGraph(graph, { path: finding?.path, file: selectedFile }, nodeLimit)
     : { graph, total: graph.nodes.length };
   renderGraphNote(view.graph.nodes.length, view.total, !!finding);
   const instance = ensureCy();
@@ -405,7 +477,7 @@ function exportPng() {
     statusEl.textContent = "No hay grafo para exportar todavía.";
     return;
   }
-  download("graphsast-grafo.png", cy.png({ full: true, scale: 2, bg: "#070a10" }));
+  download("graphsast-grafo.png", cy.png({ full: true, scale: 2, bg: graphPalette(theme).background }));
 }
 
 function exportJson() {
@@ -803,6 +875,8 @@ function setMode(next: Mode) {
   tabExamples.setAttribute("aria-selected", String(next === "examples"));
   projectModeEl.hidden = next !== "project";
   examplesModeEl.hidden = next !== "examples";
+  // Los ejemplos se dibujan enteros: el límite es solo para proyectos.
+  nodeLimitSelect.parentElement!.hidden = next !== "project";
   clearAnalysisView();
   if (next === "project") {
     if (project) showProject();
@@ -983,5 +1057,85 @@ dropZone.addEventListener("drop", (e) => {
     });
 });
 
+function applyTheme() {
+  document.documentElement.dataset.theme = theme;
+  themeToggle.textContent = theme === "dark" ? "Tema claro" : "Tema oscuro";
+  cy?.style(cytoscapeStyle());
+}
+
+function toggleTheme() {
+  theme = theme === "dark" ? "light" : "dark";
+  writePref(THEME_KEY, theme);
+  applyTheme();
+}
+
+/** Hallazgo siguiente o anterior, en el proyecto o en el ejemplo. */
+function stepFinding(delta: 1 | -1) {
+  if (mode === "project") {
+    const i = stepIndex(selectedItem, projectItems.length, delta);
+    if (i >= 0) selectProjectItem(i);
+    return;
+  }
+  const i = stepIndex(highlightIndex, findings.length, delta);
+  if (i < 0) return;
+  highlightIndex = i;
+  renderFindings();
+  renderGraph();
+}
+
+function runShortcut(action: ShortcutAction) {
+  switch (action) {
+    case "next-finding":
+      stepFinding(1);
+      break;
+    case "prev-finding":
+      stepFinding(-1);
+      break;
+    case "fit":
+      cy?.fit(undefined, 36);
+      break;
+    case "search":
+      graphSearch.focus();
+      graphSearch.select();
+      break;
+    case "toggle-dim":
+      dimToggle.checked = !dimToggle.checked;
+      renderGraph();
+      break;
+    case "toggle-theme":
+      toggleTheme();
+      break;
+  }
+}
+
+themeToggle.addEventListener("click", toggleTheme);
+nodeLimitSelect.value = nodeLimitValue(nodeLimit);
+nodeLimitSelect.addEventListener("change", () => {
+  nodeLimit = resolveNodeLimit(nodeLimitSelect.value);
+  writePref(NODE_LIMIT_KEY, nodeLimitValue(nodeLimit));
+  renderGraph();
+});
+graphSearch.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  graphSearch.value = "";
+  applySearch(false);
+  graphSearch.blur();
+});
+document.addEventListener("keydown", (e) => {
+  const target = e.target instanceof HTMLElement ? e.target : null;
+  const action = shortcutFor({
+    key: e.key,
+    ctrlKey: e.ctrlKey,
+    metaKey: e.metaKey,
+    altKey: e.altKey,
+    targetTag: target?.tagName,
+    targetEditable: target?.isContentEditable,
+  });
+  if (!action) return;
+  e.preventDefault();
+  runShortcut(action);
+});
+
+applyTheme();
 setMode("project");
 statusEl.textContent = "Elegí una carpeta o archivos de tu proyecto para empezar.";
