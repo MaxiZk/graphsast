@@ -21,6 +21,14 @@ describe("catalog CWE", () => {
     expect(cwes).toContain(943);
   });
 
+  it("cada familia explica el riesgo, un ataque y cómo corregirlo", () => {
+    for (const entry of bundle.entries) {
+      for (const field of ["description", "attack", "fix"] as const) {
+        expect(entry[field]?.trim(), `CWE-${entry.cwe}.${field}`).toBeTruthy();
+      }
+    }
+  });
+
   it("CWE-89 cubre clientes SQL y solo mira el texto de la consulta", () => {
     const sqli = bundle.entries.find((e) => e.cwe === 89)!;
     const specs = sqli.sinks.map(sinkSpecOf);

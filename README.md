@@ -280,11 +280,18 @@ npm start          # http://localhost:5173
 ```
 
 El usuario elige o arrastra una carpeta (o archivos sueltos) de su proyecto y,
-al terminar el análisis, ve las vulnerabilidades encontradas: cada hallazgo con
-su familia CWE, el archivo y la línea del sink, el camino completo del dato
-(aunque cruce archivos), el código con las líneas del camino resaltadas y el
-grafo. La pestaña «Ejemplos» permite pegar código y trae dos casos que difieren
-en una línea: una consulta SQL vulnerable y la misma consulta con `sanitize()`.
+al terminar el análisis, ve las vulnerabilidades encontradas, una por cada
+línea peligrosa (varios caminos al mismo destino se agrupan). Para la elegida,
+la explicación responde cuatro preguntas: de dónde viene el dato y por qué no
+es confiable, a dónde llega y por qué es peligroso (con un ataque de ejemplo),
+por qué nada lo frenó y cómo se corrige. Los textos de riesgo, ataque y
+corrección salen del catálogo (`description`, `attack`, `fix`). Además, el
+camino completo (aunque cruce archivos), el código con las líneas resaltadas y
+el grafo.
+
+La pestaña «Ejemplos» trae pares vulnerable/corregido que difieren en una
+línea, para SQL Injection, XSS y NoSQL Injection, uno de Command Injection y
+uno en el que el dato cruza dos funciones. También se puede pegar código.
 
 El análisis corre en el navegador, en un Web Worker, con el mismo motor que el
 CLI (`@graphsast/core/browser`, sin Neo4j): se analizan los mismos archivos

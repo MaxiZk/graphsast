@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { getTaintRoles, scanFilesWithGraphs } from "@graphsast/core";
 import {
   focusGraph,
-  findingPath,
   graphIndexOfFile,
   linesInFile,
   projectFindings,
@@ -69,7 +68,7 @@ describe("hallazgos del proyecto", () => {
     const [item] = projectFindings(output);
     expect(item!.finding.file).toBe("app/repo.ts");
     // req (controller.ts:2) → id (repo.ts:1) → db.query (repo.ts:2)
-    expect(findingPath(item!.finding)).toBe("req → [app/repo.ts] id → db.query");
+    expect(item!.finding.steps.map((s) => s.name)).toEqual(["req", "id", "db.query"]);
     expect([...linesInFile(item!.finding, "app/repo.ts")].sort()).toEqual([1, 2]);
     expect([...linesInFile(item!.finding, "app/controller.ts")]).toEqual([2]);
   });

@@ -15,7 +15,7 @@ export { analyzeTaint, getTaintRoles } from "./taint/analyzer.js";
 export type { TaintConfig, TaintFinding, TaintRule, TaintRoles } from "./taint/types.js";
 export { getRuleLabels, getCatalogBundle } from "./taint/rules.js";
 export type { CweCatalogEntry, CatalogBundle } from "./catalog/types.js";
-export { buildVerdict } from "./engine/verdict.js";
+export { buildVerdict, vulnerableDetail } from "./engine/verdict.js";
 export type { Verdict, VerdictKind } from "./engine/verdict.js";
 export { analyzeSource } from "./engine/payload.js";
 export type { AnalysisPayload } from "./engine/payload.js";

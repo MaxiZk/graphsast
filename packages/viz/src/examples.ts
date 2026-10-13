@@ -1,18 +1,49 @@
 export interface DemoExample {
   id: string;
   title: string;
+  /** Qué mirar: el ataque en el vulnerable, qué cambió en el corregido. */
   description: string;
   code: string;
   expectFinding: boolean;
+  /** Familia CWE que tiene que encontrar (vulnerables) o que deja de encontrar (corregidos). */
+  cwe: number;
+  /** El otro ejemplo del par vulnerable/corregido. */
+  pair?: string;
 }
 
 /**
- * La misma función en dos versiones que difieren en una línea: el id de la URL
- * llega a la consulta pasando por otra función, y en la segunda versión pasa
- * antes por sanitize(). Comparar los dos grafos muestra dónde se corta el
- * camino, que es lo que la demo tiene que enseñar.
+ * Cada vulnerabilidad viene en dos versiones que difieren en una línea: la
+ * vulnerable y la corregida. Comparar los dos grafos muestra dónde se corta
+ * el camino, que es lo que la demo tiene que enseñar.
  */
-const CONSULTA = `function buscarUsuario(req) {
+const SQLI = `// GET /usuarios?id=7
+app.get("/usuarios", (req, res) => {
+  const id = req.query.id;
+  db.query("SELECT * FROM usuarios WHERE id = " + id, (err, filas) => res.json(filas));
+});`;
+
+const XSS = `// GET /saludo?nombre=Ana
+app.get("/saludo", (req, res) => {
+  const nombre = req.query.nombre;
+  res.send("<h1>Hola, " + nombre + "</h1>");
+});`;
+
+const NOSQL = `// POST /login con { "email": "...", "password": "..." }
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  const usuario = await User.findOne({ email: email, password: password });
+  res.json({ ok: Boolean(usuario) });
+});`;
+
+const CMDI = `// GET /ping?host=8.8.8.8
+app.get("/ping", (req, res) => {
+  const host = req.query.host;
+  exec("ping -c 1 " + host);
+  res.send("Ping enviado");
+});`;
+
+/** El dato cruza dos funciones antes de llegar a la consulta. */
+const ENTRE_FUNCIONES = `function buscarUsuario(req) {
   const id = req.params.id;
   return consultarUsuario(id);
 }
@@ -23,27 +54,113 @@ function consultarUsuario(id) {
 
 export const DEMO_EXAMPLES: DemoExample[] = [
   {
-    id: "vulnerable",
-    title: "Con vulnerabilidad (SQL Injection)",
+    id: "sqli",
+    title: "SQL Injection · vulnerable",
     description:
-      "El id de la URL pasa a otra función y llega a db.query concatenado en "
-      + "la consulta, sin sanitizar.",
+      "El id de la URL se pega al texto de la consulta. Con ?id=1 OR 1=1 la "
+      + "consulta devuelve todos los usuarios.",
     expectFinding: true,
-    code: CONSULTA,
+    cwe: 89,
+    pair: "sqli-fixed",
+    code: SQLI,
+  },
+  {
+    id: "sqli-fixed",
+    title: "SQL Injection · corregido",
+    description:
+      "La misma consulta con un parámetro (?): el id viaja aparte del texto SQL "
+      + "y la base lo trata como un valor. No hay hallazgo.",
+    expectFinding: false,
+    cwe: 89,
+    pair: "sqli",
+    code: SQLI.replace(
+      'db.query("SELECT * FROM usuarios WHERE id = " + id, ',
+      'db.query("SELECT * FROM usuarios WHERE id = ?", [id], ',
+    ),
+  },
+  {
+    id: "xss",
+    title: "XSS · vulnerable",
+    description:
+      "El nombre de la URL vuelve dentro del HTML. Con "
+      + "?nombre=<script>alert(1)</script> el navegador ejecuta el script.",
+    expectFinding: true,
+    cwe: 79,
+    pair: "xss-fixed",
+    code: XSS,
+  },
+  {
+    id: "xss-fixed",
+    title: "XSS · corregido",
+    description:
+      "El nombre pasa por escapeHtml() antes de entrar al HTML: el < llega como "
+      + "&lt; y se muestra como texto. No hay hallazgo.",
+    expectFinding: false,
+    cwe: 79,
+    pair: "xss",
+    code: XSS.replace("const nombre = req.query.nombre;", "const nombre = escapeHtml(req.query.nombre);"),
+  },
+  {
+    id: "nosql",
+    title: "NoSQL Injection · vulnerable",
+    description:
+      'El login le pasa a MongoDB lo que vino en el JSON. Con "password": '
+      + '{"$ne": null} la condición vale para cualquier usuario y entra sin contraseña.',
+    expectFinding: true,
+    cwe: 943,
+    pair: "nosql-fixed",
+    code: NOSQL,
+  },
+  {
+    id: "nosql-fixed",
+    title: "NoSQL Injection · corregido",
+    description:
+      "String() convierte cada campo en texto: un objeto como {\"$ne\": null} ya "
+      + "no llega como operador. No hay hallazgo.",
+    expectFinding: false,
+    cwe: 943,
+    pair: "nosql",
+    code: NOSQL.replace(
+      "User.findOne({ email: email, password: password })",
+      "User.findOne({ email: String(email), password: String(password) })",
+    ),
+  },
+  {
+    id: "cmdi",
+    title: "Command Injection · vulnerable",
+    description:
+      "El host de la URL se pega a un comando del sistema. Con "
+      + "?host=8.8.8.8; cat /etc/passwd el servidor ejecuta también el segundo comando.",
+    expectFinding: true,
+    cwe: 78,
+    code: CMDI,
+  },
+  {
+    id: "vulnerable",
+    title: "Entre funciones · vulnerable",
+    description:
+      "El id de la URL pasa a otra función y recién ahí llega a la consulta. "
+      + "GraphSAST sigue el dato a través de la llamada.",
+    expectFinding: true,
+    cwe: 89,
+    pair: "sanitized",
+    code: ENTRE_FUNCIONES,
   },
   {
     id: "sanitized",
-    title: "Sanitizado",
+    title: "Entre funciones · corregido",
     description:
-      "El mismo código, pero el id pasa por sanitize() antes de la consulta: "
+      "El mismo código, pero el id pasa por sanitize() antes de la llamada: "
       + "el camino se corta y no hay hallazgo.",
     expectFinding: false,
-    code: CONSULTA.replace("const id = req.params.id;", "const id = sanitize(req.params.id);"),
+    cwe: 89,
+    pair: "vulnerable",
+    code: ENTRE_FUNCIONES.replace("const id = req.params.id;", "const id = sanitize(req.params.id);"),
   },
 ];
 
-/** Arranca en la versión vulnerable: sin hallazgo no hay camino que mirar. */
-export const DEFAULT_EXAMPLE_ID = "vulnerable";
+/** Arranca en una vulnerabilidad: sin hallazgo no hay camino que mirar. */
+export const DEFAULT_EXAMPLE_ID = "sqli";
 
 export function getExample(id: string): DemoExample {
   return DEMO_EXAMPLES.find((e) => e.id === id) ?? DEMO_EXAMPLES[0]!;

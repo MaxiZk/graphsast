@@ -24,6 +24,9 @@ export interface SarifFamily {
   cwe: number;
   name: string;
   description?: string;
+  /** Ataque de ejemplo y corrección: van a la ayuda de la regla. */
+  attack?: string;
+  fix?: string;
 }
 
 const SRCROOT = "%SRCROOT%";
@@ -63,16 +66,21 @@ function regionOf(s: ScanStep) {
   };
 }
 
-function ruleOf(cwe: number | undefined, name: string, description?: string) {
-  const summary = description
+function ruleOf(cwe: number | undefined, name: string, family: Partial<SarifFamily> = {}) {
+  const summary = family.description
     ?? "Un dato de entrada no confiable alcanza un sink sensible sin atravesar un sanitizer.";
+  const help = [
+    summary,
+    family.attack ? `Ejemplo de ataque: ${family.attack}` : "",
+    family.fix ? `Cómo corregirlo: ${family.fix}` : "",
+  ].filter(Boolean).join("\n\n");
   return {
     id: familyIdOf(cwe),
     name,
     shortDescription: { text: clip(name) },
     fullDescription: { text: clip(summary) },
     help: {
-      text: `${summary}${cwe ? ` Ver https://cwe.mitre.org/data/definitions/${cwe}.html` : ""}`,
+      text: `${help}${cwe ? `\n\nVer https://cwe.mitre.org/data/definitions/${cwe}.html` : ""}`,
     },
     defaultConfiguration: { level: "error" },
     ...(cwe
@@ -95,7 +103,7 @@ export function reportToSarif(
   // cualquier familia que aparezca en un hallazgo y no esté en la lista.
   const rules = new Map<string, ReturnType<typeof ruleOf>>();
   for (const fam of options.families ?? []) {
-    rules.set(familyIdOf(fam.cwe), ruleOf(fam.cwe, fam.name, fam.description));
+    rules.set(familyIdOf(fam.cwe), ruleOf(fam.cwe, fam.name, fam));
   }
   for (const f of result.findings) {
     const id = familyIdOf(f.cwe);

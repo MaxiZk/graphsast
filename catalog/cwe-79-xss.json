@@ -2,6 +2,8 @@
   "cwe": 79,
   "name": "Cross-Site Scripting (XSS)",
   "description": "El dato del usuario se devuelve dentro del HTML sin escapar, y el navegador de otra persona lo ejecuta como código. Sirve para robar sesiones o actuar en nombre de quien mira la página.",
+  "attack": "Si el dato es <img src=x onerror=alert(document.cookie)>, el navegador de quien abre la página ejecuta ese JavaScript.",
+  "fix": "Insertá el dato como texto (textContent, o el escapado del motor de plantillas) o escapalo antes: escapeHtml(nombre). Si tiene que ser HTML, pasalo por DOMPurify.sanitize.",
   "sources": [
     "req.query",
     "req.body",

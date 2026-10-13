@@ -2,6 +2,8 @@
   "cwe": 89,
   "name": "SQL Injection",
   "description": "El dato del usuario se concatena en una consulta SQL, así que el motor de base de datos lo interpreta como parte de la instrucción y no como un valor. Permite leer, alterar o borrar datos de otras tablas.",
+  "attack": "Si el dato es 1 OR 1=1, una consulta como SELECT * FROM usuarios WHERE id = 1 OR 1=1 devuelve todas las filas; si es 1; DROP TABLE usuarios, borra la tabla.",
+  "fix": "Pasá el dato como parámetro y no lo pegues al texto: db.query(\"SELECT * FROM usuarios WHERE id = ?\", [id]). La base lo trata siempre como un valor.",
   "sources": [
     "req.query",
     "req.body",
