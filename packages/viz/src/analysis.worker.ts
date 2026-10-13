@@ -10,7 +10,9 @@ import {
   getRuleLabels,
   getTaintRoles,
   scanFilesWithGraphs,
+  taintRulesFor,
   type ScanInput,
+  type SourceMode,
 } from "@graphsast/core/browser";
 import type {
   CatalogSummary,
@@ -50,14 +52,20 @@ async function analyzeProject(
   id: number,
   files: UploadedFile[],
   configs: UploadedFile[],
+  sourceMode: SourceMode,
 ): Promise<ProjectAnalysis> {
   const inputs = await readAll(files);
   // Los tsconfig van entre los archivos: el escaneo los separa y usa sus alias.
   const configInputs = (await readAll(configs)).filter((c) => "content" in c);
-  const output = scanFilesWithGraphs([...inputs, ...configInputs], {}, "", (done, total, file) =>
-    reply({ id, kind: "progress", done, total, file }),
+  const output = scanFilesWithGraphs(
+    [...inputs, ...configInputs],
+    { sources: sourceMode },
+    "",
+    (done, total, file) => reply({ id, kind: "progress", done, total, file }),
   );
-  const roles = output.graphs.map(({ graph }) => getTaintRoles(graph));
+  // Las mismas reglas que el escaneo: el grafo marca como entrada lo que el análisis usó.
+  const rules = taintRulesFor(sourceMode);
+  const roles = output.graphs.map(({ graph }) => getTaintRoles(graph, { rules }));
   const sources = roles.reduce((n, r) => n + r.sourceIds.length, 0);
   const sinks = roles.reduce((n, r) => n + r.sinkIds.length, 0);
   const contents: Record<string, string> = {};
@@ -81,7 +89,7 @@ self.addEventListener("message", async (event: MessageEvent<WorkerRequest>) => {
     if (request.kind === "snippet") {
       reply({ id: request.id, kind: "snippet", payload: analyzeSource(request.code, request.file) });
     } else {
-      reply({ id: request.id, kind: "project", analysis: await analyzeProject(request.id, request.files, request.configs) });
+      reply({ id: request.id, kind: "project", analysis: await analyzeProject(request.id, request.files, request.configs, request.sources) });
     }
   } catch (err) {
     reply({ id: request.id, kind: "error", message: err instanceof Error ? err.message : String(err) });

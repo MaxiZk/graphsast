@@ -4,6 +4,7 @@ import type {
   AnalysisPayload,
   IRGraph,
   TaintFinding,
+  SourceMode,
   TaintRoles,
   Verdict,
 } from "@graphsast/core/browser";
@@ -92,6 +93,7 @@ const scanProgress = document.querySelector<HTMLProgressElement>("#scan-progress
 const projectFilesEl = document.querySelector<HTMLDivElement>("#project-files")!;
 const fileList = document.querySelector<HTMLUListElement>("#file-list")!;
 const onlyVulnerable = document.querySelector<HTMLInputElement>("#only-vulnerable")!;
+const sourceModeSelect = document.querySelector<HTMLSelectElement>("#source-mode")!;
 const onlyVulnerableLabel = document.querySelector<HTMLSpanElement>("#only-vulnerable-label")!;
 const fileViewLabel = document.querySelector<HTMLParagraphElement>("#file-view-label")!;
 const projectCode = document.querySelector<HTMLDivElement>("#project-code")!;
@@ -168,6 +170,8 @@ let mode: Mode = "project";
 let snippet: AnalysisPayload | null = null;
 let examplesLoaded = false;
 let project: ProjectAnalysis | null = null;
+/** Lo último que se subió: cambiar el modo de entradas lo vuelve a analizar. */
+let lastUploads: UploadedFile[] | null = null;
 let projectItems: ProjectFinding[] = [];
 /** Archivo del proyecto que se muestra, y hallazgo resaltado (-1: ninguno). */
 let selectedFile: string | null = null;
@@ -1056,8 +1060,10 @@ async function scanUploads(uploads: UploadedFile[]) {
     return;
   }
 
+  lastUploads = uploads;
   folderInput.disabled = true;
   filesInput.disabled = true;
+  sourceModeSelect.disabled = true;
   dropZone.classList.add("busy");
   scanProgress.hidden = false;
   scanProgress.max = selection.accepted.length;
@@ -1070,7 +1076,7 @@ async function scanUploads(uploads: UploadedFile[]) {
     project = await analyzeProject(selection.accepted, (done, total, file) => {
       scanProgress.value = done;
       statusEl.textContent = `Analizando ${done + 1} de ${total}: ${file}`;
-    }, selection.configs);
+    }, selection.configs, sourceModeSelect.value as SourceMode);
     if (mode !== "project") return;
     showProject();
     const { totals } = project.output.result;
@@ -1089,6 +1095,7 @@ async function scanUploads(uploads: UploadedFile[]) {
   } finally {
     folderInput.disabled = false;
     filesInput.disabled = false;
+    sourceModeSelect.disabled = false;
     dropZone.classList.remove("busy");
     scanProgress.hidden = true;
     analyzing = false;
@@ -1238,6 +1245,10 @@ graphSearch.addEventListener("keydown", (e) => {
 });
 edgeFilters.addEventListener("change", () => renderGraph());
 onlyVulnerable.addEventListener("change", () => renderFileList());
+// Con un proyecto ya subido, el cambio se ve enseguida: no hace falta volver a elegir la carpeta.
+sourceModeSelect.addEventListener("change", () => {
+  if (lastUploads) void scanUploads(lastUploads);
+});
 codeInput.addEventListener("input", () => {
   // El contenido ya no es el del ejemplo elegido: que el rótulo no mienta.
   if (exampleSelect.value !== CUSTOM_EXAMPLE_ID) {
