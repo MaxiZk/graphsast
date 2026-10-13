@@ -118,16 +118,15 @@ export function buildVerdict(input: VerdictInput): Verdict {
 }
 
 /**
- * «Hay 1 camino de datos desde una entrada no confiable hasta una operación
- * peligrosa…», o, si varios caminos comparten destino, cuántos llegan a cuántas.
+ * «Hay 1 camino de datos por el que lo que manda el usuario llega a una
+ * operación peligrosa…», o, si varios caminos comparten destino, cuántos
+ * llegan a cuántas. Sin jerga: lo leen también quienes no son de seguridad.
  */
 export function vulnerableDetail(paths: number, places: number): string {
-  if (paths === places) {
-    return `Hay ${plural(paths, "camino", "caminos")} de datos desde una `
-      + "entrada no confiable hasta una operación peligrosa, "
-      + "sin sanitizador en el medio.";
-  }
-  return `Hay ${plural(paths, "camino", "caminos")} de datos desde entradas no `
-    + `confiables que llegan a ${plural(places, "operación peligrosa", "operaciones peligrosas")}, `
-    + "sin sanitizador en el medio.";
+  const via = `Hay ${plural(paths, "camino", "caminos")} de datos `
+    + `${paths === 1 ? "por el que" : "por los que"} lo que manda el usuario llega a `;
+  const target = paths === places
+    ? "una operación peligrosa"
+    : plural(places, "operación peligrosa", "operaciones peligrosas");
+  return `${via}${target} sin pasar por ningún filtro.`;
 }

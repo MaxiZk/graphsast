@@ -30,7 +30,7 @@ describe("explainFinding", () => {
     expect(e.sink.why).toBe(entryOf(89)!.description);
     expect(e.sink.attack).toBe(entryOf(89)!.attack);
     expect(e.fix).toBe(entryOf(89)!.fix);
-    expect(e.missing).toContain("ningún sanitizador de SQL Injection");
+    expect(e.missing).toContain("ningún filtro contra SQL Injection");
     expect(e.steps.map((s) => s.label)).toEqual(["req", "id", "db.query"]);
   });
 

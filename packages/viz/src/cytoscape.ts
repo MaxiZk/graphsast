@@ -1,4 +1,5 @@
-import type { IRGraph, IREdgeKind, TaintFinding, TaintRoles } from "@graphsast/core";
+import type { IRGraph, IREdgeKind, IRNodeKind, TaintFinding, TaintRoles } from "@graphsast/core";
+import { EDGE_KIND_LABEL, NODE_KIND_LABEL } from "./labels.js";
 
 export interface VizOptions {
   highlight?: {
@@ -25,10 +26,10 @@ export interface CytoscapeElement {
   classes?: string;
 }
 
-function nodeLabel(node: { kind: string; name: string; callee?: string }): string {
+function nodeLabel(node: { kind: IRNodeKind; name: string; callee?: string }): string {
   if (node.kind === "Call") return (node as { callee: string }).callee;
-  if (node.name) return `${node.kind}: ${node.name}`;
-  return node.kind;
+  const kind = NODE_KIND_LABEL[node.kind];
+  return node.name ? `${kind}: ${node.name}` : kind;
 }
 
 function pathEdgeSet(path: string[]): Set<string> {
@@ -88,7 +89,7 @@ export function toCytoscapeElements(
         id: `${edge.from}|${edge.kind}|${edge.to}`,
         source: edge.from,
         target: edge.to,
-        label: edge.kind,
+        label: EDGE_KIND_LABEL[edge.kind],
         kind: edge.kind,
       },
       classes: classes.join(" "),

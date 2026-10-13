@@ -18,7 +18,7 @@ import {
 } from "./examples.js";
 import { loadCatalogBundle } from "./catalog-browser.js";
 import { explainFinding, groupBySink, stepLabel, whereOf } from "./explain.js";
-import { describeNoFinding, plural } from "./labels.js";
+import { EDGE_KIND_LABEL, NODE_KIND_LABEL, describeNoFinding, plural } from "./labels.js";
 import {
   filesForList,
   focusGraph,
@@ -613,14 +613,14 @@ function renderStats() {
   }
   statsEl.hidden = false;
   const kinds = Object.entries(lastStats.edgeKinds)
-    .map(([k, v]) => `${k}: ${v}`)
+    .map(([k, v]) => `${EDGE_KIND_LABEL[k as keyof typeof EDGE_KIND_LABEL] ?? k}: ${v}`)
     .join(" · ");
   statsEl.innerHTML = `
     <dt>Tiempo</dt><dd>${lastStats.elapsedMs} ms</dd>
     <dt>Líneas</dt><dd>${lastStats.lineCount}</dd>
-    <dt>Nodos</dt><dd>${lastStats.nodeCount}</dd>
-    <dt>Aristas</dt><dd>${lastStats.edgeCount}</dd>
-    <dt>Tipos</dt><dd>${kinds}</dd>
+    <dt>Partes del código</dt><dd>${lastStats.nodeCount}</dd>
+    <dt>Conexiones</dt><dd>${lastStats.edgeCount}</dd>
+    <dt>Por tipo</dt><dd>${kinds}</dd>
   `;
 }
 
@@ -667,7 +667,8 @@ function renderCatalog() {
 
     const conteo = document.createElement("p");
     conteo.className = "muted catalog-count";
-    conteo.textContent = `${entry.sinks} sinks · ${entry.sanitizers} sanitizers`;
+    conteo.textContent = `${plural(entry.sinks, "operación peligrosa", "operaciones peligrosas")} · `
+      + `${plural(entry.sanitizers, "filtro conocido", "filtros conocidos")}`;
     li.appendChild(conteo);
     catalogList.appendChild(li);
   }
@@ -951,7 +952,7 @@ function renderExplanation() {
   explainPath.replaceChildren(
     ...explanation.steps.map((step) => {
       const li = document.createElement("li");
-      li.append(textBlock("code", step.label), textBlock("code", ` · ${step.kind} · línea ${step.line}`, "step-where"));
+      li.append(textBlock("code", step.label), textBlock("code", ` · ${NODE_KIND_LABEL[step.kind]} · línea ${step.line}`, "step-where"));
       if (step.newFile) li.append(textBlock("code", `en ${step.file}`, "step-file"));
       return li;
     }),
@@ -1207,10 +1208,11 @@ async function runAnalysis() {
     if (mode !== "examples") return;
     showSnippet(data);
 
-    const roleHint = `${lastRoles.sourceIds.length} source(s) · ${lastRoles.sinkIds.length} sink(s)`;
+    const roleHint = `${plural(lastRoles.sourceIds.length, "entrada del usuario", "entradas del usuario")} · `
+      + plural(lastRoles.sinkIds.length, "operación peligrosa", "operaciones peligrosas");
     statusEl.textContent = lastVerdict && !lastVerdict.conclusive
       ? `${lastVerdict.title} · ${lastStats?.elapsedMs ?? "?"} ms`
-      : `Análisis en ${lastStats?.elapsedMs ?? "?"} ms · ${findings.length} hallazgo(s) · ${roleHint}`;
+      : `Análisis en ${lastStats?.elapsedMs ?? "?"} ms · ${plural(findings.length, "hallazgo", "hallazgos")} · ${roleHint}`;
   } catch (err) {
     snippet = null;
     analyzedCode = null;
