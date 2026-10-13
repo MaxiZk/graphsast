@@ -46,7 +46,13 @@ jobs:
       - name: Release en GitHub con el paquete
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" graphsast-core-*.tgz --generate-notes --verify-tag
+        # Si el release ya existe (re-ejecución), solo reemplaza el paquete.
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" graphsast-core-*.tgz --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" graphsast-core-*.tgz --generate-notes --verify-tag
+          fi
       - name: Publicar en npm
         if: env.NPM_TOKEN != ''
         run: npm publish -w @graphsast/core
