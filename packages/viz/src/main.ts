@@ -70,6 +70,9 @@ const graphNote = document.querySelector<HTMLParagraphElement>("#graph-note")!;
 const graphEmpty = document.querySelector<HTMLDivElement>("#graph-empty")!;
 const graphEmptyText = document.querySelector<HTMLParagraphElement>("#graph-empty-text")!;
 const GRAPH_EMPTY_TEXT = graphEmptyText.textContent!;
+const pipeCode = document.querySelector<HTMLLIElement>("#pipe-code")!;
+const pipeGraph = document.querySelector<HTMLLIElement>("#pipe-graph")!;
+const pipeResult = document.querySelector<HTMLLIElement>("#pipe-result")!;
 const graphSearch = document.querySelector<HTMLInputElement>("#graph-search")!;
 const graphSearchCount = document.querySelector<HTMLSpanElement>("#graph-search-count")!;
 const exportPngBtn = document.querySelector<HTMLButtonElement>("#export-png")!;
@@ -417,6 +420,46 @@ function showNodeTooltip(node: cytoscape.NodeSingular) {
   nodeTooltip.style.top = `${top}px`;
 }
 
+/**
+ * Título del veredicto para la web: el del motor dice "source → sink", que es
+ * jerga; "detectadas" mantiene que no se afirma que el código sea seguro.
+ */
+function verdictTitle(verdict: Verdict): string {
+  return verdict.kind === "clean" ? "Sin vulnerabilidades detectadas" : verdict.title;
+}
+
+type PipeState = "idle" | "active" | "done" | "alert";
+
+function setPipe(step: HTMLLIElement, state: PipeState, status: string) {
+  step.dataset.state = state;
+  step.querySelector(".pipe-status")!.textContent = status;
+}
+
+/** Hay un análisis en curso: la barra de proceso lo muestra en el paso 2. */
+let analyzing = false;
+
+/** Barra de proceso: en qué paso está el usuario y qué dio cada uno. */
+function renderPipeline() {
+  const loaded = mode === "project" ? project !== null : graph !== null;
+  const source = mode === "project"
+    ? project
+      ? plural(project.output.result.totals.files, "archivo", "archivos")
+      : "Esperando una carpeta o archivos"
+    : graph ? "Ejemplo cargado" : "Esperando un ejemplo";
+  setPipe(pipeCode, loaded && !analyzing ? "done" : "active", source);
+
+  if (analyzing) setPipe(pipeGraph, "active", "Siguiendo los datos…");
+  else if (loaded) {
+    setPipe(pipeGraph, "done", mode === "project"
+      ? `${plural(project!.output.result.totals.crossFileCalls, "llamada", "llamadas")} entre archivos`
+      : `${plural(graph!.nodes.length, "nodo", "nodos")} en el grafo`);
+  } else setPipe(pipeGraph, "idle", "Sin analizar");
+
+  const verdict = lastVerdict;
+  if (analyzing || !loaded || !verdict) setPipe(pipeResult, "idle", "Sin analizar");
+  else setPipe(pipeResult, verdict.kind === "vulnerable" ? "alert" : "done", verdictTitle(verdict));
+}
+
 /** El aviso sobre el grafo vacío: `null` lo oculta. */
 function setGraphEmpty(text: string | null) {
   graphEmpty.hidden = text === null;
@@ -545,6 +588,7 @@ function clearAnalysisView() {
   codeLinesEl.innerHTML = "";
   projectCode.innerHTML = "";
   nodeDetail.textContent = "";
+  renderPipeline();
 }
 
 function renderStats() {
@@ -649,6 +693,7 @@ const VERDICT_CLASS: Record<Verdict["kind"], string> = {
 };
 
 function renderVerdict() {
+  renderPipeline();
   verdictEl.hidden = false;
   const verdict = lastVerdict;
   if (!verdict) {
@@ -662,7 +707,7 @@ function renderVerdict() {
   verdictEl.className = VERDICT_CLASS[verdict.kind];
   verdictEl.innerHTML = "";
   const title = document.createElement("strong");
-  title.textContent = verdict.title;
+  title.textContent = verdictTitle(verdict);
   const detail = document.createElement("p");
   detail.className = "verdict-detail";
   detail.textContent = verdict.detail;
@@ -711,7 +756,7 @@ function renderFindings() {
     const sinks = lastRoles.sinkIds.length;
     const sources = lastRoles.sourceIds.length;
     li.textContent = graph
-      ? `Sin camino source→sink (${plural(sources, "source", "sources")}, ${plural(sinks, "sink", "sinks")} en el grafo).`
+      ? `Ningún dato del usuario llega a una operación peligrosa (${plural(sources, "entrada", "entradas")}, ${plural(sinks, "operación peligrosa", "operaciones peligrosas")} en el grafo).`
       : "Todavía no hay resultados.";
     findingsList.appendChild(li);
     return;
@@ -1007,6 +1052,8 @@ async function scanUploads(uploads: UploadedFile[]) {
   scanProgress.max = selection.accepted.length;
   scanProgress.value = 0;
   statusEl.textContent = "Preparando el analizador…";
+  analyzing = true;
+  renderPipeline();
   const started = performance.now();
   try {
     project = await analyzeProject(selection.accepted, (done, total, file) => {
@@ -1033,6 +1080,8 @@ async function scanUploads(uploads: UploadedFile[]) {
     filesInput.disabled = false;
     dropZone.classList.remove("busy");
     scanProgress.hidden = true;
+    analyzing = false;
+    renderPipeline();
   }
 }
 
@@ -1129,6 +1178,8 @@ async function runAnalysis() {
   statusEl.textContent = "Analizando…";
   analyzeBtn.disabled = true;
   nodeDetail.textContent = "";
+  analyzing = true;
+  renderPipeline();
   try {
     const data = await analyzeSnippet(submittedCode, "demo.ts");
     // Si el usuario cambió de pestaña mientras tanto, el resultado queda
@@ -1150,6 +1201,8 @@ async function runAnalysis() {
     statusEl.textContent = `Error: ${err}`;
   } finally {
     analyzeBtn.disabled = false;
+    analyzing = false;
+    renderPipeline();
   }
 }
 

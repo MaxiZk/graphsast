@@ -27,17 +27,39 @@
           <circle cx="8" cy="24" r="4.5" fill="#ef4444" />
         </svg>
         <div>
+          <p class="kicker">Análisis estático de seguridad · JavaScript y TypeScript</p>
           <h1><span class="brand-name">GraphSAST</span> <span id="engine-badge" class="engine-badge memory" hidden>Memoria</span></h1>
-          <p>Busca en código JavaScript y TypeScript los lugares donde un dato que manda el usuario llega sin control a una operación peligrosa.</p>
+          <p>Busca los lugares donde un dato que manda el usuario llega sin control a una operación peligrosa.</p>
         </div>
       </div>
-      <dl class="legend" aria-label="Leyenda del grafo">
-        <div title="Source: por donde entra un dato que controla el usuario (req.query, req.body...)"><dt class="swatch source"></dt><dd>Entrada del usuario</dd></div>
-        <div title="Sink: una operación que es peligrosa si recibe ese dato (consulta SQL, comando, HTML)"><dt class="swatch sink"></dt><dd>Operación peligrosa</dd></div>
-        <div title="El recorrido del dato desde la entrada hasta la operación peligrosa"><dt class="swatch risk"></dt><dd>Camino del dato</dd></div>
-      </dl>
-      <button type="button" id="theme-toggle" class="btn-ghost theme-toggle" title="Cambiar el tema (t)"></button>
+      <div class="header-actions">
+        <span class="trust-chip" title="El análisis corre en tu navegador: el código no se sube a ningún servidor.">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          Corre en tu navegador
+        </span>
+        <button type="button" id="theme-toggle" class="btn-ghost theme-toggle" title="Cambiar el tema (t)"></button>
+      </div>
     </header>
+
+    <nav class="pipeline" aria-label="Progreso del análisis">
+      <ol aria-live="polite">
+        <li id="pipe-code" data-state="active">
+          <span class="pipe-num">1</span>
+          <span class="pipe-text"><span class="pipe-title">Código</span><span class="pipe-status">Esperando una carpeta, archivos o un ejemplo</span></span>
+        </li>
+        <li id="pipe-graph" data-state="idle">
+          <span class="pipe-num">2</span>
+          <span class="pipe-text"><span class="pipe-title">Recorrido del dato</span><span class="pipe-status">Sin analizar</span></span>
+        </li>
+        <li id="pipe-result" data-state="idle">
+          <span class="pipe-num">3</span>
+          <span class="pipe-text"><span class="pipe-title">Resultado</span><span class="pipe-status">Sin analizar</span></span>
+        </li>
+      </ol>
+    </nav>
 
     <main class="layout">
       <section class="panel editor-panel">
@@ -60,8 +82,8 @@
             </svg>
             <p class="drop-title">Arrastrá una carpeta o archivos .js / .ts acá</p>
             <div class="btn-row drop-actions">
-              <label class="btn-primary file-btn">Elegir carpeta<input type="file" id="folder-input" webkitdirectory multiple hidden /></label>
-              <label class="btn-ghost file-btn">Elegir archivos<input type="file" id="files-input" multiple accept=".js,.jsx,.mjs,.cjs,.ts,.tsx" hidden /></label>
+              <label class="btn-primary file-btn">Analizar carpeta<input type="file" id="folder-input" webkitdirectory multiple hidden /></label>
+              <label class="btn-ghost file-btn">Analizar archivos<input type="file" id="files-input" multiple accept=".js,.jsx,.mjs,.cjs,.ts,.tsx" hidden /></label>
             </div>
             <p class="privacy">El análisis corre en tu navegador: el código no se sube a ningún servidor.</p>
           </div>
@@ -144,6 +166,12 @@
             <label><input type="checkbox" id="dim-toggle" checked /> Atenuar resto</label>
           </fieldset>
         </details>
+
+        <dl class="legend" aria-label="Leyenda del grafo">
+          <div title="Source: por donde entra un dato que controla el usuario (req.query, req.body...)"><dt class="swatch source"></dt><dd>Entrada del usuario</dd></div>
+          <div title="Sink: una operación que es peligrosa si recibe ese dato (consulta SQL, comando, HTML)"><dt class="swatch sink"></dt><dd>Operación peligrosa</dd></div>
+          <div title="El recorrido del dato desde la entrada hasta la operación peligrosa"><dt class="swatch risk"></dt><dd>Camino del dato</dd></div>
+        </dl>
 
         <p id="graph-note" class="graph-note" hidden></p>
         <div class="cy-wrap">
