@@ -62,16 +62,16 @@ describe("analisis entre archivos: controlador → servicio → repositorio", ()
 
     const f = result.findings[0]!;
     expect(f.cwe).toBe(89);
-    expect(f.file).toBe(path.join("src", "repository.ts"));
-    expect(f.source).toMatchObject({ file: path.join("src", "controller.ts"), name: "req", line: 2 });
-    expect(f.sink).toMatchObject({ file: path.join("src", "repository.ts"), line: 2 });
+    expect(f.file).toBe("src/repository.ts");
+    expect(f.source).toMatchObject({ file: "src/controller.ts", name: "req", line: 2 });
+    expect(f.sink).toMatchObject({ file: "src/repository.ts", line: 2 });
 
     const files = f.steps.map((s) => s.file);
     const order = files.filter((file, i) => i === 0 || file !== files[i - 1]);
     expect(order).toEqual([
-      path.join("src", "controller.ts"),
-      path.join("src", "service.ts"),
-      path.join("src", "repository.ts"),
+      "src/controller.ts",
+      "src/service.ts",
+      "src/repository.ts",
     ]);
   });
 
@@ -80,7 +80,7 @@ describe("analisis entre archivos: controlador → servicio → repositorio", ()
     expect(result.totals.crossFileCalls).toBe(0);
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.source).toMatchObject({
-      file: path.join("src", "repository.ts"),
+      file: "src/repository.ts",
       name: "userId",
     });
   });
@@ -302,6 +302,22 @@ describe("fuera del alcance: no se liga (y no se simula)", () => {
       for (const f of r.findings) expect(f.source.file).toBe(f.file);
     });
   }
+});
+
+describe("métodos de paquetes externos: no se adivina un método del proyecto", () => {
+  it("path.resolve() no se liga al único método `resolve` del escaneo", () => {
+    const r = scanPaths([project({
+      "index.ts": "export class Index { resolve(x: string) { return x; } }\n",
+      "handler.ts": "export function handler(req: any, deferred: any) { deferred.resolve(req.body); }\n",
+      "build.ts": [
+        'import path from "node:path";',
+        'import { execSync } from "node:child_process";',
+        'export function build() { execSync(path.resolve("/tmp", "x")); }',
+        "",
+      ].join("\n"),
+    })]);
+    expect(r.findings.filter((f) => f.file.endsWith("build.ts"))).toEqual([]);
+  });
 });
 
 describe("resolveSpecifier", () => {

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import Ajv from "ajv-draft-04";
 import addFormats from "ajv-formats";
 import { scanSource } from "../scan.js";
@@ -191,6 +193,7 @@ describe("reportToSarif contra el esquema oficial", () => {
     r.root = "/otro";
     const loc = sarifOf(r, "/repo").runs[0].results[0].locations[0]
       .physicalLocation.artifactLocation;
-    expect(loc).toEqual({ uri: "file:///otro/a.js" });
+    // En Windows `/otro` se resuelve contra la unidad actual (file:///D:/otro/a.js).
+    expect(loc).toEqual({ uri: pathToFileURL(path.resolve("/otro/a.js")).href });
   });
 });
