@@ -67,6 +67,9 @@ const verdictEl = document.querySelector<HTMLDivElement>("#verdict")!;
 const readingEl = document.querySelector<HTMLParagraphElement>("#reading")!;
 const nodeDetail = document.querySelector<HTMLPreElement>("#node-detail")!;
 const graphNote = document.querySelector<HTMLParagraphElement>("#graph-note")!;
+const graphEmpty = document.querySelector<HTMLDivElement>("#graph-empty")!;
+const graphEmptyText = document.querySelector<HTMLParagraphElement>("#graph-empty-text")!;
+const GRAPH_EMPTY_TEXT = graphEmptyText.textContent!;
 const graphSearch = document.querySelector<HTMLInputElement>("#graph-search")!;
 const graphSearchCount = document.querySelector<HTMLSpanElement>("#graph-search-count")!;
 const exportPngBtn = document.querySelector<HTMLButtonElement>("#export-png")!;
@@ -414,8 +417,15 @@ function showNodeTooltip(node: cytoscape.NodeSingular) {
   nodeTooltip.style.top = `${top}px`;
 }
 
+/** El aviso sobre el grafo vacío: `null` lo oculta. */
+function setGraphEmpty(text: string | null) {
+  graphEmpty.hidden = text === null;
+  if (text !== null) graphEmptyText.textContent = text;
+}
+
 function renderGraph() {
   if (!graph) return;
+  setGraphEmpty(null);
   const finding = currentHighlight();
   const view = mode === "project"
     ? focusGraph(graph, { path: finding?.path, file: selectedFile }, nodeLimit)
@@ -526,6 +536,7 @@ function clearAnalysisView() {
   highlightIndex = 0;
 
   cy?.elements().remove();
+  setGraphEmpty(GRAPH_EMPTY_TEXT);
   graphNote.hidden = true;
   verdictEl.hidden = true;
   readingEl.textContent = "";
@@ -610,6 +621,8 @@ function renderCatalog() {
 function renderEngineBadge() {
   engineBadge.textContent = lastEngine === "neo4j" ? "Neo4j" : "Memoria";
   engineBadge.className = `engine-badge ${lastEngine}`;
+  // En el navegador siempre es el motor en memoria: la etiqueta solo informa con Neo4j.
+  engineBadge.hidden = lastEngine !== "neo4j";
   engineBadge.title =
     lastEngine === "neo4j"
       ? "Análisis vía Cypher sobre grafo persistido"
@@ -642,7 +655,7 @@ function renderVerdict() {
     // Solo se llega acá sin analizar; tras un análisis hay fallback.
     verdictEl.className = "verdict unknown";
     verdictEl.textContent = mode === "project"
-      ? "Subí una carpeta o archivos para analizarlos."
+      ? "Subí una carpeta o archivos. Acá vas a ver si hay vulnerabilidades, por qué son peligrosas y cómo corregirlas."
       : "Sin analizar todavía.";
     return;
   }
@@ -680,9 +693,11 @@ function renderFindings() {
 
   if (mode === "project") {
     if (projectItems.length === 0) {
+      // Sin proyecto, el veredicto ya dice qué hacer.
+      if (!project) return;
       const li = document.createElement("li");
       li.className = "empty";
-      li.textContent = project ? "Sin hallazgos en el proyecto." : "Todavía no hay resultados.";
+      li.textContent = "Sin hallazgos en el proyecto.";
       findingsList.appendChild(li);
       return;
     }
@@ -927,6 +942,7 @@ function showProjectGraph(graphIndex: number, findingIndex: number) {
   if (graph) renderGraph();
   else {
     cy?.elements().remove();
+    setGraphEmpty("Este archivo no tiene funciones ni datos que seguir.");
     graphNote.hidden = true;
     renderCodeHighlight();
   }
@@ -1285,4 +1301,3 @@ document.addEventListener("keydown", (e) => {
 
 applyTheme();
 setMode("project");
-statusEl.textContent = "Elegí una carpeta o archivos de tu proyecto para empezar.";

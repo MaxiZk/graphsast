@@ -27,20 +27,24 @@
           <circle cx="8" cy="24" r="4.5" fill="#ef4444" />
         </svg>
         <div>
-          <h1><span class="brand-name">GraphSAST</span> <span id="engine-badge" class="engine-badge memory">Memoria</span></h1>
-          <p>Analizador estático · grafo de flujo de datos · detección de taint</p>
+          <h1><span class="brand-name">GraphSAST</span> <span id="engine-badge" class="engine-badge memory" hidden>Memoria</span></h1>
+          <p>Busca en código JavaScript y TypeScript los lugares donde un dato que manda el usuario llega sin control a una operación peligrosa.</p>
         </div>
       </div>
       <dl class="legend" aria-label="Leyenda del grafo">
-        <div><dt class="swatch source"></dt><dd>Source</dd></div>
-        <div><dt class="swatch sink"></dt><dd>Sink</dd></div>
-        <div><dt class="swatch risk"></dt><dd>Camino de riesgo</dd></div>
+        <div title="Source: por donde entra un dato que controla el usuario (req.query, req.body...)"><dt class="swatch source"></dt><dd>Entrada del usuario</dd></div>
+        <div title="Sink: una operación que es peligrosa si recibe ese dato (consulta SQL, comando, HTML)"><dt class="swatch sink"></dt><dd>Operación peligrosa</dd></div>
+        <div title="El recorrido del dato desde la entrada hasta la operación peligrosa"><dt class="swatch risk"></dt><dd>Camino del dato</dd></div>
       </dl>
       <button type="button" id="theme-toggle" class="btn-ghost theme-toggle" title="Cambiar el tema (t)"></button>
     </header>
 
     <main class="layout">
       <section class="panel editor-panel">
+        <div class="step-head">
+          <h2 class="step-title"><span class="step-num">1</span>Elegí el código</h2>
+          <p class="step-desc">Tu proyecto o un ejemplo: el análisis es el mismo.</p>
+        </div>
         <div class="panel-head">
           <div class="mode-tabs" role="tablist" aria-label="Qué analizar">
             <button type="button" id="tab-project" class="mode-tab" role="tab" aria-selected="true" aria-controls="project-mode">Tu proyecto</button>
@@ -54,13 +58,19 @@
               <path d="M12 16V4M7 9l5-5 5 5" />
               <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
             </svg>
-            <p class="drop-title">Arrastrá una carpeta o archivos acá</p>
+            <p class="drop-title">Arrastrá una carpeta o archivos .js / .ts acá</p>
             <div class="btn-row drop-actions">
               <label class="btn-primary file-btn">Elegir carpeta<input type="file" id="folder-input" webkitdirectory multiple hidden /></label>
               <label class="btn-ghost file-btn">Elegir archivos<input type="file" id="files-input" multiple accept=".js,.jsx,.mjs,.cjs,.ts,.tsx" hidden /></label>
             </div>
             <p class="privacy">El análisis corre en tu navegador: el código no se sube a ningún servidor.</p>
           </div>
+
+          <ol class="how-steps" aria-label="Qué pasa con lo que subís">
+            <li>GraphSAST lee los archivos JavaScript y TypeScript de la carpeta y sus subcarpetas (salvo <code>node_modules</code>, <code>dist</code> y similares).</li>
+            <li>Sigue cada dato que entra desde afuera (por ejemplo <code>req.query</code>) por variables, funciones y archivos.</li>
+            <li>Si llega a una operación peligrosa sin pasar por un filtro, lo marca en el grafo (2) y lo explica en Resultado (3).</li>
+          </ol>
 
           <p id="selection-summary" class="selection-summary" hidden></p>
           <progress id="scan-progress" class="scan-progress" hidden></progress>
@@ -74,6 +84,7 @@
         </div>
 
         <div id="examples-mode" class="examples-mode" role="tabpanel" aria-labelledby="tab-examples" hidden>
+          <p class="how-note">Código chico, armado para probar sin subir nada. Podés editarlo y volver a analizar.</p>
           <label class="field-label" for="example-select">Ejemplo</label>
           <select id="example-select" class="select"></select>
           <p id="example-desc" class="example-desc"></p>
@@ -95,7 +106,10 @@
 
       <section class="panel graph-panel">
         <div class="panel-head">
-          <h2>Grafo</h2>
+          <div class="step-head">
+            <h2 class="step-title"><span class="step-num">2</span>Recorrido del dato</h2>
+            <p class="step-desc">Cada círculo es una parte del código; las flechas, por dónde pasa el dato.</p>
+          </div>
           <div class="btn-row">
             <button type="button" id="fit-btn" class="btn-ghost">Centrar</button>
             <button type="button" id="export-png" class="btn-ghost" title="Descargar el grafo dibujado como imagen">PNG</button>
@@ -118,19 +132,26 @@
           </label>
         </div>
 
-        <fieldset id="edge-filters" class="edge-filters">
-          <legend>Aristas visibles</legend>
-          <label><input type="checkbox" value="FLOWS_TO" checked /> FLOWS_TO</label>
-          <label><input type="checkbox" value="CALLS" checked /> CALLS</label>
-          <label><input type="checkbox" value="BINDS_TO" checked /> BINDS_TO</label>
-          <label><input type="checkbox" value="RETURNS" checked /> RETURNS</label>
-          <label><input type="checkbox" value="SANITIZED_BY" checked /> SANITIZED_BY</label>
-          <label><input type="checkbox" id="dim-toggle" checked /> Atenuar resto</label>
-        </fieldset>
+        <details class="graph-options">
+          <summary>Opciones del grafo</summary>
+          <fieldset id="edge-filters" class="edge-filters">
+            <legend>Aristas visibles</legend>
+            <label><input type="checkbox" value="FLOWS_TO" checked /> FLOWS_TO</label>
+            <label><input type="checkbox" value="CALLS" checked /> CALLS</label>
+            <label><input type="checkbox" value="BINDS_TO" checked /> BINDS_TO</label>
+            <label><input type="checkbox" value="RETURNS" checked /> RETURNS</label>
+            <label><input type="checkbox" value="SANITIZED_BY" checked /> SANITIZED_BY</label>
+            <label><input type="checkbox" id="dim-toggle" checked /> Atenuar resto</label>
+          </fieldset>
+        </details>
 
         <p id="graph-note" class="graph-note" hidden></p>
         <div class="cy-wrap">
           <div id="cy" class="cy"></div>
+          <div id="graph-empty" class="graph-empty">
+            <p class="graph-empty-title">Acá aparece el recorrido del dato</p>
+            <p id="graph-empty-text">Elegí una carpeta, archivos o un ejemplo. Vas a ver en naranja el camino desde la entrada del usuario hasta la operación peligrosa.</p>
+          </div>
           <div id="node-tooltip" class="node-tooltip" role="tooltip" hidden></div>
         </div>
         <pre id="node-detail" class="node-detail"></pre>
@@ -141,7 +162,10 @@
       </section>
 
       <aside class="panel findings-panel">
-        <h2>Hallazgos</h2>
+        <div class="step-head">
+          <h2 class="step-title"><span class="step-num">3</span>Resultado</h2>
+          <p class="step-desc">Qué es peligroso, por qué y cómo se corrige.</p>
+        </div>
         <div id="verdict" class="verdict" hidden></div>
         <ul id="findings-list" class="findings-list"></ul>
 
