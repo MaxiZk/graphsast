@@ -15,18 +15,11 @@ import {
   DEMO_EXAMPLES,
   getExample,
 } from "./examples.js";
-import {
-  describeFinding,
-  describeNoFinding,
-  findingTitle,
-  formatFindingPath,
-  plural,
-} from "./labels.js";
+import { loadCatalogBundle } from "./catalog-browser.js";
+import { explainFinding, groupBySink, stepLabel, whereOf } from "./explain.js";
+import { describeNoFinding, plural } from "./labels.js";
 import {
   focusGraph,
-  findingHeading,
-  findingLocation,
-  findingPath,
   graphIndexOfFile,
   linesInFile,
   projectFindings,
@@ -96,6 +89,23 @@ const projectCode = document.querySelector<HTMLDivElement>("#project-code")!;
 const themeToggle = document.querySelector<HTMLButtonElement>("#theme-toggle")!;
 const nodeLimitSelect = document.querySelector<HTMLSelectElement>("#node-limit")!;
 const nodeTooltip = document.querySelector<HTMLDivElement>("#node-tooltip")!;
+const explainEl = document.querySelector<HTMLElement>("#explain")!;
+const explainSummary = document.querySelector<HTMLParagraphElement>("#explain-summary")!;
+const explainSource = document.querySelector<HTMLDivElement>("#explain-source")!;
+const explainSink = document.querySelector<HTMLDivElement>("#explain-sink")!;
+const explainMissing = document.querySelector<HTMLDivElement>("#explain-missing")!;
+const explainFix = document.querySelector<HTMLDivElement>("#explain-fix")!;
+const explainFixItem = document.querySelector<HTMLLIElement>("#explain-fix-item")!;
+const explainOthers = document.querySelector<HTMLDivElement>("#explain-others")!;
+const explainPathSummary = document.querySelector<HTMLElement>("#explain-path-summary")!;
+const explainPath = document.querySelector<HTMLOListElement>("#explain-path")!;
+
+/**
+ * El catálogo en la página, para explicar cada hallazgo (riesgo, ataque,
+ * corrección, sanitizers). Son los mismos JSON que usa el worker; no arrastra
+ * el motor.
+ */
+const CATALOG = new Map(loadCatalogBundle().entries.map((e) => [e.cwe, e]));
 
 /**
  * Preferencias guardadas en el navegador. Puede no haber almacenamiento
@@ -647,16 +657,13 @@ function renderVerdict() {
 }
 
 /**
- * Lectura del hallazgo resaltado en lenguaje natural. Sin hallazgos la frase
- * dice por qué no lo hay, en vez de quedar en blanco.
+ * Sin hallazgos, una frase que dice por qué no lo hay en vez de dejar el
+ * panel en blanco. Con un hallazgo elegido, la explicación lo reemplaza.
  */
 function renderReading() {
   const finding = currentHighlight();
-  if (graph && finding) {
-    readingEl.textContent = describeFinding(graph, finding);
-    return;
-  }
-  if (!graph) {
+  renderExplanation();
+  if (!graph || finding) {
     readingEl.textContent = "";
     return;
   }
@@ -672,7 +679,14 @@ function renderFindings() {
   renderReading();
 
   if (mode === "project") {
-    renderProjectFindings();
+    if (projectItems.length === 0) {
+      const li = document.createElement("li");
+      li.className = "empty";
+      li.textContent = project ? "Sin hallazgos en el proyecto." : "Todavía no hay resultados.";
+      findingsList.appendChild(li);
+      return;
+    }
+    renderFindingGroups();
     return;
   }
 
@@ -687,53 +701,190 @@ function renderFindings() {
     findingsList.appendChild(li);
     return;
   }
+  renderFindingGroups();
+}
 
-  findings.forEach((f, i) => {
-    const li = document.createElement("li");
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = i === highlightIndex ? "active" : "";
-    // Texto, no HTML: el título y el camino llevan código del usuario
-    // (`o["<img onerror=...>"]()` es un callee válido).
-    const title = document.createElement("strong");
-    title.textContent = findingTitle(graph!, f, i);
-    btn.append(title, formatFindingPath(graph!, f));
-    btn.addEventListener("click", () => {
-      highlightIndex = i;
-      renderFindings();
-      renderGraph();
-    });
-    li.appendChild(btn);
-    findingsList.appendChild(li);
+/** Lo que muestra la tarjeta de un hallazgo, igual en un ejemplo y en un proyecto. */
+interface FindingEntry {
+  /** `highlightIndex` en un ejemplo; índice de `projectItems` en un proyecto. */
+  index: number;
+  /** Mismo destino ⇔ misma clave. */
+  key: string;
+  heading: string;
+  where: string;
+  file: string;
+  sinkCode: string;
+  sourceLabel: string;
+  length: number;
+}
+
+function headingOf(cwe: number | undefined, cweName: string | undefined): string {
+  return cwe ? `${cweName ?? "Vulnerabilidad"} · CWE-${cwe}` : "Flujo sin sanitizar";
+}
+
+function findingEntries(): FindingEntry[] {
+  if (mode === "project") {
+    return projectItems.map(({ finding: f }, index) => ({
+      index,
+      key: `${f.file}:${f.sink.line}:${f.sink.col}`,
+      heading: headingOf(f.cwe, f.cweName),
+      where: `${f.file.slice(f.file.lastIndexOf("/") + 1)}:${f.sink.line}`,
+      file: f.file,
+      sinkCode: f.sink.code,
+      sourceLabel: f.source.name,
+      length: f.steps.length,
+    }));
+  }
+  const byId = new Map(graph!.nodes.map((n) => [n.id, n]));
+  return findings.flatMap((f, index) => {
+    const sink = byId.get(f.sinkId);
+    const source = byId.get(f.sourceId);
+    if (!sink || !source) return [];
+    return [{
+      index,
+      key: f.sinkId,
+      heading: headingOf(f.cwe, f.cweName),
+      where: whereOf(sink),
+      file: sink.loc.file,
+      sinkCode: sink.code,
+      sourceLabel: stepLabel(source),
+      length: f.path.length,
+    }];
   });
 }
 
-function renderProjectFindings() {
-  if (projectItems.length === 0) {
-    const li = document.createElement("li");
-    li.className = "empty";
-    li.textContent = project ? "Sin hallazgos en el proyecto." : "Todavía no hay resultados.";
-    findingsList.appendChild(li);
+function selectedIndex(): number {
+  return mode === "project" ? selectedItem : highlightIndex;
+}
+
+function selectEntry(index: number) {
+  if (mode === "project") {
+    selectProjectItem(index);
     return;
   }
-  projectItems.forEach((item, i) => {
+  highlightIndex = index;
+  renderFindings();
+  renderGraph();
+}
+
+/** Grupos de caminos al mismo destino, en el orden de la lista. */
+function findingGroups(): FindingEntry[][] {
+  return groupBySink(findingEntries(), (e) => e.key, (e) => e.length);
+}
+
+function uniqueSources(group: FindingEntry[]): string[] {
+  return [...new Set(group.map((e) => e.sourceLabel))];
+}
+
+/**
+ * Una tarjeta por destino. Texto, no HTML: el destino y las entradas son
+ * código del usuario (`o["<img onerror=...>"]()` es un callee válido).
+ */
+function renderFindingGroups() {
+  const selected = selectedIndex();
+  for (const group of findingGroups()) {
+    const first = group[0]!;
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = i === selectedItem ? "active" : "";
+    btn.className = group.some((e) => e.index === selected) ? "active" : "";
     const title = document.createElement("strong");
-    title.textContent = findingHeading(item.finding);
+    title.textContent = first.heading;
     const where = document.createElement("span");
     where.className = "finding-location";
-    where.textContent = findingLocation(item.finding);
-    const path = document.createElement("span");
-    path.className = "finding-path";
-    path.textContent = findingPath(item.finding);
-    btn.append(title, where, path);
-    btn.addEventListener("click", () => selectProjectItem(i));
+    where.textContent = first.where;
+    where.title = first.file;
+    const sink = document.createElement("span");
+    sink.className = "finding-sink";
+    sink.textContent = first.sinkCode.split("\n")[0]!.trim();
+    const sources = document.createElement("span");
+    sources.className = "finding-sources";
+    const names = uniqueSources(group);
+    sources.textContent = group.length === 1
+      ? `Entra por ${names[0]}`
+      : `${group.length} caminos llegan acá, desde ${names.join(", ")}`;
+    btn.append(title, where, sink, sources);
+    btn.addEventListener("click", () => {
+      if (!group.some((e) => e.index === selectedIndex())) selectEntry(first.index);
+    });
     li.appendChild(btn);
     findingsList.appendChild(li);
-  });
+  }
+}
+
+function textBlock(tag: "p" | "code", text: string, className?: string): HTMLElement {
+  const el = document.createElement(tag);
+  el.textContent = text;
+  if (className) el.className = className;
+  return el;
+}
+
+/** `req` · demo.ts:1 */
+function labelWithWhere(label: string, where: string): HTMLElement {
+  const line = document.createElement("div");
+  line.append(textBlock("code", label), ` · ${where}`);
+  return line;
+}
+
+/** Explicación del hallazgo elegido: de dónde viene, a dónde llega, qué faltó, cómo se corrige. */
+function renderExplanation() {
+  const finding = currentHighlight();
+  const explanation = graph && finding
+    ? explainFinding(graph, finding, finding.cwe ? CATALOG.get(finding.cwe) : undefined)
+    : null;
+  explainEl.hidden = !explanation;
+  if (!explanation) return;
+
+  explainSummary.textContent = `${explanation.title}: ${explanation.summary}`;
+
+  explainSource.replaceChildren(
+    labelWithWhere(explanation.source.label, explanation.source.where),
+    textBlock("p", explanation.source.why),
+  );
+
+  const { sink } = explanation;
+  explainSink.replaceChildren(
+    labelWithWhere(sink.label, sink.where),
+    textBlock("code", sink.code, "explain-code"),
+    textBlock("p", sink.why),
+    ...(sink.attack ? [textBlock("p", `Ejemplo de ataque: ${sink.attack}`, "explain-attack")] : []),
+  );
+
+  explainMissing.replaceChildren(textBlock("p", explanation.missing));
+  explainFixItem.hidden = !explanation.fix;
+  explainFix.replaceChildren(textBlock("p", explanation.fix ?? ""));
+
+  // Otros caminos al mismo destino: cambian el resaltado sin salir de la explicación.
+  const current = selectedIndex();
+  const group = findingGroups().find((g) => g.some((e) => e.index === current)) ?? [];
+  const others = group.filter((e) => e.index !== current);
+  explainOthers.hidden = others.length === 0;
+  explainOthers.replaceChildren();
+  if (others.length > 0) {
+    explainOthers.append(
+      others.length === 1
+        ? "Otro camino llega al mismo destino, desde: "
+        : `Otros ${others.length} caminos llegan al mismo destino, desde: `,
+    );
+    for (const other of others) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = other.sourceLabel;
+      btn.title = `Ver el camino que empieza en ${other.sourceLabel}`;
+      btn.addEventListener("click", () => selectEntry(other.index));
+      explainOthers.append(btn);
+    }
+  }
+
+  explainPathSummary.textContent = `Ver el camino completo (${explanation.steps.length} nodos)`;
+  explainPath.replaceChildren(
+    ...explanation.steps.map((step) => {
+      const li = document.createElement("li");
+      li.append(textBlock("code", step.label), textBlock("code", ` · ${step.kind} · línea ${step.line}`, "step-where"));
+      if (step.newFile) li.append(textBlock("code", `en ${step.file}`, "step-file"));
+      return li;
+    }),
+  );
 }
 
 /** Archivos subidos con su cantidad de hallazgos o el motivo por el que no se analizaron. */
@@ -791,9 +942,10 @@ function selectProjectItem(i: number) {
 
 /** Elige un archivo: su primer hallazgo si tiene, o su grafo sin resaltar. */
 function selectProjectFile(file: string) {
-  const first = projectItems.findIndex((item) => item.finding.file === file);
-  if (first >= 0) {
-    selectProjectItem(first);
+  // El camino más corto del primer destino de ese archivo: es el que mejor se sigue.
+  const group = findingGroups().find((g) => g[0]!.file === file);
+  if (group) {
+    selectProjectItem(group[0]!.index);
     return;
   }
   selectedItem = -1;
@@ -814,7 +966,7 @@ function showProject() {
   renderRules();
   renderStats();
   const firstFile = project.output.result.files.find((f) => !f.error)?.file;
-  if (projectItems.length > 0) selectProjectItem(0);
+  if (projectItems.length > 0) selectProjectItem(findingGroups()[0]![0]!.index);
   else if (firstFile) selectProjectFile(firstFile);
   else {
     clearAnalysisView();
@@ -1071,16 +1223,11 @@ function toggleTheme() {
 
 /** Hallazgo siguiente o anterior, en el proyecto o en el ejemplo. */
 function stepFinding(delta: 1 | -1) {
-  if (mode === "project") {
-    const i = stepIndex(selectedItem, projectItems.length, delta);
-    if (i >= 0) selectProjectItem(i);
-    return;
-  }
-  const i = stepIndex(highlightIndex, findings.length, delta);
-  if (i < 0) return;
-  highlightIndex = i;
-  renderFindings();
-  renderGraph();
+  // De destino en destino: los caminos al mismo destino se eligen desde la explicación.
+  const groups = findingGroups();
+  const current = groups.findIndex((g) => g.some((e) => e.index === selectedIndex()));
+  const next = stepIndex(current, groups.length, delta);
+  if (next >= 0) selectEntry(groups[next]![0]!.index);
 }
 
 function runShortcut(action: ShortcutAction) {

@@ -1,3 +1,4 @@
+import { vulnerableDetail } from "@graphsast/core/browser";
 import type { IRGraph, ScanFilesOutput, ScanFinding, Verdict } from "@graphsast/core/browser";
 import { plural } from "./labels.js";
 
@@ -30,24 +31,6 @@ export function graphIndexOfFile(output: ScanFilesOutput, file: string): number 
 /** Líneas del camino que caen en `file`: un camino entre archivos cruza varios. */
 export function linesInFile(finding: ScanFinding, file: string): Set<number> {
   return new Set(finding.steps.filter((s) => s.file === file && s.line > 0).map((s) => s.line));
-}
-
-export function findingHeading(finding: ScanFinding): string {
-  return finding.cwe ? `CWE-${finding.cwe} · ${finding.cweName ?? ""}`.trim() : "Flujo sin sanitizar";
-}
-
-export function findingLocation(finding: ScanFinding): string {
-  return `${finding.file}:${finding.sink.line}`;
-}
-
-/** `req → q → db.query`, marcando los saltos a otro archivo. */
-export function findingPath(finding: ScanFinding): string {
-  return finding.steps
-    .map((s, i) => {
-      const prev = finding.steps[i - 1];
-      return prev && prev.file !== s.file ? `[${s.file}] ${s.name}` : s.name;
-    })
-    .join(" → ");
 }
 
 /**
@@ -88,15 +71,17 @@ export function projectVerdict(
   }
 
   if (totals.findings > 0) {
+    // Como en buildVerdict: una vulnerabilidad por sink, no por camino.
+    const places = new Set(
+      output.result.findings.map((f) => `${f.file}:${f.sink.line}:${f.sink.col}`),
+    ).size;
     return {
       ...base,
       kind: "vulnerable",
       conclusive: true,
-      title: `${plural(totals.findings, "vulnerabilidad detectada", "vulnerabilidades detectadas")} `
+      title: `${plural(places, "vulnerabilidad detectada", "vulnerabilidades detectadas")} `
         + `en ${plural(totals.filesWithFindings, "archivo", "archivos")}`,
-      detail:
-        `Hay ${plural(totals.findings, "camino", "caminos")} de datos desde una entrada `
-        + `no confiable hasta una operación peligrosa, sin sanitizador en el medio.${skipped}`,
+      detail: `${vulnerableDetail(totals.findings, places)}${skipped}`,
     };
   }
 
