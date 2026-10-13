@@ -2,7 +2,7 @@ import type { IRCall, IREdge, IRFunction, IRGraph, IRNode } from "../ir/types.js
 import { buildDefIndex } from "../dfg/dataflow.js";
 import { callSiteEdges } from "../dfg/interproc.js";
 import { FunctionIndex, normalizeCallee } from "../cfg/resolve.js";
-import { resolveImportedCallee, type ProjectIndex } from "./links.js";
+import { isExternalReceiver, resolveImportedCallee, type ProjectIndex } from "./links.js";
 
 export interface ProjectFile {
   abs: string;
@@ -92,8 +92,8 @@ function crossFileTarget(
   const imported = resolveImportedCallee(index, abs, call.callee);
   if (imported) return { fn: fnById.get(imported), exact: true };
 
-  // Ya resuelta dentro de su archivo: no se adivina de nuevo.
-  if (call.resolution) return { exact: false };
+  // Ya resuelta dentro de su archivo, o método de un paquete: no se adivina.
+  if (call.resolution || isExternalReceiver(index, abs, call.callee)) return { exact: false };
   const callee = normalizeCallee(call.callee);
   const dot = callee.lastIndexOf(".");
   if (dot === -1) return { exact: false };
