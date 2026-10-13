@@ -98,7 +98,10 @@
           <progress id="scan-progress" class="scan-progress" hidden></progress>
 
           <div id="project-files" hidden>
-            <p class="field-label">Archivos analizados</p>
+            <div class="file-list-head">
+              <p class="field-label">Archivos analizados</p>
+              <label class="file-filter"><input type="checkbox" id="only-vulnerable" /> <span id="only-vulnerable-label">Solo con vulnerabilidades</span></label>
+            </div>
             <ul id="file-list" class="file-list"></ul>
             <p id="file-view-label" class="field-label">Archivo</p>
             <div id="project-code" class="code-lines code-view" aria-live="polite"></div>

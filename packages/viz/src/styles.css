@@ -1043,6 +1043,29 @@ body {
   margin-top: 0.8rem;
 }
 
+.file-list-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.file-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.74rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.file-filter:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .file-list {
   flex: none;
   list-style: none;

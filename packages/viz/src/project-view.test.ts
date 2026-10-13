@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { getTaintRoles, scanFilesWithGraphs } from "@graphsast/core";
 import {
+  filesForList,
   focusGraph,
   graphIndexOfFile,
   linesInFile,
@@ -77,6 +78,29 @@ describe("hallazgos del proyecto", () => {
     const { output } = scan({ ...CROSS_FILE, "bad.ts": "def f(x):\n    return x" });
     expect(graphIndexOfFile(output, "app/controller.ts")).toBe(graphIndexOfFile(output, "app/repo.ts"));
     expect(graphIndexOfFile(output, "bad.ts")).toBe(-1);
+  });
+});
+
+describe("filesForList", () => {
+  const files = [
+    { file: "a.ts", findings: [] },
+    { file: "b.ts", findings: [1] },
+    { file: "c.ts", findings: [] },
+    { file: "d.ts", findings: [1, 2] },
+    { file: "e.ts", findings: [1] },
+  ];
+
+  it("pone arriba los archivos con hallazgos, de más a menos, y conserva el orden del resto", () => {
+    expect(filesForList(files, false).map((f) => f.file)).toEqual(["d.ts", "b.ts", "e.ts", "a.ts", "c.ts"]);
+  });
+
+  it("con el filtro deja solo los que tienen hallazgos", () => {
+    expect(filesForList(files, true).map((f) => f.file)).toEqual(["d.ts", "b.ts", "e.ts"]);
+  });
+
+  it("no modifica la lista original", () => {
+    filesForList(files, false);
+    expect(files[0]!.file).toBe("a.ts");
   });
 });
 
