@@ -115,12 +115,12 @@ export function explainFinding(
       label: stepLabel(last),
       where: whereOf(last),
       code: last.code,
-      why: entry?.description ?? "Es una operación sensible: lo que reciba se interpreta como parte de una instrucción.",
+      why: entry?.description ?? "Es una operación peligrosa: lo que reciba se interpreta como parte de una instrucción.",
       ...(entry?.attack ? { attack: entry.attack } : {}),
     },
     missing:
-      `En ${edges === 1 ? "el paso" : `los ${edges} pasos`} del camino no hay ningún sanitizador`
-      + `${family ? ` de ${family}` : ""}${sanitizerExamples(entry)}: el dato llega tal como entró.`,
+      `En ${edges === 1 ? "el paso" : `los ${edges} pasos`} del camino no hay ningún filtro`
+      + `${family ? ` contra ${family}` : ""}${sanitizerExamples(entry)}: el dato llega tal como entró.`,
     ...(entry?.fix ? { fix: entry.fix } : {}),
     steps,
   };

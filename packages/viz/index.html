@@ -29,7 +29,13 @@
         <div>
           <p class="kicker">Análisis estático de seguridad · JavaScript y TypeScript</p>
           <h1><span class="brand-name">GraphSAST</span> <span id="engine-badge" class="engine-badge memory" hidden>Memoria</span></h1>
-          <p>Busca los lugares donde un dato que manda el usuario llega sin control a una operación peligrosa.</p>
+          <p>Busca los lugares donde un dato que manda el usuario llega sin control a una operación peligrosa. Por ahí entran los ataques más comunes contra aplicaciones web:</p>
+          <ul class="threats" aria-label="Ataques que busca">
+            <li title="CWE-89: el dato se pega a una consulta SQL y la base lo ejecuta como parte de la orden."><strong>Inyección SQL</strong> leer o borrar la base</li>
+            <li title="CWE-78: el dato termina en un comando del sistema operativo."><strong>Inyección de comandos</strong> ejecutar órdenes en el servidor</li>
+            <li title="CWE-79: el dato se devuelve dentro del HTML y el navegador de otra persona lo ejecuta."><strong>XSS</strong> robar sesiones ajenas</li>
+            <li title="CWE-943: el dato cambia la forma de una consulta a MongoDB u otra base NoSQL."><strong>Inyección NoSQL</strong> leer o cambiar datos ajenos</li>
+          </ul>
         </div>
       </div>
       <div class="header-actions">
@@ -88,19 +94,26 @@
             <p class="privacy">El análisis corre en tu navegador: el código no se sube a ningún servidor.</p>
           </div>
 
-          <label class="source-mode">
-            <span class="field-label">Qué cuenta como entrada del usuario</span>
-            <select id="source-mode" class="select">
-              <option value="params" title="Todo parámetro de una función que nadie llama: revisa más y avisa más">Cualquier parámetro (más avisos)</option>
-              <option value="catalog" title="Solo las entradas del catálogo: req, ctx, @Body() de NestJS...">Solo req, ctx, @Body()... (menos avisos falsos)</option>
-            </select>
-          </label>
-
           <ol class="how-steps" aria-label="Qué pasa con lo que subís">
             <li>GraphSAST lee los archivos JavaScript y TypeScript de la carpeta y sus subcarpetas (salvo <code>node_modules</code>, <code>dist</code> y similares).</li>
             <li>Sigue cada dato que entra desde afuera (por ejemplo <code>req.query</code>) por variables, funciones y archivos.</li>
             <li>Si llega a una operación peligrosa sin pasar por un filtro, lo marca en el grafo (2) y lo explica en Resultado (3).</li>
           </ol>
+
+          <details class="analysis-options">
+            <summary>Opciones del análisis</summary>
+            <label class="source-mode">
+              <span class="field-label">Qué cuenta como entrada del usuario</span>
+              <select id="source-mode" class="select">
+                <option value="params">Cualquier parámetro de función</option>
+                <option value="catalog">Solo entradas web conocidas</option>
+              </select>
+            </label>
+            <p class="option-help">
+              <strong>Cualquier parámetro</strong> revisa más y avisa más: también marca funciones internas o de tests.
+              <strong>Solo entradas web conocidas</strong> mira lo que llega en un pedido (<code>req.query</code>, <code>req.body</code>, <code>@Body()</code>...) y da menos avisos falsos.
+            </p>
+          </details>
 
           <p id="selection-summary" class="selection-summary" hidden></p>
           <progress id="scan-progress" class="scan-progress" hidden></progress>
@@ -168,12 +181,12 @@
         <details class="graph-options">
           <summary>Opciones del grafo</summary>
           <fieldset id="edge-filters" class="edge-filters">
-            <legend>Aristas visibles</legend>
-            <label><input type="checkbox" value="FLOWS_TO" checked /> FLOWS_TO</label>
-            <label><input type="checkbox" value="CALLS" checked /> CALLS</label>
-            <label><input type="checkbox" value="BINDS_TO" checked /> BINDS_TO</label>
-            <label><input type="checkbox" value="RETURNS" checked /> RETURNS</label>
-            <label><input type="checkbox" value="SANITIZED_BY" checked /> SANITIZED_BY</label>
+            <legend>Flechas visibles</legend>
+            <label><input type="checkbox" value="FLOWS_TO" checked /> pasa a</label>
+            <label><input type="checkbox" value="CALLS" checked /> llama a</label>
+            <label><input type="checkbox" value="BINDS_TO" checked /> entra como parámetro</label>
+            <label><input type="checkbox" value="RETURNS" checked /> devuelve</label>
+            <label><input type="checkbox" value="SANITIZED_BY" checked /> filtrado</label>
             <label><input type="checkbox" id="dim-toggle" checked /> Atenuar resto</label>
           </fieldset>
         </details>
@@ -240,11 +253,11 @@
         <details class="help-details">
           <summary>Cómo leer el grafo</summary>
           <p class="explain-text">
-            El camino de riesgo va en naranja; lo que el dato no toca queda atenuado.
+            El camino del dato va en naranja; lo que el dato no toca queda atenuado. Cada círculo es una parte del código y cada flecha, cómo pasa el dato de una a otra.
           </p>
           <dl class="glossary">
             <div>
-              <dt><span class="node-swatch parameter"></span>Parameter</dt>
+              <dt><span class="node-swatch parameter"></span>Parámetro</dt>
               <dd>Parámetro de una función: por donde entra el dato.</dd>
             </div>
             <div>
@@ -252,34 +265,34 @@
               <dd>Donde el dato se guarda o se transforma.</dd>
             </div>
             <div>
-              <dt><span class="node-swatch call"></span>Call</dt>
-              <dd>Una llamada. Si es una operación peligrosa, es el destino (sink).</dd>
+              <dt><span class="node-swatch call"></span>Llamada</dt>
+              <dd>Una llamada a una función. Si es una operación peligrosa, es el destino del dato.</dd>
             </div>
             <div>
-              <dt><span class="node-swatch function"></span>Function</dt>
+              <dt><span class="node-swatch function"></span>Función</dt>
               <dd>Una función declarada.</dd>
             </div>
           </dl>
           <dl class="glossary">
             <div>
-              <dt><span class="edge-swatch flows-to"></span>FLOWS_TO</dt>
-              <dd>El dato pasa de un nodo a otro.</dd>
+              <dt><span class="edge-swatch flows-to"></span>pasa a</dt>
+              <dd>El dato pasa de una parte del código a otra.</dd>
             </div>
             <div>
-              <dt><span class="edge-swatch binds-to"></span>BINDS_TO</dt>
+              <dt><span class="edge-swatch binds-to"></span>entra como parámetro</dt>
               <dd>Un argumento entra al parámetro de la función llamada.</dd>
             </div>
             <div>
-              <dt><span class="edge-swatch returns"></span>RETURNS</dt>
+              <dt><span class="edge-swatch returns"></span>devuelve</dt>
               <dd>Lo que retorna una función vuelve a donde se la llamó.</dd>
             </div>
             <div>
-              <dt><span class="edge-swatch calls"></span>CALLS</dt>
+              <dt><span class="edge-swatch calls"></span>llama a</dt>
               <dd>Una función invoca a otra.</dd>
             </div>
             <div>
-              <dt><span class="edge-swatch sanitized-by"></span>SANITIZED_BY</dt>
-              <dd>El dato sale de un sanitizador.</dd>
+              <dt><span class="edge-swatch sanitized-by"></span>filtrado</dt>
+              <dd>El dato pasa por una función que lo limpia (un escape, una validación).</dd>
             </div>
           </dl>
         </details>

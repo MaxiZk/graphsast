@@ -106,6 +106,8 @@ body {
   display: flex;
   align-items: center;
   gap: 0.85rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .brand-logo {
@@ -282,7 +284,7 @@ body {
 
 .header p {
   margin: 0.2rem 0 0;
-  max-width: 60ch;
+  max-width: 105ch;
   color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.4;
@@ -1416,9 +1418,21 @@ kbd {
   line-height: 1.4;
 }
 
+/* Opciones avanzadas del análisis: cerradas, debajo de la explicación. */
+.analysis-options {
+  margin-top: 0.85rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.analysis-options > summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
 .source-mode {
   display: block;
-  margin-top: 0.85rem;
+  margin-top: 0.6rem;
 }
 
 .source-mode .field-label {
@@ -1427,6 +1441,47 @@ kbd {
 
 .source-mode .select {
   margin-bottom: 0;
+}
+
+.option-help {
+  margin: 0.45rem 0 0;
+  line-height: 1.45;
+}
+
+.option-help strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.option-help code {
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+/* Los ataques que busca, a la vista en el encabezado. */
+.threats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.threats li {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--sink) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sink) 7%, transparent);
+  font-size: 0.74rem;
+  color: var(--muted);
+  cursor: help;
+}
+
+.threats strong {
+  color: var(--danger-text);
+  font-weight: 650;
+  margin-right: 0.3rem;
 }
 
 .how-steps {

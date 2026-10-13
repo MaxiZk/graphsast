@@ -121,7 +121,7 @@ function deleteFinance(req, res) {
 }`);
     expect(v.findings).toBe(2);
     expect(v.title).toBe("1 vulnerabilidad detectada");
-    expect(v.detail).toContain("Hay 2 caminos de datos desde entradas no confiables que llegan a 1 operación peligrosa");
+    expect(v.detail).toContain("Hay 2 caminos de datos por los que lo que manda el usuario llega a 1 operación peligrosa");
   });
 
   it("un error de sintaxis va en singular y varios en plural", () => {
