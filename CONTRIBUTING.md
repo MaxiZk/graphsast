@@ -46,7 +46,11 @@ Node 22 (el mismo que usa el CI). La arquitectura está resumida en
 ## Agregar una familia CWE
 
 1. Creá `catalog/cwe-<n>-<nombre>.json` con `cwe`, `name`, `description`,
-   `sources`, `sinks` y `sanitizers`.
+   `attack`, `fix`, `sources`, `sinks` y `sanitizers`. `description` dice por
+   qué el sink es peligroso, `attack` da un ataque concreto («Si el dato es
+   …») y `fix` dice cómo se corrige: la web los usa para explicar cada
+   hallazgo y el SARIF los pone en la ayuda de la regla. Un test exige los
+   tres.
 2. Sumala a `catalog/index.json`.
 3. Agregá casos al benchmark (abajo) y tests de precisión.
 

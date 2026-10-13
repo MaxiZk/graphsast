@@ -13,7 +13,7 @@ export { analyzeTaint, getTaintRoles } from "./taint/analyzer.js";
 export { markSanitizedEdges } from "./taint/sanitized.js";
 export { parseSource, loadSource } from "./parser/parser.js";
 export type { ParseResult, Dialect } from "./parser/parser.js";
-export { buildVerdict } from "./engine/verdict.js";
+export { buildVerdict, vulnerableDetail } from "./engine/verdict.js";
 export type { Verdict, VerdictKind, VerdictInput } from "./engine/verdict.js";
 export { defaultTaintRules, getRuleLabels, getCatalogBundle, RULE_LABELS } from "./taint/rules.js";
 export { findPath, reaches, DEFAULT_MAX_DEPTH, DEFAULT_TAINT_PROPAGATE_EDGES } from "./taint/reach.js";

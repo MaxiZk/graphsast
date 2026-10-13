@@ -2,6 +2,8 @@
   "cwe": 78,
   "name": "OS Command Injection",
   "description": "El dato del usuario termina en un comando del sistema operativo. El shell ejecuta lo que el atacante agregue, con los permisos del proceso que corre la aplicación.",
+  "attack": "Si el dato es 8.8.8.8; cat /etc/passwd, el shell ejecuta el comando previsto y después el que agregó el atacante, con los permisos del servidor.",
+  "fix": "No armes comandos concatenando datos del usuario. Validá el dato contra una lista de valores permitidos y llamá al programa sin shell (execFile con el programa fijo).",
   "sources": [
     "req.query",
     "req.body",

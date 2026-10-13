@@ -115,6 +115,15 @@ function deleteFinance(req, res) {
     expect(v.detail).toContain("Hay 3 caminos de datos");
   });
 
+  it("varios caminos al mismo sink son una sola vulnerabilidad", () => {
+    const v = verdictOf(`function h(a, b) {
+  db.query(a + b);
+}`);
+    expect(v.findings).toBe(2);
+    expect(v.title).toBe("1 vulnerabilidad detectada");
+    expect(v.detail).toContain("Hay 2 caminos de datos desde entradas no confiables que llegan a 1 operación peligrosa");
+  });
+
   it("un error de sintaxis va en singular y varios en plural", () => {
     const one = buildVerdict({
       graph: emptyGraph,

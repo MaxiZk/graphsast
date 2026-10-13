@@ -27,6 +27,10 @@ export interface CweCatalogEntry {
   name: string;
   /** Qué es esa debilidad, en una frase, para mostrar junto a la familia. */
   description?: string;
+  /** Un ataque concreto contra el ejemplo típico de la familia, para explicar un hallazgo. */
+  attack?: string;
+  /** Cómo se corrige, con la forma segura de la API cuando la hay. */
+  fix?: string;
   sources: string[];
   sinks: (string | SinkSpec)[];
   sanitizers: string[];

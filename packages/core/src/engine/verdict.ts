@@ -68,19 +68,19 @@ export function buildVerdict(input: VerdictInput): Verdict {
   }
 
   if (findings > 0) {
+    // Una vulnerabilidad es un lugar para corregir: varios caminos al mismo
+    // sink cuentan una vez, y el detalle dice cuántos caminos hay.
+    const places = new Set(input.findings.map((f) => f.sinkId)).size;
     return {
       ...base,
       kind: "vulnerable",
       conclusive: true,
       title: plural(
-        findings,
+        places,
         "vulnerabilidad detectada",
         "vulnerabilidades detectadas",
       ),
-      detail:
-        `Hay ${plural(findings, "camino", "caminos")} de datos desde una `
-        + "entrada no confiable hasta una operación peligrosa, "
-        + "sin sanitizador en el medio.",
+      detail: vulnerableDetail(findings, places),
     };
   }
 
@@ -115,4 +115,19 @@ export function buildVerdict(input: VerdictInput): Verdict {
       + "y ninguno llega sin sanitizar. Alcance: este archivo; el flujo que "
       + "entra o sale por imports no se sigue.",
   };
+}
+
+/**
+ * «Hay 1 camino de datos desde una entrada no confiable hasta una operación
+ * peligrosa…», o, si varios caminos comparten destino, cuántos llegan a cuántas.
+ */
+export function vulnerableDetail(paths: number, places: number): string {
+  if (paths === places) {
+    return `Hay ${plural(paths, "camino", "caminos")} de datos desde una `
+      + "entrada no confiable hasta una operación peligrosa, "
+      + "sin sanitizador en el medio.";
+  }
+  return `Hay ${plural(paths, "camino", "caminos")} de datos desde entradas no `
+    + `confiables que llegan a ${plural(places, "operación peligrosa", "operaciones peligrosas")}, `
+    + "sin sanitizador en el medio.";
 }

@@ -110,7 +110,13 @@ describe("reportToSarif contra el esquema oficial", () => {
   const validate = ajv.compile(schema);
 
   const families = [
-    { cwe: 89, name: "SQL Injection", description: "Consulta SQL armada con entrada." },
+    {
+      cwe: 89,
+      name: "SQL Injection",
+      description: "Consulta SQL armada con entrada.",
+      attack: "Con id = 1 OR 1=1 devuelve todas las filas.",
+      fix: "Pasar el dato como parámetro.",
+    },
     { cwe: 78, name: "OS Command Injection" },
   ];
 
@@ -142,6 +148,15 @@ describe("reportToSarif contra el esquema oficial", () => {
     const inv = sarif.runs[0].invocations[0];
     expect(inv.executionSuccessful).toBe(false);
     expect(inv.toolExecutionNotifications[0].message.text).toBe("No se pudo analizar");
+  });
+
+  it("la ayuda de la regla trae el ataque de ejemplo y la corrección del catálogo", () => {
+    const rules = sarifOf(resultOf(VULN)).runs[0].tool.driver.rules;
+    const sqli = rules.find((r: { id: string }) => r.id === "cwe-89");
+    expect(sqli.help.text).toContain("Ejemplo de ataque: Con id = 1 OR 1=1");
+    expect(sqli.help.text).toContain("Cómo corregirlo: Pasar el dato como parámetro.");
+    const cmdi = rules.find((r: { id: string }) => r.id === "cwe-78");
+    expect(cmdi.help.text).not.toContain("Cómo corregirlo");
   });
 
   it("ruleId es la familia CWE y hay una regla por familia activa", () => {
