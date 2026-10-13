@@ -88,6 +88,14 @@
             <p class="privacy">El análisis corre en tu navegador: el código no se sube a ningún servidor.</p>
           </div>
 
+          <label class="source-mode">
+            <span class="field-label">Qué cuenta como entrada del usuario</span>
+            <select id="source-mode" class="select">
+              <option value="params" title="Todo parámetro de una función que nadie llama: revisa más y avisa más">Cualquier parámetro (más avisos)</option>
+              <option value="catalog" title="Solo las entradas del catálogo: req, ctx, @Body() de NestJS...">Solo req, ctx, @Body()... (menos avisos falsos)</option>
+            </select>
+          </label>
+
           <ol class="how-steps" aria-label="Qué pasa con lo que subís">
             <li>GraphSAST lee los archivos JavaScript y TypeScript de la carpeta y sus subcarpetas (salvo <code>node_modules</code>, <code>dist</code> y similares).</li>
             <li>Sigue cada dato que entra desde afuera (por ejemplo <code>req.query</code>) por variables, funciones y archivos.</li>

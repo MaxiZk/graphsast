@@ -1,4 +1,4 @@
-import type { AnalysisPayload, ScanFilesOutput, TaintRoles } from "@graphsast/core/browser";
+import type { AnalysisPayload, ScanFilesOutput, SourceMode, TaintRoles } from "@graphsast/core/browser";
 
 /** Archivo elegido por el usuario, con su ruta relativa a lo que subió. */
 export interface UploadedFile {
@@ -29,7 +29,7 @@ export interface ProjectAnalysis {
 
 export type WorkerRequest =
   | { id: number; kind: "snippet"; code: string; file: string }
-  | { id: number; kind: "project"; files: UploadedFile[]; configs: UploadedFile[] };
+  | { id: number; kind: "project"; files: UploadedFile[]; configs: UploadedFile[]; sources: SourceMode };
 
 export type WorkerResponse =
   | { id: number; kind: "progress"; done: number; total: number; file: string }

@@ -1,4 +1,4 @@
-import type { AnalysisPayload } from "@graphsast/core/browser";
+import type { AnalysisPayload, SourceMode } from "@graphsast/core/browser";
 import type {
   ProjectAnalysis,
   UploadedFile,
@@ -65,6 +65,7 @@ export function analyzeProject(
   files: UploadedFile[],
   onProgress?: Progress,
   configs: UploadedFile[] = [],
+  sources: SourceMode = "params",
 ): Promise<ProjectAnalysis> {
-  return request({ id: nextId++, kind: "project", files, configs }, onProgress);
+  return request({ id: nextId++, kind: "project", files, configs, sources }, onProgress);
 }
