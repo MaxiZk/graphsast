@@ -395,3 +395,17 @@ export function resolveImportedCallee(
   const target = resolveSpecifier(abs, binding.specifier, index.known, index.aliases);
   return target ? resolveExportedFunction(index, target, exported) : null;
 }
+
+/**
+ * ¿El receptor de `algo.m(...)` es un import de un módulo fuera del escaneo
+ * (`node:path`, `express`)? Entonces `m` es de ese paquete y no se adivina un
+ * método del proyecto: `path.resolve()` no es `FunctionIndex.resolve`.
+ */
+export function isExternalReceiver(index: ProjectIndex, abs: string, callee: string): boolean {
+  const normalized = callee.replace(/\s+/g, "");
+  const dot = normalized.indexOf(".");
+  if (dot === -1) return false;
+  const binding = index.modules.get(abs)?.links.imports.get(normalized.slice(0, dot));
+  return binding !== undefined
+    && resolveSpecifier(abs, binding.specifier, index.known, index.aliases) === null;
+}

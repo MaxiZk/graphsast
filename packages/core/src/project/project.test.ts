@@ -304,6 +304,22 @@ describe("fuera del alcance: no se liga (y no se simula)", () => {
   }
 });
 
+describe("métodos de paquetes externos: no se adivina un método del proyecto", () => {
+  it("path.resolve() no se liga al único método `resolve` del escaneo", () => {
+    const r = scanPaths([project({
+      "index.ts": "export class Index { resolve(x: string) { return x; } }\n",
+      "handler.ts": "export function handler(req: any, deferred: any) { deferred.resolve(req.body); }\n",
+      "build.ts": [
+        'import path from "node:path";',
+        'import { execSync } from "node:child_process";',
+        'export function build() { execSync(path.resolve("/tmp", "x")); }',
+        "",
+      ].join("\n"),
+    })]);
+    expect(r.findings.filter((f) => f.file.endsWith("build.ts"))).toEqual([]);
+  });
+});
+
 describe("resolveSpecifier", () => {
   const known = new Set(["/p/a.ts", "/p/lib/index.ts", "/p/b.js"]);
   it("resuelve extension, index y .js hacia .ts", () => {
