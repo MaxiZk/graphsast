@@ -20,10 +20,11 @@ vi.setConfig({ testTimeout: 60_000, hookTimeout: 180_000 });
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE = path.resolve(HERE, "../..");
 const CLI = path.join(PACKAGE, "dist/cli/graphsast.cli.js");
-const TSC = path.resolve(PACKAGE, "../../node_modules/.bin/tsc");
+// El script de typescript con node: `.bin/tsc` no se puede lanzar sin shell en Windows.
+const TSC = path.resolve(PACKAGE, "../../node_modules/typescript/bin/tsc");
 
 beforeAll(() => {
-  const r = spawnSync(TSC, ["-b"], { cwd: PACKAGE, encoding: "utf8" });
+  const r = spawnSync(process.execPath, [TSC, "-b"], { cwd: PACKAGE, encoding: "utf8" });
   if (r.status !== 0) throw new Error(`tsc -b falló:\n${r.stdout}${r.stderr}`);
 });
 
