@@ -19,6 +19,7 @@ import { loadCatalogBundle } from "./catalog-browser.js";
 import { explainFinding, groupBySink, stepLabel, whereOf } from "./explain.js";
 import { describeNoFinding, plural } from "./labels.js";
 import {
+  filesForList,
   focusGraph,
   graphIndexOfFile,
   linesInFile,
@@ -90,6 +91,8 @@ const selectionSummary = document.querySelector<HTMLParagraphElement>("#selectio
 const scanProgress = document.querySelector<HTMLProgressElement>("#scan-progress")!;
 const projectFilesEl = document.querySelector<HTMLDivElement>("#project-files")!;
 const fileList = document.querySelector<HTMLUListElement>("#file-list")!;
+const onlyVulnerable = document.querySelector<HTMLInputElement>("#only-vulnerable")!;
+const onlyVulnerableLabel = document.querySelector<HTMLSpanElement>("#only-vulnerable-label")!;
 const fileViewLabel = document.querySelector<HTMLParagraphElement>("#file-view-label")!;
 const projectCode = document.querySelector<HTMLDivElement>("#project-code")!;
 const themeToggle = document.querySelector<HTMLButtonElement>("#theme-toggle")!;
@@ -450,8 +453,12 @@ function renderPipeline() {
 
   if (analyzing) setPipe(pipeGraph, "active", "Siguiendo los datos…");
   else if (loaded) {
-    setPipe(pipeGraph, "done", mode === "project"
-      ? `${plural(project!.output.result.totals.crossFileCalls, "llamada", "llamadas")} entre archivos`
+    const totals = project?.output.result.totals;
+    setPipe(pipeGraph, "done", mode === "project" && totals
+      ? `${totals.lines.toLocaleString("es")} líneas recorridas`
+        + (totals.crossFileCalls > 0
+          ? ` · ${plural(totals.crossFileCalls, "llamada", "llamadas")} entre archivos`
+          : "")
       : `${plural(graph!.nodes.length, "nodo", "nodos")} en el grafo`);
   } else setPipe(pipeGraph, "idle", "Sin analizar");
 
@@ -951,7 +958,11 @@ function renderExplanation() {
 function renderFileList() {
   fileList.innerHTML = "";
   if (!project) return;
-  for (const file of project.output.result.files) {
+  const { files } = project.output.result;
+  const vulnerableCount = files.filter((f) => f.findings.length > 0).length;
+  onlyVulnerableLabel.textContent = `Solo con vulnerabilidades (${vulnerableCount})`;
+  onlyVulnerable.disabled = vulnerableCount === 0;
+  for (const file of filesForList(files, onlyVulnerable.checked && vulnerableCount > 0)) {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.type = "button";
@@ -1226,6 +1237,7 @@ graphSearch.addEventListener("keydown", (e) => {
   }
 });
 edgeFilters.addEventListener("change", () => renderGraph());
+onlyVulnerable.addEventListener("change", () => renderFileList());
 codeInput.addEventListener("input", () => {
   // El contenido ya no es el del ejemplo elegido: que el rótulo no mienta.
   if (exampleSelect.value !== CUSTOM_EXAMPLE_ID) {

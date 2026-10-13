@@ -23,6 +23,19 @@ export function projectFindings(output: ScanFilesOutput): ProjectFinding[] {
   );
 }
 
+/**
+ * Archivos para la lista del proyecto: primero los que tienen hallazgos (más
+ * hallazgos, más arriba) y, con `onlyVulnerable`, solo esos. `sort` es estable:
+ * a igual cantidad queda el orden del escaneo.
+ */
+export function filesForList<T extends { findings: readonly unknown[] }>(
+  files: readonly T[],
+  onlyVulnerable: boolean,
+): T[] {
+  const list = onlyVulnerable ? files.filter((f) => f.findings.length > 0) : [...files];
+  return list.sort((a, b) => b.findings.length - a.findings.length);
+}
+
 /** Índice del grafo que contiene el archivo, o -1 si no se pudo analizar. */
 export function graphIndexOfFile(output: ScanFilesOutput, file: string): number {
   return output.graphs.findIndex((g) => g.files.includes(file));
