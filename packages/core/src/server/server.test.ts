@@ -65,7 +65,8 @@ beforeAll(async () => {
   );
   writeFileSync(path.join(root, "README.md"), "# nada\n");
   writeFileSync(path.join(outside, "secreto.js"), "function h(req){ db.query(req.body); }\n");
-  symlinkSync(outside, path.join(root, "enlace"));
+  // "junction": en Windows no requiere permisos de administrador; en el resto se ignora.
+  symlinkSync(outside, path.join(root, "enlace"), "junction");
 
   server = await startApiServer({ root, port: 0 });
   port = (server.address() as AddressInfo).port;

@@ -160,7 +160,8 @@ describe("assertReadableTarget", () => {
       .toThrow(/no existe/);
   });
 
-  it.skipIf(process.getuid?.() === 0)("rechaza una ruta sin permiso de lectura", () => {
+  // En Windows chmod no quita el permiso de lectura.
+  it.skipIf(process.getuid?.() === 0 || process.platform === "win32")("rechaza una ruta sin permiso de lectura", () => {
     const locked = path.join(root, "locked.ts");
     writeFileSync(locked, "export {};\n");
     chmodSync(locked, 0o000);

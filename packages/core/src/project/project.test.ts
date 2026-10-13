@@ -62,16 +62,16 @@ describe("analisis entre archivos: controlador → servicio → repositorio", ()
 
     const f = result.findings[0]!;
     expect(f.cwe).toBe(89);
-    expect(f.file).toBe(path.join("src", "repository.ts"));
-    expect(f.source).toMatchObject({ file: path.join("src", "controller.ts"), name: "req", line: 2 });
-    expect(f.sink).toMatchObject({ file: path.join("src", "repository.ts"), line: 2 });
+    expect(f.file).toBe("src/repository.ts");
+    expect(f.source).toMatchObject({ file: "src/controller.ts", name: "req", line: 2 });
+    expect(f.sink).toMatchObject({ file: "src/repository.ts", line: 2 });
 
     const files = f.steps.map((s) => s.file);
     const order = files.filter((file, i) => i === 0 || file !== files[i - 1]);
     expect(order).toEqual([
-      path.join("src", "controller.ts"),
-      path.join("src", "service.ts"),
-      path.join("src", "repository.ts"),
+      "src/controller.ts",
+      "src/service.ts",
+      "src/repository.ts",
     ]);
   });
 
@@ -80,7 +80,7 @@ describe("analisis entre archivos: controlador → servicio → repositorio", ()
     expect(result.totals.crossFileCalls).toBe(0);
     expect(result.findings).toHaveLength(1);
     expect(result.findings[0]!.source).toMatchObject({
-      file: path.join("src", "repository.ts"),
+      file: "src/repository.ts",
       name: "userId",
     });
   });
