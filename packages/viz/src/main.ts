@@ -10,7 +10,14 @@ import type {
 } from "@graphsast/core/browser";
 import { analyzeProject, analyzeSnippet } from "./analysis-client.js";
 import { renderCodeLines } from "./code-lines.js";
-import { graphExport, linesOnPath, nodeMatchesQuery, toCytoscapeElements } from "./cytoscape.js";
+import {
+  PATH_MARGIN,
+  axisPan,
+  graphExport,
+  linesOnPath,
+  nodeMatchesQuery,
+  toCytoscapeElements,
+} from "./cytoscape.js";
 import {
   DEFAULT_EXAMPLE_ID,
   DEMO_EXAMPLES,
@@ -193,9 +200,11 @@ function cytoscapeStyle(): cytoscape.StylesheetJson {
       selector: "node",
       style: {
         label: "data(label)",
-        "font-size": 12,
+        "font-size": NODE_FONT_SIZE,
+        // Más chico que esto en pantalla no se lee: mejor no dibujarlo que una mancha.
+        "min-zoomed-font-size": 6,
         "text-wrap": "wrap",
-        "text-max-width": "110px",
+        "text-max-width": "80px",
         "background-color": "#475569",
         color: "#f8fafc",
         "text-outline-color": "#1e293b",
@@ -273,7 +282,8 @@ function cytoscapeStyle(): cytoscape.StylesheetJson {
         "target-arrow-shape": "triangle",
         "curve-style": "bezier",
         label: "data(label)",
-        "font-size": 9,
+        "font-size": 10,
+        "min-zoomed-font-size": 6,
         color: palette.edgeLabel,
       },
     },
@@ -319,9 +329,9 @@ function ensureCy(): Core {
     cy.on("tap", "node", (evt) => {
       const d = evt.target.data();
       nodeDetail.textContent = [
-        d.kind ? `kind: ${d.kind}` : "",
-        d.line ? `line: ${d.line}` : "",
-        d.code ? `code: ${d.code}` : "",
+        d.kind ? `tipo: ${kindLabel(d.kind)}` : "",
+        d.line ? `línea: ${d.line}` : "",
+        d.code ? `código: ${d.code}` : "",
       ]
         .filter(Boolean)
         .join("\n");
@@ -381,23 +391,65 @@ function renderProjectCode() {
     : 0;
 }
 
-/**
- * Zoom por debajo del cual las etiquetas dejan de leerse proyectadas.
- * Medido sobre el ejemplo G+, que son tres componentes desconectadas en fila:
- * encuadrar todo daba 0.35 y no se leía ni un nodo.
- */
-const MIN_READABLE_ZOOM = 0.6;
+/** Nombre del tipo de nodo para mostrar; un tipo desconocido queda como vino. */
+function kindLabel(kind: string): string {
+  return NODE_KIND_LABEL[kind as keyof typeof NODE_KIND_LABEL] ?? kind;
+}
+
+/** Tamaño de los rótulos de nodo, en px a zoom 1. */
+const NODE_FONT_SIZE = 13;
 
 /**
- * Encuadra el grafo entero; si para entrar hay que achicarlo más de lo
- * legible, encuadra el camino de riesgo con sus vecinos inmediatos —que es lo
- * que hay que mirar— y deja el resto a un paso de rueda.
+ * Zoom por debajo del cual los rótulos dejan de leerse: 13 px × 0.75 ≈ 10 px
+ * en pantalla. Con 0.6 quedaban en 7 px; en un proyecto, un camino de diez
+ * nodos encuadrado entero daba 0.27 (3 px) y no se leía nada.
  */
-function fitGraph(instance: Core, hasHighlight: boolean) {
-  instance.fit(undefined, 36);
-  if (instance.zoom() >= MIN_READABLE_ZOOM || !hasHighlight) return;
+const MIN_READABLE_ZOOM = 0.75;
+
+/**
+ * Sin camino que mirar, el grafo entero se prefiere un poco chico (hasta
+ * 13 px × 0.5 ≈ 6.5 px) antes que recortado: en los ejemplos corregidos
+ * encuadrar todo da 0.6 y se lee; un archivo de un proyecto daba 0.34.
+ */
+const MIN_OVERVIEW_ZOOM = 0.5;
+
+/**
+ * Encuadra el grafo entero. Si así no se lee, encuadra lo que importa: el
+ * camino del hallazgo elegido o, sin camino, las entradas, operaciones
+ * peligrosas y filtros. Si eso tampoco entra legible, no lo achica más: lo
+ * deja a zoom legible desde su entrada (`startId`, la primera entrada o el
+ * rincón del grafo). Lo demás se recorre arrastrando. Devuelve si algo
+ * quedó afuera de la vista.
+ */
+function fitGraph(instance: Core, startId: string | undefined): boolean {
   const path = instance.$(".risk-path");
-  if (path.nonempty()) instance.fit(path.closedNeighborhood(), 48);
+  const onPath = !!startId && path.nonempty();
+  instance.fit(undefined, 36);
+  if (instance.zoom() >= (onPath ? MIN_READABLE_ZOOM : MIN_OVERVIEW_ZOOM)) return false;
+
+  const roles = instance.nodes(".source, .sink, .sanitizer");
+  const focus = onPath ? path : roles.nonempty() ? roles : null;
+  if (focus) {
+    instance.fit(focus, PATH_MARGIN);
+    if (instance.zoom() >= MIN_READABLE_ZOOM) return false;
+  }
+  const target = focus ?? instance.elements();
+  const box = target.boundingBox();
+  const sources = onPath
+    ? instance.nodes(".risk-path").filter((n) => n.id() === startId)
+    : instance.nodes(".source");
+  const anchor = sources.nonempty()
+    ? (sources.first() as cytoscape.NodeSingular).position()
+    : { x: box.x1, y: box.y1 };
+
+  const zoom = MIN_READABLE_ZOOM;
+  instance.zoom(zoom);
+  instance.pan({
+    x: axisPan(box.x1, box.x2, anchor.x, instance.width(), zoom),
+    y: axisPan(box.y1, box.y2, anchor.y, instance.height(), zoom),
+  });
+  // Un camino apenas más grande que el mínimo entra igual: entonces no se avisa.
+  return box.w * zoom > instance.width() || box.h * zoom > instance.height();
 }
 
 /**
@@ -407,7 +459,7 @@ function fitGraph(instance: Core, hasHighlight: boolean) {
 function showNodeTooltip(node: cytoscape.NodeSingular) {
   const d = node.data() as { kind?: string; code?: string; file?: string; line?: number };
   const head = document.createElement("strong");
-  head.textContent = [d.kind, d.file && d.line ? `${d.file}:${d.line}` : d.line ? `línea ${d.line}` : ""]
+  head.textContent = [d.kind && kindLabel(d.kind), d.file && d.line ? `${d.file}:${d.line}` : d.line ? `línea ${d.line}` : ""]
     .filter(Boolean)
     .join(" · ");
   const code = document.createElement("code");
@@ -494,20 +546,36 @@ function renderGraph() {
       dimNonPath: dimToggle.checked && !!finding,
     }),
   });
-  instance
-    .layout({
-      name: "breadthfirst",
-      directed: true,
-      padding: 36,
-      // Sin contar la etiqueta, el layout separa círculos de 58px mientras el
-      // texto ocupa hasta 110: en grafos de más de diez nodos los rótulos se
-      // pisaban y no se leía cuál era cuál.
-      nodeDimensionsIncludeLabels: true,
-      avoidOverlap: true,
-      spacingFactor: 1.3,
-    })
-    .run();
-  fitGraph(instance, !!finding);
+  const layout = {
+    name: "breadthfirst",
+    directed: true,
+    padding: 36,
+    // Sin contar la etiqueta, el layout separa círculos de 58px mientras el
+    // texto ocupa hasta 80: en grafos de más de diez nodos los rótulos se
+    // pisaban y no se leía cuál era cuál. La separación mínima sale del ancho
+    // del rótulo y se aplica en los dos ejes, así que un rótulo más angosto
+    // (en dos líneas) y 1.15 en vez de 1.3 compactan el grafo sin pisarse.
+    nodeDimensionsIncludeLabels: true,
+    avoidOverlap: true,
+    spacingFactor: 1.15,
+  } as const;
+  const fitZoom = () => {
+    const box = instance.elements().boundingBox();
+    return Math.min(instance.width() / box.w, instance.height() / box.h);
+  };
+  // El breadthfirst apila los niveles hacia abajo: un camino largo quedaba
+  // como una columna angosta en un recuadro apaisado (zoom 0.27). Se dibuja
+  // también rotado (de izquierda a derecha) y queda el que entra más grande.
+  instance.layout(layout).run();
+  const asIs = fitZoom();
+  instance.layout({ ...layout, transform: (_node, pos) => ({ x: pos.y, y: pos.x }) }).run();
+  if (fitZoom() <= asIs * 1.1) instance.layout(layout).run();
+  if (fitGraph(instance, finding?.path[0])) {
+    graphNote.hidden = false;
+    graphNote.textContent = `${graphNote.textContent} ${finding ? "El camino" : "El grafo"} no entra `
+      .trimStart()
+      + "entero a un tamaño legible: arrastrá para recorrerlo o tocá «Centrar» para verlo completo.";
+  }
   applySearch(false);
   renderCodeHighlight();
 }
@@ -572,7 +640,7 @@ function renderGraphNote(shown: number, total: number, onPath: boolean) {
     ? ""
     : `Se muestran ${shown} de ${total} nodos: `
       + (onPath
-        ? "el camino de riesgo y sus vecinos inmediatos."
+        ? "el camino del dato y sus vecinos inmediatos."
         : `los de ${selectedFile ?? "este archivo"}.`)
       + " El análisis recorrió el grafo completo.";
 }

@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { analyzeGraph, analyzeTaint } from "@graphsast/core";
-import { graphExport, linesOnPath, nodeMatchesQuery, toCytoscapeElements } from "./cytoscape.js";
+import {
+  PATH_MARGIN,
+  axisPan,
+  graphExport,
+  linesOnPath,
+  nodeMatchesQuery,
+  toCytoscapeElements,
+} from "./cytoscape.js";
 
 describe("toCytoscapeElements", () => {
   it("genera nodos y aristas del grafo", () => {
@@ -85,5 +92,19 @@ describe("graphExport", () => {
     expect(out.edges).toHaveLength(graph.edges.length);
     expect(out.findings).toHaveLength(1);
     expect(JSON.parse(JSON.stringify(out)).generator).toBe("GraphSAST");
+  });
+});
+
+describe("axisPan", () => {
+  it("centra el camino si entra", () => {
+    // Camino de 0 a 100 a zoom 1 en 400 px: su centro (50) queda en 200.
+    expect(axisPan(0, 100, 0, 400, 1)).toBe(150);
+  });
+
+  it("si no entra, pega al margen el borde del lado de la entrada", () => {
+    // Entrada a la izquierda (x = 0): el borde izquierdo queda en el margen.
+    expect(axisPan(0, 1000, 0, 400, 1)).toBe(PATH_MARGIN);
+    // Entrada a la derecha (x = 1000): el borde derecho queda a un margen del final.
+    expect(axisPan(0, 1000, 1000, 400, 1)).toBe(400 - PATH_MARGIN - 1000);
   });
 });

@@ -145,3 +145,20 @@ export function graphExport(
     findings,
   };
 }
+
+/** Margen entre el borde del grafo y un camino recortado, en px. */
+export const PATH_MARGIN = 48;
+
+/**
+ * Desplazamiento en un eje para un camino que ocupa `[min, max]` (coordenadas
+ * del modelo) en una vista de `size` px: centrado si entra; si no, con el
+ * borde del lado de la entrada (`anchor`) contra el margen, para que se vea
+ * dónde empieza. No supone que el camino avance en una sola dirección.
+ */
+export function axisPan(min: number, max: number, anchor: number, size: number, zoom: number): number {
+  if ((max - min) * zoom <= size - 2 * PATH_MARGIN) return size / 2 - ((min + max) / 2) * zoom;
+  return anchor - min <= max - anchor
+    ? PATH_MARGIN - min * zoom
+    : size - PATH_MARGIN - max * zoom;
+}
+
