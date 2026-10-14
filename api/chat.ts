@@ -10,7 +10,8 @@ import Anthropic from "@anthropic-ai/sdk";
  * packages/viz/src/chat.test.ts.
  */
 
-export const CHAT_MODEL = "claude-opus-5-5";
+/** Haiku: el más barato ($0.10 / $0.50 por millón de tokens); alcanza para explicar un hallazgo ya armado. */
+export const CHAT_MODEL = "claude-haiku-5-5";
 
 /**
  * Límites del pedido: la función es pública y cada pregunta cuesta. La página
@@ -159,15 +160,14 @@ export async function POST(request: Request): Promise<Response> {
   if (!process.env.ANTHROPIC_API_KEY) return plain(503, "El chat no está configurado en el servidor.");
   client ??= new Anthropic();
 
-  const stream = client.beta.messages.stream({
+  const stream = client.messages.stream({
     model: CHAT_MODEL,
     max_tokens: 4096,
     // Chat: respuestas rápidas; la explicación del hallazgo ya hace el trabajo pesado.
+    // Haiku piensa por defecto y eso cuenta en max_tokens: con "low" piensa poco.
     output_config: { effort: "low" },
-    // Preguntas sobre ataques pueden activar los filtros de ciberseguridad: con
-    // "default" un rechazo se reintenta en el modelo que Anthropic recomienda.
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
+    // Haiku no tiene reintento automático ante un rechazo (`fallbacks`): si el
+    // filtro de seguridad rechaza la pregunta, se avisa abajo (stop_reason "refusal").
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     messages: chatMessages(parsed.value),
   });
