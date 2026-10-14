@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { analyzeGraph, analyzeTaint, getCatalogBundle } from "@graphsast/core";
 import { explainFinding } from "./explain.js";
-import { CHAT_LIMITS, chatContext, chatMessages, validateChatRequest } from "./chat.js";
-import { POST, allowRequest } from "./chat-server.js";
+import { CHAT_LIMITS, chatContext } from "./chat.js";
+import { LIMITS, POST, allowRequest, chatMessages, validateChatRequest } from "../../../api/chat.js";
 
 const SQLI = [
   'app.get("/usuarios", (req, res) => {',
@@ -17,6 +17,12 @@ function context(): string {
   const entry = getCatalogBundle().entries.find((e) => e.cwe === finding!.cwe);
   return chatContext(explainFinding(graph, finding!, entry)!);
 }
+
+describe("límites", () => {
+  it("la página y la función usan los mismos (api/chat.ts no puede importarlos)", () => {
+    expect(CHAT_LIMITS).toEqual(LIMITS);
+  });
+});
 
 describe("chatContext", () => {
   it("lleva el tipo, la entrada, el destino con su código y cada paso del camino", () => {
