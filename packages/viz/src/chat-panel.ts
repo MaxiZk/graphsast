@@ -45,7 +45,7 @@ export function createChatPanel(el: ChatPanelElements): ChatPanel {
     li.className = `chat-msg ${role}`;
     const who = document.createElement("span");
     who.className = "chat-who";
-    who.textContent = role === "user" ? "Vos" : "Claude";
+    who.textContent = role === "user" ? "Vos" : "Asistente";
     const body = document.createElement("div");
     body.className = "chat-body";
     if (role === "user") body.textContent = text;
