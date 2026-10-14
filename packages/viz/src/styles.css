@@ -1557,6 +1557,176 @@ kbd {
   display: none;
 }
 
+/* Chat con Claude sobre el hallazgo elegido. */
+.chat {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.chat-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.chat-head .subhead {
+  margin-top: 0;
+  color: var(--accent);
+}
+
+.chat-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.chat-privacy {
+  margin: 0 0 0.55rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--faint);
+}
+
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.chat-suggestions button {
+  padding: 0.28rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  color: var(--accent-text);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.chat-suggestions button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.chat-suggestions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.chat-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-log:not(:empty) {
+  margin-bottom: 0.6rem;
+}
+
+.chat-msg {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.chat-msg.user {
+  margin-left: 1.5rem;
+  background: var(--tint);
+}
+
+.chat-msg.assistant {
+  margin-right: 0.5rem;
+  background: var(--inset);
+}
+
+.chat-msg.error {
+  border-color: color-mix(in srgb, var(--sink) 45%, transparent);
+}
+
+.chat-who {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.chat-msg.assistant .chat-who {
+  color: var(--accent);
+}
+
+.chat-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-text {
+  margin: 0 0 0.45rem;
+}
+
+.chat-text:last-child {
+  margin-bottom: 0;
+}
+
+.chat-code {
+  margin: 0.35rem 0 0.45rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chat-msg.waiting .chat-body {
+    animation: chat-wait 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes chat-wait {
+  50% { opacity: 0.35; }
+}
+
+.chat-form {
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-end;
+}
+
+.chat-form textarea {
+  flex: 1;
+  min-height: 2.6rem;
+  resize: vertical;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--inset);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.chat-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 @media (max-width: 1100px) {
   body {
     height: auto;

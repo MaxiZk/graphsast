@@ -39,7 +39,7 @@
         </div>
       </div>
       <div class="header-actions">
-        <span class="trust-chip" title="El análisis corre en tu navegador: el código no se sube a ningún servidor.">
+        <span class="trust-chip" title="El análisis corre en tu navegador: el código no se sube a ningún servidor. Solo si usás el chat, se envía el hallazgo que preguntás.">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="5" y="11" width="14" height="10" rx="2" />
             <path d="M8 11V7a4 4 0 0 1 8 0v4" />
@@ -91,7 +91,7 @@
               <label class="btn-primary file-btn">Analizar carpeta<input type="file" id="folder-input" webkitdirectory multiple hidden /></label>
               <label class="btn-ghost file-btn">Analizar archivos<input type="file" id="files-input" multiple accept=".js,.jsx,.mjs,.cjs,.ts,.tsx" hidden /></label>
             </div>
-            <p class="privacy">El análisis corre en tu navegador: el código no se sube a ningún servidor.</p>
+            <p class="privacy">El análisis corre en tu navegador: el código no se sube a ningún servidor. Solo si usás el chat de Resultado se envía el hallazgo que preguntás.</p>
           </div>
 
           <ol class="how-steps" aria-label="Qué pasa con lo que subís">
@@ -248,6 +248,29 @@
             <ol id="explain-path"></ol>
           </details>
         </section>
+
+        <section id="chat" class="chat" aria-label="Chat con Claude sobre este hallazgo" hidden>
+          <div class="chat-head">
+            <h3 class="subhead">Preguntale a Claude</h3>
+            <button type="button" id="chat-reset" class="chat-reset" hidden>Empezar de nuevo</button>
+          </div>
+          <p class="chat-privacy">
+            Al preguntar se envía este hallazgo (la explicación y las líneas del camino) a Claude, de Anthropic.
+            El resto de tu código no sale del navegador.
+          </p>
+          <div id="chat-suggestions" class="chat-suggestions">
+            <button type="button">¿Cómo lo aprovecharía un atacante?</button>
+            <button type="button">Mostrame cómo corregirlo en este código</button>
+            <button type="button">¿Puede ser un falso positivo?</button>
+            <button type="button">Explicámelo más simple</button>
+          </div>
+          <ol id="chat-log" class="chat-log" aria-live="polite"></ol>
+          <form id="chat-form" class="chat-form">
+            <textarea id="chat-input" rows="2" maxlength="2000" aria-label="Tu pregunta sobre el hallazgo" placeholder="Preguntá lo que no te quedó claro…"></textarea>
+            <button type="submit" id="chat-send" class="btn-primary">Enviar</button>
+          </form>
+        </section>
+
         <p id="reading" class="reading"></p>
 
         <details class="help-details">
