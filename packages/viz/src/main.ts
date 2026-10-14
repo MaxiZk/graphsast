@@ -25,6 +25,8 @@ import {
 } from "./examples.js";
 import { loadCatalogBundle } from "./catalog-browser.js";
 import { explainFinding, groupBySink, stepLabel, whereOf } from "./explain.js";
+import { chatContext } from "./chat.js";
+import { createChatPanel } from "./chat-panel.js";
 import { EDGE_KIND_LABEL, NODE_KIND_LABEL, describeNoFinding, plural } from "./labels.js";
 import {
   filesForList,
@@ -108,6 +110,15 @@ const themeToggle = document.querySelector<HTMLButtonElement>("#theme-toggle")!;
 const nodeLimitSelect = document.querySelector<HTMLSelectElement>("#node-limit")!;
 const nodeTooltip = document.querySelector<HTMLDivElement>("#node-tooltip")!;
 const explainEl = document.querySelector<HTMLElement>("#explain")!;
+const chatPanel = createChatPanel({
+  section: document.querySelector<HTMLElement>("#chat")!,
+  log: document.querySelector<HTMLOListElement>("#chat-log")!,
+  form: document.querySelector<HTMLFormElement>("#chat-form")!,
+  input: document.querySelector<HTMLTextAreaElement>("#chat-input")!,
+  send: document.querySelector<HTMLButtonElement>("#chat-send")!,
+  suggestions: document.querySelector<HTMLElement>("#chat-suggestions")!,
+  reset: document.querySelector<HTMLButtonElement>("#chat-reset")!,
+});
 const explainSummary = document.querySelector<HTMLParagraphElement>("#explain-summary")!;
 const explainSource = document.querySelector<HTMLDivElement>("#explain-source")!;
 const explainSink = document.querySelector<HTMLDivElement>("#explain-sink")!;
@@ -973,6 +984,7 @@ function renderExplanation() {
     ? explainFinding(graph, finding, finding.cwe ? CATALOG.get(finding.cwe) : undefined)
     : null;
   explainEl.hidden = !explanation;
+  chatPanel.setContext(explanation ? chatContext(explanation) : null);
   if (!explanation) return;
 
   explainSummary.textContent = `${explanation.title}: ${explanation.summary}`;
