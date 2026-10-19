@@ -191,7 +191,6 @@
   ],
   "sanitizers": [
     "mysql.escape",
-    "parameterized",
     "validator.escape",
     "sanitize",
     "escape",
