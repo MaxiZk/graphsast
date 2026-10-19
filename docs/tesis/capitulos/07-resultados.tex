@@ -330,7 +330,12 @@ catálogo. Se registró además si la operación sensible de cada una figura
 en el catálogo, para separar después las omisiones del catálogo de las
 del motor. Las tres invocaciones a \texttt{eval} se cuentan dentro de la
 familia CWE-78, donde el catálogo ubica esa operación, aunque NodeGoat
-las clasifica como inyección de JavaScript en el servidor (CWE-95). Se
+las clasifica como inyección de JavaScript en el servidor (CWE-95). A
+partir de la retroalimentación descripta en la
+sección~\ref{sec:validacion-usuarios}, una versión posterior del
+catálogo separó \texttt{eval} en la familia CWE-95; como un hallazgo
+cuenta por archivo y línea, el cambio no altera los resultados de la
+tabla~\ref{tab:nodegoat}. Se
 analizó el repositorio completo, salvo las pruebas y las bibliotecas de
 terceros copiadas en \texttt{app/assets/vendor}: 2.032 líneas. Un
 hallazgo cuenta para una vulnerabilidad si está en el archivo del
@@ -475,6 +480,23 @@ USD 8 mensuales (riesgo R-07) y observaciones de las sesiones.}
 
 \paragraph{Entrevista.} \completar{Síntesis de la entrevista por tema.}
 
+\paragraph{Prueba libre.} Fuera del protocolo de las sesiones, un
+desarrollador usó la versión web con código de un proyecto propio, con
+el servidor escrito en Go y la interfaz en TypeScript, y envió sus
+observaciones por escrito con ejemplos de código. Valoró la interfaz y
+señaló un falso positivo, un falso negativo, dos hallazgos reales
+informados con una familia equivocada y dos pedidos de alcance: soporte
+para Go y una extensión para Visual Studio Code. Como no resolvió las
+tareas del protocolo, sus observaciones no entran en los indicadores de
+la tabla~\ref{tab:h3-resultados}. El falso positivo y el falso negativo
+provienen de construcciones habituales que el banco sintético no
+cubría: validar el dato con una expresión regular y salir antes de la
+operación sensible, y guardarlo en un campo de la instancia desde el
+constructor para usarlo en otro método. Los ejemplos de cada punto se
+incorporaron como pruebas automatizadas. La
+tabla~\ref{tab:feedback-decisiones} resume la decisión tomada en cada
+caso.
+
 \begin{table}[H]
     \centering
     \caption{Traducción de la retroalimentación en decisiones de diseño}
@@ -486,6 +508,27 @@ USD 8 mensuales (riesgo R-07) y observaciones de las sesiones.}
         \midrule
         Sesiones (n=\completar{..}) & \completar{...} & \completar{...} & \completar{...} \\
         Entrevista & \completar{...} & \completar{...} & \completar{...} \\
+        \midrule
+        Prueba libre & Una validación con expresión regular anclada seguida
+            de \texttt{return} no cortaba el camino hacia \texttt{exec}
+            (falso positivo). & Reconocer como corte las validaciones en un
+            \texttt{if} que acotan el dato: expresión regular anclada,
+            verificación numérica y lista permitida. & Implementado \\
+        Prueba libre & Un dato guardado en \texttt{this} desde el
+            constructor y usado en otro método no se seguía (falso
+            negativo). & Representar los campos de clase como variables
+            de la clase y resolver \texttt{new} hacia el constructor. &
+            Implementado \\
+        Prueba libre & La lectura de un archivo con una ruta del usuario se
+            informaba como XSS, y \texttt{eval}, como inyección de
+            comandos. & Agregar al catálogo las familias CWE-22 y CWE-95,
+            con su explicación y su corrección. & Implementado \\
+        Prueba libre & Soporte para Go. & Requiere otro analizador
+            sintáctico que produzca la misma representación intermedia;
+            el grafo y el análisis se reutilizan. & Trabajo futuro \\
+        Prueba libre & Uso desde el editor. & Empaquetar el motor como
+            extensión de Visual Studio Code que marque los hallazgos en
+            el código. & Trabajo futuro \\
         \bottomrule
     \end{tabularx}
 \end{table}
