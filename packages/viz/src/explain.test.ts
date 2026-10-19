@@ -31,6 +31,8 @@ describe("explainFinding", () => {
     expect(e.sink.attack).toBe(entryOf(89)!.attack);
     expect(e.fix).toBe(entryOf(89)!.fix);
     expect(e.missing).toContain("ningún filtro contra SQL Injection");
+    // Los ejemplos de filtro son funciones que existen, para poder buscarlas.
+    expect(e.missing).toContain("(por ejemplo mysql.escape, validator.escape, escapeId)");
     expect(e.steps.map((s) => s.label)).toEqual(["req", "id", "db.query"]);
   });
 
