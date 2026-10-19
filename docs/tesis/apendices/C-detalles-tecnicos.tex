@@ -84,6 +84,18 @@ etiquetadas, el alcance del análisis y la regla de conteo. La copia se
 guarda en el directorio temporal del sistema, o en el indicado por la
 variable \texttt{NODEGOAT\_CACHE}.
 
+Las cifras de NodeGoat del capítulo~\ref{cap:resultados} corresponden al
+commit \texttt{36fe433} de GraphSAST, del 24 de septiembre de 2026. Para
+reproducirlas exactamente se parte de ese commit; con versiones
+posteriores el catálogo es más amplio y los resultados difieren
+(sección~\ref{sec:nodegoat}).
+
+\begin{lstlisting}[caption={Reproducción de NodeGoat con la versión medida}, label={lst:nodegoat-version}]
+git checkout 36fe433
+npm install
+npm run nodegoat
+\end{lstlisting}
+
 \section{Variables de entorno}
 
 El motor sobre Neo4j se habilita desde la API local
