@@ -58,9 +58,9 @@ describe("pares vulnerable / corregido", () => {
     },
   );
 
-  it("cubre las cuatro familias del catálogo", () => {
+  it("cubre las seis familias del catálogo", () => {
     expect(new Set(DEMO_EXAMPLES.filter((e) => e.expectFinding).map((e) => e.cwe))).toEqual(
-      new Set([89, 79, 943, 78]),
+      new Set([89, 79, 943, 78, 22, 95]),
     );
   });
 

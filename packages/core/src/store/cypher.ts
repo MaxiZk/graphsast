@@ -49,6 +49,8 @@ export function nodeProperties(
     sinkCwe: sink ? sink.cwe ?? NO_CWE : null,
     sinkArgs: sink?.args ? [...sink.args] : null,
     sinkMaxDepth: sink?.maxDepth ?? null,
+    sinkCatalogSourceOnly: sink?.catalogSourceOnly ? true : null,
+    catalogSource: annotations?.catalogSourceIds.has(node.id) ? true : null,
     sanitizerCwes: sanitizer ? sanitizer.map((c) => c ?? NO_CWE) : null,
   };
   if (node.kind === "Call") {
@@ -103,7 +105,9 @@ function cypherProps(json: string): string {
  * - si el sink restringe argumentos, la última arista tiene que entrar por
  *   uno de ellos (`entersSink`);
  * - el camino no supera `$maxDepth` si está fijado, o si no el largo máximo de
- *   la familia del sink.
+ *   la familia del sink;
+ * - si la familia del sink solo acepta entradas del catálogo
+ *   (`requireCatalogSource`), el source tiene que ser una.
  *
  * El largo de un patrón variable no puede ser un parámetro: `maxHops` es la
  * cota del patrón, y tiene que cubrir el mayor de esos largos.
@@ -117,6 +121,7 @@ MATCH (s:GSNode {taintRole: 'source'}) WHERE $run IS NULL OR s.run = $run
 MATCH (k:GSNode) WHERE k.sinkCwe IS NOT NULL AND ($run IS NULL OR k.run = $run)
 MATCH p = (s)-[:FLOWS_TO|SANITIZED_BY|CALLS|BINDS_TO|RETURNS*1..${maxHops}]->(k)
 WHERE length(p) <= coalesce($maxDepth, k.sinkMaxDepth, ${DEFAULT_MAX_DEPTH})
+  AND (k.sinkCatalogSourceOnly IS NULL OR s.catalogSource = true)
   AND NONE(n IN nodes(p)[1..-1] WHERE n.sanitizerCwes IS NOT NULL
         AND (k.sinkCwe = -1 OR -1 IN n.sanitizerCwes OR k.sinkCwe IN n.sanitizerCwes))
   AND (k.sinkArgs IS NULL

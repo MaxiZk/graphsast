@@ -1,0 +1,75 @@
+{
+  "cwe": 95,
+  "name": "Code Injection",
+  "description": "El dato del usuario se ejecuta como código JavaScript del servidor: el atacante corre lo que quiera, con los permisos de la aplicación.",
+  "attack": "Si el dato es require('child_process').execSync('cat /etc/passwd').toString(), eval lo ejecuta y devuelve el archivo; si es process.exit(), tira el servidor.",
+  "fix": "No ejecutes datos del usuario. Si es JSON, usá JSON.parse; si es un número, Number(dato); si es una fórmula, un parser que solo permita las operaciones previstas.",
+  "sources": [
+    "req.query",
+    "req.body",
+    "req.params",
+    "req.headers",
+    "req.cookies",
+    "request.query",
+    "request.body",
+    "request.params",
+    "request.headers",
+    "ctx.query",
+    "ctx.params",
+    "ctx.request",
+    "ctx.headers",
+    "@Body",
+    "@Param",
+    "@Query",
+    "@Headers",
+    "@Req",
+    "@Request"
+  ],
+  "sinks": [
+    {
+      "callee": "eval",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "vm.runInNewContext",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "vm.runInThisContext",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "vm.runInContext",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "Function",
+      "bare": true
+    },
+    {
+      "callee": "vm.compileFunction",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "vm.Script",
+      "args": [
+        0
+      ]
+    }
+  ],
+  "sanitizers": [
+    "parseInt",
+    "parseFloat",
+    "Number"
+  ]
+}

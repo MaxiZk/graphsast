@@ -46,7 +46,10 @@ código fuente → AST (ts-morph) → IR → grafo (CALLS / FLOWS_TO / BINDS_TO 
 
 Los sanitizers se **quitan del grafo** antes de buscar el camino, de modo que
 todo camino hallado es por construcción no sanitizado. Las familias activas
-están en [`catalog/`](catalog/): CWE-89, CWE-78, CWE-79 y CWE-943.
+están en [`catalog/`](catalog/): CWE-89 (SQL), CWE-78 (comandos), CWE-79 (XSS),
+CWE-943 (NoSQL), CWE-22 (Path Traversal) y CWE-95 (inyección de código: `eval`,
+`new Function`, `vm`). Leer un archivo no cuenta como XSS: lo que devuelve es
+su contenido, no el dato del usuario.
 
 Las llamadas a funciones del propio código se siguen: funciones declaradas,
 arrows y function expressions guardadas en una variable, campo o propiedad,
@@ -76,6 +79,12 @@ restricciones:
   `users.find(...)` no).
 - Un patrón `paquete.f` coincide aunque el import tenga otro nombre local
   (`const cp = require("child_process"); cp.exec(x)`).
+
+Una familia puede fijar `"requireCatalogSource": true`: entonces solo cuentan
+los caminos que empiezan en una entrada del catálogo (`req.query`, `@Body()`...),
+también con `--sources params`. Lo usa Path Traversal: que un script lea el
+archivo cuya ruta recibe es lo normal; que lo haga con la ruta de un request,
+no.
 
 Una familia puede fijar `"maxDepth": n`, el largo máximo (en aristas) de un
 camino hasta sus sinks; sin esto es 15. `--max-depth` lo reemplaza para todas
@@ -500,10 +509,26 @@ evitan los casos conocidos (`regex.exec`, `users.find`), pero un nombre de
 receptor convencional (`db.query`, `conn.query`) puede no ser lo que parece.
 `new Modelo(x)` es transparente: `new ObjectId(id)` no sanea.
 
-**Validación no es sanitización.** `zod`, `joi` o `class-validator` validan la
-forma del dato, no su contenido: un `z.string()` acepta `' OR 1=1 --`. Por eso
-no están en el catálogo como sanitizers. Las conversiones numéricas
+**Validaciones que cortan.** Un `if` que valida el dato y corta si no pasa
+(`if (!/^[a-z]+$/.test(x)) return ...`), o que encierra el uso
+(`if (LISTA.includes(x)) { ... }`), protege los usos de esa misma expresión
+dentro de la zona validada, para todas las familias. Se reconocen las
+regex ancladas en los dos extremos (sin un `|` suelto ni el flag `m`),
+`Number.isInteger`/`isSafeInteger`/`isFinite`, los `validator.isX` de formatos
+sin caracteres especiales (`isInt`, `isAlphanumeric`, `isUUID`...) y la
+pertenencia a una lista (`LISTA.includes(x)`, `SET.has(x)`). Una regex sin
+anclar (`/[a-z]/` acepta `a; rm -rf /`) o un `if` que no sale no cortan.
+
+**Validación de forma no es sanitización.** `zod`, `joi` o `class-validator`
+validan la forma del dato, no su contenido: un `z.string()` acepta `' OR 1=1 --`.
+Por eso no están en el catálogo como sanitizers. Las conversiones numéricas
 (`parseInt`, `Number`) sí, porque un número no puede llevar la inyección.
+
+**Campos de clase.** `this.x = dato` en el constructor y `this.x` en otro
+método son la misma variable de la clase, y `new Clase(dato)` liga el
+argumento con el parámetro del constructor (también los parámetros con
+modificador de TypeScript, `constructor(private repo)`). Los campos de objetos
+literales y los de `static` no se siguen.
 
 **Precisión general.** El análisis no es sensible al contexto de llamada ni
 al camino de ejecución, y la profundidad máxima de un camino es 15 pasos. Solo
