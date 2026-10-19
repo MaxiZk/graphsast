@@ -38,8 +38,32 @@ app.post("/login", async (req, res) => {
 const CMDI = `// GET /ping?host=8.8.8.8
 app.get("/ping", (req, res) => {
   const host = req.query.host;
+  // (el host no se valida)
   exec("ping -c 1 " + host);
   res.send("Ping enviado");
+});`;
+
+const PATH_TRAVERSAL = `// GET /archivos?nombre=manual.pdf
+app.get("/archivos", (req, res) => {
+  const nombre = req.query.nombre;
+  res.send(fs.readFileSync("./archivos/" + nombre));
+});`;
+
+const CODE_INJECTION = `// GET /calcular?expr=2*3
+app.get("/calcular", (req, res) => {
+  const expr = req.query.expr;
+  res.json({ resultado: eval(expr) });
+});`;
+
+/** El dato entra por el constructor, queda en la instancia y se usa en otro método. */
+const CAMPO_DE_CLASE = `class Reportes {
+  constructor(carpeta) { this.carpeta = carpeta; }
+  comprimir() { exec("tar -czf reporte.tgz " + this.carpeta); }
+}
+
+app.post("/reportes", (req, res) => {
+  new Reportes(req.body.carpeta).comprimir();
+  res.send("Reporte en preparación");
 });`;
 
 /** El dato cruza dos funciones antes de llegar a la consulta. */
@@ -133,7 +157,67 @@ export const DEMO_EXAMPLES: DemoExample[] = [
       + "?host=8.8.8.8; cat /etc/passwd el servidor ejecuta también el segundo comando.",
     expectFinding: true,
     cwe: 78,
+    pair: "cmdi-fixed",
     code: CMDI,
+  },
+  {
+    id: "cmdi-fixed",
+    title: "Command Injection · corregido",
+    description:
+      "Antes de usar el host se valida con una regex anclada (solo letras, números, "
+      + "punto y guion) y, si no pasa, se corta. El ; nunca llega al comando. No hay hallazgo.",
+    expectFinding: false,
+    cwe: 78,
+    pair: "cmdi",
+    code: CMDI.replace(
+      "  // (el host no se valida)",
+      '  if (!/^[\\w.-]+$/.test(host)) return res.status(400).send("Host inválido");',
+    ),
+  },
+  {
+    id: "path",
+    title: "Path Traversal · vulnerable",
+    description:
+      "El nombre de la URL arma la ruta del archivo. Con ?nombre=../../etc/passwd "
+      + "el servidor devuelve un archivo de fuera de la carpeta.",
+    expectFinding: true,
+    cwe: 22,
+    pair: "path-fixed",
+    code: PATH_TRAVERSAL,
+  },
+  {
+    id: "path-fixed",
+    title: "Path Traversal · corregido",
+    description:
+      "path.basename() se queda solo con el nombre del archivo: ../../etc/passwd "
+      + "pasa a ser passwd, que se busca dentro de la carpeta. No hay hallazgo.",
+    expectFinding: false,
+    cwe: 22,
+    pair: "path",
+    code: PATH_TRAVERSAL.replace(
+      "const nombre = req.query.nombre;",
+      "const nombre = path.basename(req.query.nombre);",
+    ),
+  },
+  {
+    id: "code",
+    title: "Code Injection · vulnerable",
+    description:
+      "La expresión de la URL se ejecuta con eval. Con "
+      + "?expr=process.exit() el atacante apaga el servidor; con require(...) corre lo que quiera.",
+    expectFinding: true,
+    cwe: 95,
+    code: CODE_INJECTION,
+  },
+  {
+    id: "clase",
+    title: "Campo de clase · vulnerable",
+    description:
+      "El dato entra por el constructor, queda guardado en this.carpeta y se usa "
+      + "en otro método. GraphSAST lo sigue a través del campo.",
+    expectFinding: true,
+    cwe: 78,
+    code: CAMPO_DE_CLASE,
   },
   {
     id: "vulnerable",
