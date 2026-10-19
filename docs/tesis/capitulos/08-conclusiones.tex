@@ -25,12 +25,19 @@ indica en qué medida se alcanzó, con referencia a la sección que lo
 demuestra.
 \end{guia}
 
-% Esqueleto al 24/09/2026. Las respuestas a las hipótesis dependen de la
-% línea de base, de NodeGoat y de la validación con usuarios del
-% capítulo 7; hasta tenerlas, quedan como marcadores.
+% BORRADOR al 19/10/2026: redactado con la evidencia del capítulo 7. El
+% autor debe revisar y reescribir cada afirmación. Los marcadores que
+% quedan dependen de las sesiones de validación de H3 y de la entrevista.
 
-\completar{Párrafo de apertura: la pregunta de investigación del
-capítulo~\ref{cap:introduccion} y cómo se organiza la respuesta.}
+La pregunta de investigación del capítulo~\ref{cap:introduccion} plantea
+si un analizador basado en grafos de flujo de datos detecta
+vulnerabilidades de arquitectura con mayor precisión y menos falsos
+positivos que las herramientas basadas en coincidencia de patrones de
+texto. La respuesta se organiza en torno a las tres hipótesis: H1 y H2
+se contrastan con el banco sintético, con OWASP NodeGoat y con una línea
+de base que usa el mismo catálogo sin seguir el flujo del dato; H3, con
+la validación con usuarios. Todas las cifras corresponden a la versión
+medida del 24 de septiembre (sección~\ref{sec:nodegoat}).
 
 % -------------------------------------------------------------
 \section{Respuesta a las hipótesis}\label{sec:respuesta-hipotesis}
@@ -38,21 +45,43 @@ capítulo~\ref{cap:introduccion} y cómo se organiza la respuesta.}
 
 \paragraph{H1.} La representación del código como grafo de flujo de
 datos permite identificar vulnerabilidades con mayor precisión que la
-coincidencia de patrones. \completar{Respuesta (afirmativa, negativa o
-con matices) con la cifra de la tabla~\ref{tab:metricas} que la sostiene
-y el contraejemplo que la limita.}
+coincidencia de patrones. La respuesta es afirmativa, con un matiz
+importante. Sobre el banco sintético, GraphSAST obtuvo una precisión de
+1,00 frente a 0,85 de la línea de base, con la misma exhaustividad de
+1,00 y un $F_1$ de 1,00 frente a 0,92 (tabla~\ref{tab:metricas}). Sobre
+NodeGoat, en cambio, los dos detectores obtuvieron exactamente los mismos
+resultados: precisión de 0,75 y exhaustividad de 0,50. El matiz es que
+la ventaja depende de que el código contenga saneamientos o caminos
+aparentes que el grafo descarta; en NodeGoat los destinos alcanzados
+reciben el dato de forma directa, y en ese escenario seguir el flujo no
+agrega precisión a la coincidencia de nombres. La evidencia favorable
+proviene, además, de un banco construido por el autor.
 
 \paragraph{H2.} El análisis de contaminación sobre el grafo reduce los
-falsos positivos respecto de la detección por expresiones regulares.
-\completar{Respuesta con los falsos positivos de la línea de base y de
-GraphSAST, y el falso positivo por coincidencia de nombres de la
-sección~\ref{sec:resultados-negativos}.}
+falsos positivos respecto de la detección por expresiones regulares. La
+respuesta es afirmativa sobre el banco sintético y no demostrada sobre
+código real. En el banco, la línea de base produjo cinco falsos
+positivos, tres en caminos saneados y dos entre variables homónimas sin
+un camino real entre sí, y GraphSAST ninguno. En NodeGoat ambos
+detectores produjeron el mismo falso positivo, en una tarea de
+automatización cuyo argumento no proviene de un usuario remoto. Fuera de
+las mediciones aparecieron dos falsos positivos de GraphSAST que sirven
+de contraejemplo: una llamada a \texttt{RegExp.prototype.exec} reportada
+como inyección de comandos por coincidir en el nombre, y una validación
+con expresión regular anclada que no cortaba el camino, reportada en la
+prueba libre. Ambos se corrigieron después de la versión medida
+(sección~\ref{sec:resultados-negativos}), y muestran que el grafo reduce
+los falsos positivos en la medida en que el modelo reconoce las formas
+en que el código real protege un dato.
 
 \paragraph{H3.} La visualización del recorrido facilita la
 interpretación del riesgo frente al listado en texto.
 \completar{Respuesta con los resultados de la
 tabla~\ref{tab:h3-resultados}, declarada preliminar por el tamaño de la
-muestra.}
+muestra.} La prueba libre descripta en la
+sección~\ref{sec:validacion-usuarios} no permite contrastar esta
+hipótesis, porque no comparó la visualización con el reporte de texto;
+su aporte fue identificar errores de detección.
 
 % -------------------------------------------------------------
 \section{Cumplimiento de los objetivos}\label{sec:cumplimiento}
@@ -67,12 +96,12 @@ muestra.}
         \toprule
         \tb{Objetivo} & \tb{Evidencia} & \tb{Grado} & \tb{Observación} \\
         \midrule
-        OE-1 & RF-01; sección~\ref{sec:pruebas} & \completar{..} & El análisis sintáctico se apoya en ts-morph, sin un analizador propio (capítulo~\ref{cap:marco-tecnologico}) \\
-        OE-2 & RF-02; tabla~\ref{tab:suite} & \completar{..} & Cinco categorías de nodo y cinco de arista, como se definió \\
-        OE-3 & RF-03 a RF-05; tabla~\ref{tab:confusion} & \completar{..} & Cuatro familias en lugar de tres: se sumó CWE-943 \\
-        OE-4 & RF-10 & \completar{..} & Neo4j opera como motor opcional; el recorrido en memoria es el modo por defecto \\
-        OE-5 & RF-06, RF-07; capítulo~\ref{cap:marco-tecnologico} & \completar{..} & La visualización se publicó como aplicación web que analiza en el navegador \\
-        OE-6 & Secciones~\ref{sec:pruebas} y~\ref{sec:validacion-usuarios} & \completar{..} & \completar{Estado de la validación sobre código real y con usuarios} \\
+        OE-1 & RF-01; sección~\ref{sec:pruebas} & Cumplido & El análisis sintáctico se apoya en ts-morph, sin un analizador propio (capítulo~\ref{cap:marco-tecnologico}) \\
+        OE-2 & RF-02; tabla~\ref{tab:suite} & Cumplido & Cinco categorías de nodo y cinco de arista, como se definió \\
+        OE-3 & RF-03 a RF-05; tabla~\ref{tab:confusion} & Cumplido y ampliado & Seis familias en lugar de tres: se sumaron CWE-943, CWE-22 y CWE-95 \\
+        OE-4 & RF-10 & Cumplido con cambio de rol & Neo4j opera como motor opcional, con paridad verificada en cada cambio; el recorrido en memoria es el modo por defecto \\
+        OE-5 & RF-06, RF-07; capítulo~\ref{cap:marco-tecnologico} & Cumplido & La visualización se publicó como aplicación web que analiza en el navegador y explica cada hallazgo \\
+        OE-6 & Secciones~\ref{sec:pruebas} y~\ref{sec:validacion-usuarios} & Parcial & Validación sobre código real limitada a una aplicación con seis vulnerabilidades; \completar{estado de la validación con usuarios} \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -81,67 +110,131 @@ muestra.}
 \section{Implicancias}\label{sec:implicancias}
 % -------------------------------------------------------------
 
-\paragraph{Técnicas.} \completar{Qué muestran los resultados sobre la
-formulación de la seguridad como accesibilidad en un grafo: dónde
-funcionó y dónde la resolución de llamadas limita el enfoque.}
+\paragraph{Técnicas.} Formular la seguridad como accesibilidad en un
+grafo resultó adecuado para los recorridos explícitos, en los que el dato
+pasa de variable en variable y de función en función hasta el destino:
+el motor los siguió dentro de una función, entre funciones y entre
+archivos, y descartó los caminos saneados. Los límites aparecieron en
+tres lugares. El primero es la cobertura del catálogo: sobre NodeGoat,
+las omisiones se debieron a operaciones que el catálogo no registraba y
+no al motor. El segundo es la resolución de llamadas sin información de
+tipos, que obliga a heurísticas para saber qué método atiende una
+llamada sobre un objeto. El tercero es que muchas protecciones del código
+real no son llamadas a una función de saneamiento sino decisiones de
+control, como validar y salir; incorporarlas exigió modelar esas
+validaciones como cortes del camino, lo que muestra que el grafo de flujo
+de datos necesita información del flujo de control para ser preciso.
 
-\paragraph{Sociales.} \completar{Análisis en el navegador sin enviar el
-código a un servidor; acceso a una herramienta de este tipo para
-desarrolladores independientes y equipos chicos; vínculo con el
-aseguramiento de la calidad.}
+\paragraph{Sociales.} El análisis en el navegador permite que un
+desarrollador independiente o un equipo pequeño audite su código sin
+instalar herramientas ni enviarlo a un servidor, lo que reduce la barrera
+de entrada a una práctica que suele quedar reservada a organizaciones con
+suites corporativas. La explicación de cada hallazgo en lenguaje llano,
+incorporada a partir de la revisión con la cátedra, acerca el resultado a
+quien no conoce la terminología de seguridad, y vincula la herramienta
+con el aseguramiento de la calidad como control preventivo previo a las
+pruebas. El asistente sobre un hallazgo introduce un compromiso explícito
+entre ayuda y confidencialidad, que se resolvió dejando su uso a decisión
+del usuario y enviando solo el hallazgo consultado.
 
-\paragraph{Económicas.} \completar{Relación con el capítulo~\ref{cap:economica}:
-la captación de usuarios como condición crítica y lo que respondieron
-los participantes sobre la disposición a pagar.}
+\paragraph{Económicas.} El capítulo~\ref{cap:economica} identificó la
+captación de usuarios como la condición crítica de la viabilidad, y el
+riesgo R-07 señala la competencia de herramientas gratuitas en
+determinadas condiciones de uso. \completar{Respuestas de los
+participantes sobre la disposición a pagar USD 8 mensuales.} El asistente
+agrega un costo por uso que el modelo económico no contemplaba y que
+conviene acotar por suscriptor.
 
 % -------------------------------------------------------------
 \section{Limitaciones}\label{sec:limitaciones}
 % -------------------------------------------------------------
 
-\paragraph{Técnicas.} El análisis entre archivos solo sigue funciones
-declaradas con \texttt{function} e importadas con módulos ES y ruta
-relativa. Los destinos sensibles se reconocen por el nombre de la
-función invocada. \completar{Estado final tras el congelamiento del 3 de
-noviembre.}
+\paragraph{Técnicas.} En la versión entregada, el análisis entre
+archivos sigue funciones declaradas o asignadas a constantes, importadas
+con módulos ES, \texttt{require} o alias de rutas, pero no los paquetes
+de \texttt{node\_modules} ni las importaciones con ruta calculada. Los
+métodos sobre objetos de tipo desconocido se resuelven por una heurística
+de nombre único. Los destinos sensibles se reconocen por nombre,
+calificado por el módulo importado o el objeto receptor, y las
+validaciones solo cortan el camino en las formas reconocidas. El
+análisis se limita a JavaScript y TypeScript.
 
 \paragraph{De datos.} El banco sintético fue construido por el autor y
 concentra 26 de sus 43 casos en inyección SQL. El corpus de advisories
 de npm resultó no evaluable por el modelo de amenaza del analizador.
-\completar{Tamaño y representatividad del corpus de NodeGoat.}
+NodeGoat aporta seis vulnerabilidades en una sola aplicación de 2.032
+líneas, sin casos en los que un saneamiento proteja un destino, por lo
+que no permite generalizar. Sus cifras corresponden a la versión medida:
+con el catálogo ampliado posteriormente, ambos detectores emiten
+hallazgos sin etiqueta que no se revisaron
+(sección~\ref{sec:nodegoat}).
 
 \paragraph{De validación.} \completar{Tamaño y origen de la muestra de
-participantes; autor en el doble rol de desarrollador y facilitador;
-casos de dos archivos.}
+participantes.} El autor cumplió el doble rol de desarrollador y
+facilitador, lo que se mitigó con un guion y reglas fijas, y los casos de
+la validación tienen dos archivos, por lo que no representan la lectura
+de un proyecto real. La prueba libre corresponde a una sola persona del
+entorno del autor.
 
-\paragraph{De mercado.} \completar{Competencia de herramientas gratuitas
-en determinadas condiciones de uso (riesgo R-07) y supuestos de
-captación del capítulo~\ref{cap:economica}.}
+\paragraph{De mercado.} Existen herramientas consolidadas, como Semgrep
+y CodeQL, que se ofrecen sin costo en determinadas condiciones de uso
+(riesgo R-07), y las proyecciones de captación del
+capítulo~\ref{cap:economica} no fueron contrastadas con usuarios
+dispuestos a pagar.
 
 % -------------------------------------------------------------
 \section{Recomendaciones}\label{sec:recomendaciones}
 % -------------------------------------------------------------
 
-\completar{Recomendaciones accionables para la práctica profesional (por
-ejemplo, en qué etapa del desarrollo incorporar el análisis) y para el
-desarrollo tecnológico de la herramienta.}
+\paragraph{Para la práctica profesional.} Incorporar el análisis en la
+integración continua, sobre cada cambio, mediante la línea de comandos y
+su reporte SARIF, de modo que los hallazgos aparezcan en la revisión del
+código antes de llegar a producción; reservar la versión web para
+entender y corregir cada hallazgo. Tratar cada hallazgo como el punto de
+partida de una revisión y no como un veredicto, y preferir las
+correcciones estructurales, como las consultas parametrizadas, a los
+filtros escritos a mano, que el analizador puede no reconocer.
+
+\paragraph{Para el desarrollo de la herramienta.} Usar la información de
+tipos del compilador de TypeScript para resolver los métodos sobre
+objetos, en lugar de la heurística de nombre único; ampliar el catálogo
+con las operaciones que explicaron las omisiones de NodeGoat, como las
+plantillas HTML y las consultas de MongoDB con \texttt{\$where}; y
+construir un corpus de código real con casos saneados, que es donde el
+análisis sobre el grafo puede mostrar su ventaja.
 
 % -------------------------------------------------------------
 \section{Trabajo futuro}\label{sec:trabajo-futuro}
 % -------------------------------------------------------------
 
-\completar{Mejoras que quedaron fuera del cierre de alcance del 13 de
-octubre (riesgo R-03): resolución de funciones flecha, métodos de clase
-y \texttt{require} entre archivos; calificación de destinos por módulo;
-ampliación del catálogo; validación con una muestra mayor y con
-proyectos reales de mayor tamaño; soporte para Go y extensión para
-Visual Studio Code, pedidos en la prueba libre
-(sección~\ref{sec:validacion-usuarios}).}
+Quedan fuera del alcance entregado: el soporte para otros lenguajes, en
+particular Go, pedido en la prueba libre, que requiere otro analizador
+sintáctico que produzca la misma representación intermedia mientras el
+grafo y el análisis se reutilizan; una extensión para Visual Studio Code
+que marque los hallazgos en el editor; el análisis de motores de
+plantillas; nuevas familias del catálogo, como la falsificación de
+peticiones del lado del servidor (CWE-918) y la redirección abierta
+(CWE-601); la resolución de llamadas con información de tipos; y la
+validación con una muestra mayor de usuarios y con proyectos reales de
+mayor tamaño.
 
 % -------------------------------------------------------------
 \section{Contribución al conocimiento}\label{sec:contribucion}
 % -------------------------------------------------------------
 
-\completar{Qué se sabe después de este trabajo que no se sabía antes. El
-aporte no es la técnica, que existe en CodeQL, Semgrep y Joern
+El aporte no es la técnica, que existe en CodeQL, Semgrep y Joern
 (capítulo~\ref{cap:marco-teorico}), sino la implementación propia de la
-cadena completa y su medición, incluidos los resultados desfavorables.}
+cadena completa, desde el código fuente hasta la explicación del
+hallazgo, y su medición, incluidos los resultados desfavorables. De esa
+medición se desprenden tres observaciones. Primero, frente a una línea de
+base que usa el mismo catálogo, el análisis sobre el grafo solo mejora la
+precisión cuando el código contiene saneamientos o caminos aparentes;
+sobre una aplicación deliberadamente vulnerable, donde el dato llega
+directo al destino, ambos enfoques coinciden. Segundo, la cobertura del
+catálogo limitó la exhaustividad más que el motor, de modo que la
+calidad de las especificaciones de orígenes, destinos y saneamientos
+pesa tanto como el algoritmo de recorrido, en línea con lo que sostienen
+\citet{dutta2022} y \citet{balbi2023}. Tercero, los advisories
+publicados del ecosistema npm rara vez tienen la forma de un recorrido
+de una entrada a un destino, lo que advierte contra usarlos como corpus
+para evaluar herramientas de análisis de contaminación.

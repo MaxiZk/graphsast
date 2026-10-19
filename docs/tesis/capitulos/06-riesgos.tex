@@ -83,13 +83,13 @@ Los supuestos son condiciones que se dan por ciertas sin haberlas verificado; la
         S-02 & Las operaciones sensibles que emplean las aplicaciones analizadas coinciden con las registradas en el catálogo: consultas SQL, ejecución de procesos, escritura en el documento y métodos de Mongoose. & R-01, R-08 \\
         S-03 & Existen aplicaciones Node.js deliberadamente vulnerables, con vulnerabilidades documentadas y una licencia que permite analizarlas, como OWASP NodeGoat (licencia Apache-2.0). & R-02 \\
         S-04 & Se consiguen entre cinco y ocho desarrolladores dispuestos a participar de la validación de la hipótesis H3 entre el 5 y el 9 de octubre. & R-06 \\
-        S-05 & Vercel mantiene las condiciones y el precio del plan Pro (USD 20 mensuales) durante el horizonte de evaluación. & Capítulo 5 (Tabla 14) \\
-        S-06 & El procesador de pagos admite vendedores radicados en Argentina y mantiene su comisión del 5 \% más USD 0,50 por transacción. & Capítulo 5 (Tabla 14) \\
+        S-05 & Vercel mantiene las condiciones y el precio del plan Pro (USD 20 mensuales) durante el horizonte de evaluación. & Tabla~\ref{tab:costos-operativos} \\
+        S-06 & El procesador de pagos admite vendedores radicados en Argentina y mantiene su comisión del 5 \% más USD 0,50 por transacción. & Tabla~\ref{tab:costos-operativos} \\
         C-01 & Restricción: el proyecto tiene un único integrante, con una dedicación parcial de tres a cuatro días por semana. & R-11 \\
         C-02 & Restricción: las fechas son fijas; capítulo 7 el 13 de octubre, capítulo 8 el 20 de octubre, documento integrado el 27 de octubre, sistema congelado el 3 de noviembre y entrega final el 17 de noviembre. & R-03 \\
         C-03 & Restricción: durante el desarrollo no hay presupuesto; se emplean herramientas libres y planes gratuitos. & R-09 \\
-        C-04 & Restricción: el código analizado no puede salir del equipo del usuario, por lo que el análisis se ejecuta en el navegador o en la interfaz de línea de comandos, sin procesamiento en un servidor. & R-12 \\
-        C-05 & Restricción: el alcance se limita a JavaScript y TypeScript y a las cuatro familias de debilidades del catálogo. & R-01 \\
+        C-04 & Restricción: el código analizado no puede salir del equipo del usuario, por lo que el análisis se ejecuta en el navegador o en la interfaz de línea de comandos, sin procesamiento en un servidor. Solo el asistente opcional envía, a pedido del usuario, el hallazgo consultado. & R-12 \\
+        C-05 & Restricción: el alcance se limita a JavaScript y TypeScript y a las familias de debilidades del catálogo, cuatro al momento de este análisis y seis al cierre. & R-01 \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -190,7 +190,7 @@ Los ocho riesgos de exposición alta se desarrollan con la evidencia que los sos
 
 \subsection{R-08: mantenimiento del catálogo}\label{sec:n6.4.8}
 
-\paragraph{Evidencia.} El catálogo registra 23 destinos sensibles y 18 sanitizadores en cuatro archivos JSON, y cada nueva versión de una biblioteca puede introducir operaciones que no figuran en él.
+\paragraph{Evidencia.} Al momento de este análisis el catálogo registraba 23 destinos sensibles y 18 sanitizadores en cuatro archivos JSON; al cierre registra 101 destinos y 50 sanitizadores en seis archivos (tabla~\ref{tab:catalogo}). Cada nueva versión de una biblioteca puede introducir operaciones que no figuran en él.
 
 \paragraph{Respuesta.} Se publica el código con licencia abierta (R-10) y se documenta en el README cómo agregar una entrada al catálogo, para que otros desarrolladores puedan contribuir. La sección~\ref{sec:n6.6} desarrolla la continuidad del sistema.
 
@@ -214,7 +214,7 @@ La cátedra identifica siete riesgos que con mayor frecuencia hacen fracasar un 
         Equipo que se desarma & El equipo es de una persona y no tiene reemplazo. & R-11 \\
         Tecnología que no da & La resolución de llamadas limita el desempeño sobre código real, y el navegador limita el tamaño de proyecto analizable. & R-01, R-12 \\
         Inviabilidad de costo & El costo de desarrollo es nulo; en la operación, la viabilidad depende de la captación y no de los costos (capítulo 5). & R-07 \\
-        Barrera legal o ética & El código analizado no sale del equipo del usuario, lo que evita tratar código de terceros en servidores propios; falta declarar la licencia del repositorio. & R-10 \\
+        Barrera legal o ética & El código analizado no sale del equipo del usuario, lo que evita tratar código de terceros en servidores propios, salvo el hallazgo que el usuario decida consultar al asistente; el repositorio declara licencia MIT. & R-10 \\
         Nadie a cargo & El autor es el único responsable del mantenimiento después de la entrega. & R-08 \\
         \bottomrule
     \end{tabularx}
@@ -222,7 +222,7 @@ La cátedra identifica siete riesgos que con mayor frecuencia hacen fracasar un 
 
 \section{Continuidad del sistema después de la entrega}\label{sec:n6.6}
 
-La pregunta sobre quién mantiene el sistema cuando el autor se recibe se responde con tres decisiones. Primero, el código se publicará con licencia MIT en un repositorio público (R-10), lo que permite que cualquier persona lo use, lo modifique y lo continúe. Segundo, la parte que más cambia con el tiempo, las reglas de detección, está separada del motor en los archivos JSON del catálogo, de modo que actualizarla no requiere conocer la implementación del análisis. Tercero, la versión web no tiene componentes de servidor ni base de datos que administrar: el despliegue en Vercel se reconstruye a partir del repositorio, y mantenerla en línea para uso no comercial no tiene costo.
+La pregunta sobre quién mantiene el sistema cuando el autor se recibe se responde con tres decisiones. Primero, el código se publica con licencia MIT en un repositorio público (R-10), lo que permite que cualquier persona lo use, lo modifique y lo continúe. Segundo, la parte que más cambia con el tiempo, las reglas de detección, está separada del motor en los archivos JSON del catálogo, de modo que actualizarla no requiere conocer la implementación del análisis. Tercero, la versión web no tiene base de datos que administrar y su único componente de servidor es la función del asistente, que es opcional: el despliegue en Vercel se reconstruye a partir del repositorio, y mantenerla en línea para uso no comercial no tiene costo, salvo el consumo de la API del asistente, que puede desactivarse sin afectar el análisis.
 
 El autor asume el mantenimiento durante el horizonte de evaluación del capítulo~\ref{cap:economica}. Si el proyecto no continúa como producto, queda disponible como herramienta académica de código abierto.
 
@@ -231,3 +231,27 @@ El autor asume el mantenimiento durante el horizonte de evaluación del capítul
 La matriz se revisa en cada entrega, al etiquetar la versión correspondiente en el repositorio: se actualizan la probabilidad y el impacto de cada riesgo, se registran los que se materializaron y se agregan los nuevos. Los riesgos R-09 a R-12 no tienen un tratamiento desarrollado más allá de la respuesta de la tabla~\ref{tab:matriz-riesgos} y se revisan en esas mismas instancias.
 
 Las fechas de control son el 1 de octubre para la convocatoria de participantes (R-06), el 6 de octubre para el corpus de aplicaciones reales (R-02), el 13 de octubre para el cierre del alcance (R-03) y el 3 de noviembre para las dependencias y la licencia (R-05 y R-10).
+
+\section{Estado de los riesgos al cierre}\label{sec:n6.8}
+
+La tabla~\ref{tab:estado-riesgos} registra la evolución de los riesgos cuyo estado cambió después de este análisis. Los riesgos que no figuran mantienen la calificación y la respuesta de la tabla~\ref{tab:matriz-riesgos}.
+
+\begin{table}[H]
+    \centering
+    \caption{Estado de los riesgos al cierre del desarrollo}
+    \label{tab:estado-riesgos}
+    \small
+    \begin{tabularx}{\textwidth}{l l L}
+        \toprule
+        \tb{ID} & \tb{Estado} & \tb{Evidencia} \\
+        \midrule
+        R-01 & Mitigado & Desde el 10 de octubre el motor sigue funciones flecha, métodos de clase, \texttt{require} y alias de TypeScript, también entre archivos (sección~\ref{sec:n4.2.5}). En la versión medida, las omisiones sobre NodeGoat se debieron a operaciones fuera del catálogo (sección~\ref{sec:nodegoat}). \\
+        R-02 & Mitigado & OWASP NodeGoat se etiquetó el 24 de septiembre, antes de analizarlo, con seis vulnerabilidades de las familias del catálogo. \\
+        R-03 & Materializado & Después del cierre del 13 de octubre se incorporaron el reconocimiento de validaciones, el seguimiento de campos de clase y las familias CWE-22 y CWE-95, en respuesta a un falso positivo, un falso negativo y dos clasificaciones erróneas reportados en la prueba libre (sección~\ref{sec:validacion-usuarios}). Los resultados medidos del capítulo~\ref{cap:resultados} corresponden a una versión anterior y no se ven afectados. \\
+        R-04 & Resuelto & Desde el 10 de octubre los destinos se califican por el módulo importado o por el objeto receptor: \texttt{regex.exec(x)} ya no se reporta como inyección de comandos, y el análisis del propio repositorio no produce hallazgos. \\
+        R-05 & Abierto & Las dependencias de producción registran cinco alertas altas que forman una sola cadena: una denegación de servicio en \texttt{braces}, que llega a través de \texttt{ts-morph}. La corrección requiere actualizar \texttt{ts-morph} a una versión mayor y queda pendiente para antes del 3 de noviembre. \\
+        R-06 & \completar{..} & \completar{Estado de las sesiones de validación de H3.} \\
+        R-10 & Resuelto & El repositorio declara licencia MIT desde el 11 de octubre. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}

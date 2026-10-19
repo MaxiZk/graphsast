@@ -97,7 +97,7 @@ valor objetivo.
         RNF-01 & Corrección sobre casos conocidos & El motor no introduce falsos positivos ni falsos negativos sobre el banco sintético & Alta & FP = 0 y FN = 0 en los 43 casos (precisión y exhaustividad) \\
         RNF-02 & Exhaustividad sobre código real & Detección de las vulnerabilidades etiquetadas en una aplicación deliberadamente vulnerable & Alta & Exhaustividad $\geq$ 50\,\% sobre OWASP NodeGoat (riesgo R-01) \\
         RNF-03 & Rendimiento & Tiempo de análisis en la línea de comandos & Media & $\leq$ 1 s por cada 1.000 líneas (indicador de tiempo de análisis) \\
-        RNF-04 & Confidencialidad & El código analizado no sale del equipo del usuario & Alta & 0 solicitudes a otros dominios durante el análisis en la versión web \\
+        RNF-04 & Confidencialidad & El análisis no envía el código fuera del equipo del usuario & Alta & 0 solicitudes a otros dominios durante el análisis en la versión web; el asistente opcional envía solo el hallazgo consultado \\
         RNF-05 & Portabilidad & La versión web funciona sin instalación & Media & El análisis se completa en un navegador actualizado sin complementos \\
         RNF-06 & Mantenibilidad del catálogo & Las reglas se modifican sin cambiar el motor & Media & Agregar un destino o un saneamiento requiere editar solo un archivo JSON \\
         RNF-07 & Seguridad de las dependencias & El repositorio no publica dependencias con vulnerabilidades graves & Alta & 0 alertas críticas o altas abiertas al 3 de noviembre (riesgo R-05) \\
@@ -137,6 +137,11 @@ historial de cambios.
         Línea de comandos & Exclusiones, códigos de salida, SARIF, API local y análisis entre archivos & 22/09/2026 \\
         Versión web & Análisis en el navegador con carga de carpetas y publicación en Vercel & 23/09/2026 \\
         Código real & Validación sobre vulnerabilidades documentadas del ecosistema npm & 23/09/2026 \\
+        Línea de base & Etiquetado y análisis de OWASP NodeGoat, y comparación con una línea de base por expresiones regulares & 24/09/2026 \\
+        Precisión del motor & Funciones flecha, métodos de clase, \texttt{require} y alias entre archivos; destinos por argumento, módulo y receptor; saneamientos por familia & 10/10/2026 \\
+        Integración continua & Pruebas de punta a punta de la línea de comandos, paridad con Neo4j en cada cambio e imagen de contenedor & 11/10/2026 \\
+        Explicación & Explicación de cada hallazgo en la interfaz, ejemplos por familia y asistente sobre el hallazgo & 13/10/2026 \\
+        Retroalimentación & Validaciones que cortan el camino, campos de clase y familias CWE-22 y CWE-95, a partir de la prueba libre & 19/10/2026 \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -145,7 +150,15 @@ El desarrollo se apartó del plan en dos aspectos. El primero es el
 alcance: el análisis entre archivos, la versión que se ejecuta en el
 navegador y la familia CWE-943 no figuraban en el alcance del
 capítulo~\ref{cap:metodologia} y se incorporaron durante el desarrollo,
-lo que dio origen al riesgo R-03 del capítulo~\ref{cap:riesgos}. El
+lo que dio origen al riesgo R-03 del capítulo~\ref{cap:riesgos}. Ese
+riesgo se materializó después del cierre de la lista de mejoras del 13
+de octubre, cuando la prueba libre descripta en la
+sección~\ref{sec:validacion-usuarios} reportó un falso positivo, un
+falso negativo y dos hallazgos clasificados en una familia equivocada; se
+decidió corregirlos por tratarse de errores del analizador observados
+por un usuario y no de funciones nuevas. Las mediciones de este capítulo
+corresponden a la versión del 24 de septiembre y no incluyen esos
+cambios. El
 segundo es el modo de ejecución: el diseño preveía la base de datos de
 grafos como motor principal, y el sistema final resuelve la detección por
 defecto con un recorrido en memoria, dejando Neo4j como alternativa
@@ -169,16 +182,27 @@ del motor cubren a ambas.
 El sistema se encuentra publicado en \url{https://graph-sast.vercel.app/}
 y su código fuente en el repositorio indicado en el
 anexo~\ref{anx:repositorios}. La versión que corresponde a esta entrega
-se identifica con la etiqueta \completar{entrega-7} del repositorio. Las
+se identifica con la etiqueta \texttt{entrega-7} del repositorio, y las
+mediciones de este capítulo, con el commit \texttt{36fe433}. Las
 capturas del sistema en funcionamiento se presentan en el
 capítulo~\ref{cap:marco-tecnologico}: la detección de un recorrido
 vulnerable, el descarte del mismo recorrido saneado, el panel de
 métricas y el análisis de un proyecto cargado como carpeta, en el que el
 hallazgo cruza tres archivos.
 
-\completar{Agregar una captura del caso A de la validación con usuarios
-cargado en la versión publicada, con el camino entre los dos archivos
-resaltado.}
+La figura~\ref{fig:caso-a} muestra el caso A de la validación con
+usuarios analizado en la versión web: el camino resaltado parte del
+parámetro \texttt{req} en \texttt{rutas.js}, pasa por
+\texttt{armarFiltro} y llega a la consulta de \texttt{pedidos.js}, y el
+panel de resultado explica el hallazgo paso a paso. El endpoint saneado
+\texttt{verCliente} no produce hallazgo.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figuras/caso-a.png}
+    \caption{Caso A de la validación con usuarios analizado en la versión web: el camino de la inyección SQL cruza dos archivos y el panel de resultado lo explica}
+    \label{fig:caso-a}
+\end{figure}
 
 % -------------------------------------------------------------
 \section{Pruebas técnicas}\label{sec:pruebas}
@@ -190,10 +214,15 @@ La suite automatizada comprende 247 pruebas en 27 archivos, ejecutadas
 con Vitest: 219 corresponden al motor y 28 a la interfaz web. La
 tabla~\ref{tab:suite} las agrupa por etapa del procesamiento. En la
 ejecución del 24 de septiembre de 2026 todas las pruebas resultaron
-satisfactorias. La paridad entre el motor Cypher y el recorrido en
-memoria (RF-10) no forma parte de la suite, porque requiere una instancia
-activa de Neo4j. \completar{Resultado de la verificación de paridad con
-Neo4j sobre el banco sintético.}
+satisfactorias. En esa versión, la paridad entre el motor Cypher y el
+recorrido en memoria (RF-10) no formaba parte de la suite, porque
+requiere una instancia activa de Neo4j. Se incorporó el 11 de octubre
+como prueba de integración: ejecuta los 43 casos del banco sintético con
+los dos motores sobre una instancia real de Neo4j 5 Community y exige
+los mismos hallazgos. Desde entonces corre en el flujo de integración
+continua sobre cada cambio y obtiene resultados idénticos, lo que da por
+cumplido el criterio de RF-10. Al cierre del desarrollo la suite
+comprende 444 pruebas (sección~\ref{sec:n4.7.1}).
 
 \begin{table}[H]
     \centering
@@ -581,12 +610,19 @@ se reportó como inyección de comandos, porque coincide por nombre con el
 destino \texttt{exec} del catálogo. El banco sintético no detectó el
 problema porque sus casos engañosos usan nombres que contienen al de un
 destino, como \texttt{myExecutor}, y no el mismo nombre invocado sobre
-otro objeto. \completar{Estado de la corrección: calificar el destino por
-el módulo del que se importa (riesgo R-04).}
+otro objeto. La corrección se incorporó el 10 de octubre, posterior a
+las mediciones de este capítulo: cada destino se califica por el módulo
+del que se importa o por el objeto receptor, de modo que \texttt{exec}
+solo es sensible cuando proviene de \texttt{child\_process} y
+\texttt{regex.exec(x)} deja de reportarse. Desde entonces, el análisis
+del propio repositorio no produce hallazgos (riesgo R-04).
 
-\paragraph{Cobertura del análisis entre archivos.} El dato se sigue entre
-archivos solo cuando la función invocada se declara con
-\texttt{function} y se importa con módulos ES y ruta relativa. Dentro de
+\paragraph{Cobertura del análisis entre archivos.} En la versión medida,
+el dato se seguía entre archivos solo cuando la función invocada se
+declaraba con \texttt{function} y se importaba con módulos ES y ruta
+relativa; desde el 10 de octubre se siguen también las funciones flecha,
+los métodos de clase, \texttt{require} y los alias de rutas
+(sección~\ref{sec:n4.2.5}). Dentro de
 un mismo archivo, en cambio, el banco sintético incluye casos con
 funciones flecha y con un método de clase que se detectan correctamente.
 La limitación afecta, por lo tanto, a las aplicaciones Express
