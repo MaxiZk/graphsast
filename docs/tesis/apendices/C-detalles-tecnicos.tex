@@ -59,11 +59,12 @@ capítulo~\ref{cap:resultados}.
 
 \section{Catálogo de detección}
 
-El catálogo se compone de cuatro archivos JSON, uno por familia, en la
-carpeta \texttt{catalog/} del repositorio. Cada archivo declara los
-orígenes, los destinos sensibles y los saneamientos de la familia; su
-contenido se resume en la tabla de debilidades del
-capítulo~\ref{cap:marco-tecnologico}.
+El catálogo se compone de un archivo JSON por familia en la carpeta
+\texttt{catalog/} del repositorio: cuatro en la versión medida y seis al
+cierre del desarrollo. Cada archivo declara los orígenes, los destinos
+sensibles y los saneamientos de la familia, y los textos de riesgo,
+ataque y corrección que muestra la interfaz; su contenido se resume en
+la tabla~\ref{tab:catalogo}.
 
 \section{Reproducción de los resultados}
 
@@ -117,6 +118,7 @@ equipo. La instancia local se levanta con \texttt{npm run neo4j:up}.
         \texttt{NEO4J\_USER} & Usuario de la instancia & \texttt{neo4j} \\
         \texttt{NEO4J\_PASSWORD} & Contraseña de la instancia & La de desarrollo de \texttt{docker-compose.yml} \\
         \texttt{CVE\_JSON} & Archivo donde la validación con advisories escribe el informe en JSON & Sin definir \\
+        \texttt{ANTHROPIC\_API\_KEY} & Clave de la API de Anthropic, configurada solo en la función de servidor del asistente; sin ella el asistente responde que no está disponible y el resto de la aplicación funciona igual & Sin definir \\
         \bottomrule
     \end{tabularx}
 \end{table}
