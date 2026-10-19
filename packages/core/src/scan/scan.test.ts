@@ -147,6 +147,51 @@ describe("discoverFiles con .gitignore", () => {
   });
 });
 
+describe("discoverFiles con .graphsastignore", () => {
+  let repo: string;
+  const rel = (files: string[]) => files.map((f) => path.relative(repo, f).split(path.sep).join("/")).sort();
+
+  beforeAll(() => {
+    repo = mkdtempSync(path.join(tmpdir(), "graphsast-ignore-"));
+    mkdirSync(path.join(repo, ".git"));
+    mkdirSync(path.join(repo, "docs", "casos"), { recursive: true });
+    mkdirSync(path.join(repo, "src"), { recursive: true });
+    writeFileSync(path.join(repo, ".gitignore"), "*.local.ts\n");
+    writeFileSync(path.join(repo, ".graphsastignore"), "docs/casos/\n*.test.ts\n!src/app.local.ts\n");
+    for (const f of [
+      "src/app.ts",
+      "src/app.test.ts",
+      "src/app.local.ts",
+      "src/otro.local.ts",
+      "docs/casos/vulnerable.js",
+    ]) {
+      writeFileSync(path.join(repo, f), "export const x = 1;\n");
+    }
+  });
+
+  afterAll(() => rmSync(repo, { recursive: true, force: true }));
+
+  it("excluye lo que lista, sin tocar git, y puede re-incluir lo que git ignora", () => {
+    expect(rel(discoverFiles(repo))).toEqual(["src/app.local.ts", "src/app.ts"]);
+  });
+
+  it("vale también al escanear una subcarpeta del repositorio", () => {
+    expect(rel(discoverFiles(path.join(repo, "src")))).toEqual(["src/app.local.ts", "src/app.ts"]);
+  });
+
+  it("una carpeta excluida que se pide explícitamente se analiza", () => {
+    expect(rel(discoverFiles(path.join(repo, "docs", "casos")))).toEqual(["docs/casos/vulnerable.js"]);
+  });
+
+  it("gitignore: false no lo desactiva: es configuración de GraphSAST", () => {
+    expect(rel(discoverFiles(repo, { gitignore: false }))).toEqual([
+      "src/app.local.ts",
+      "src/app.ts",
+      "src/otro.local.ts",
+    ]);
+  });
+});
+
 describe("assertReadableTarget", () => {
   it("acepta archivos y carpetas existentes", () => {
     expect(() => assertReadableTarget(root)).not.toThrow();

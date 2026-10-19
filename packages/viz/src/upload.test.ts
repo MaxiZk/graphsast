@@ -104,6 +104,26 @@ describe("tsconfig y .gitignore del proyecto", () => {
     expect(describeSelection(selection)).toContain("3 excluidos por .gitignore");
   });
 
+  it("un .graphsastignore excluye del análisis, con su propio conteo", async () => {
+    const files = [
+      withText("repo/.gitignore", "*.log.js\n"),
+      withText("repo/.graphsastignore", "docs/casos/\n*.test.ts\n"),
+      upload("repo/src/a.ts"),
+      upload("repo/src/a.test.ts"),
+      upload("repo/docs/casos/vulnerable.js"),
+      upload("repo/src/debug.log.js"),
+    ];
+    const selection = selectUploads(
+      files,
+      await gitignoreFilter(files),
+      await gitignoreFilter(files, ".graphsastignore"),
+    );
+    expect(selection.accepted.map((u) => u.path)).toEqual(["repo/src/a.ts"]);
+    expect(selection.gitignored).toBe(1);
+    expect(selection.graphsastIgnored).toBe(2);
+    expect(describeSelection(selection)).toContain("2 excluidos por .graphsastignore");
+  });
+
   it("sin .gitignore no se excluye nada", async () => {
     const files = [upload("app/src/a.ts")];
     expect(selectUploads(files, await gitignoreFilter(files)).gitignored).toBe(0);

@@ -1,5 +1,5 @@
 import cytoscape, { type Core } from "cytoscape";
-import { VERSION } from "@graphsast/core/browser";
+import { GRAPHSAST_IGNORE_FILE, VERSION } from "@graphsast/core/browser";
 import type {
   AnalysisPayload,
   IRGraph,
@@ -816,10 +816,11 @@ function renderReading() {
     readingEl.textContent = "";
     return;
   }
-  readingEl.textContent = describeNoFinding(
-    lastRoles.sourceIds.length,
-    lastRoles.sinkIds.length,
-  );
+  // En un proyecto, los totales del proyecto, igual que el veredicto: el grafo
+  // dibujado es el de un archivo y contaría otra cosa.
+  readingEl.textContent = mode === "project" && project
+    ? describeNoFinding(project.sources, project.sinks)
+    : describeNoFinding(lastRoles.sourceIds.length, lastRoles.sinkIds.length);
 }
 
 function renderFindings() {
@@ -1133,7 +1134,11 @@ function showProject() {
 }
 
 async function scanUploads(uploads: UploadedFile[]) {
-  const selection = selectUploads(uploads, await gitignoreFilter(uploads));
+  const selection = selectUploads(
+    uploads,
+    await gitignoreFilter(uploads),
+    await gitignoreFilter(uploads, GRAPHSAST_IGNORE_FILE),
+  );
   selectionSummary.hidden = false;
   selectionSummary.textContent = describeSelection(selection);
   if (selection.accepted.length === 0) {

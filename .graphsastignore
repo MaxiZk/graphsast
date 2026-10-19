@@ -1,0 +1,11 @@
+# Rutas que GraphSAST no analiza al escanear este repositorio (CLI y web).
+# Misma sintaxis que .gitignore. Los archivos siguen en git; solo quedan fuera
+# del análisis. Un archivo o una carpeta que se piden explícitamente se
+# analizan igual: `graphsast scan docs/validacion/h3/caso-a`.
+
+# Casos vulnerables a propósito para la validación de H3: cada uno tiene que
+# dar exactamente un hallazgo (docs/validacion/h3/protocolo.md).
+docs/validacion/h3/
+
+# Tests: arman procesos y datos de prueba, no reciben entradas de usuarios.
+*.test.ts
