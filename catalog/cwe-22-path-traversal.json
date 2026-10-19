@@ -1,0 +1,172 @@
+{
+  "cwe": 22,
+  "name": "Path Traversal",
+  "description": "El dato del usuario arma la ruta de un archivo: con ../ sale de la carpeta prevista y lee, escribe o borra cualquier archivo al que el servidor tenga acceso.",
+  "attack": "Si el dato es ../../etc/passwd, una ruta como './files/' + dato apunta a /etc/passwd y el servidor devuelve ese archivo.",
+  "fix": "Quedate solo con el nombre del archivo (path.basename(dato)), o resolvé la ruta y rechazala si sale de la carpeta permitida: path.resolve(base, dato).startsWith(base + path.sep). Si los archivos posibles son pocos, validá contra esa lista.",
+  "requireCatalogSource": true,
+  "sources": [
+    "req.query",
+    "req.body",
+    "req.params",
+    "req.headers",
+    "req.cookies",
+    "request.query",
+    "request.body",
+    "request.params",
+    "request.headers",
+    "ctx.query",
+    "ctx.params",
+    "ctx.request",
+    "ctx.headers",
+    "@Body",
+    "@Param",
+    "@Query",
+    "@Headers",
+    "@Req",
+    "@Request"
+  ],
+  "sinks": [
+    {
+      "callee": "readFileSync",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "readFile",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "writeFileSync",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "writeFile",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "appendFileSync",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "appendFile",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "createReadStream",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "createWriteStream",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "unlinkSync",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "fs.unlink",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "fs.promises.unlink",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "rmSync",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "fs.rm",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "fs.promises.rm",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "rmdirSync",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "fs.rmdir",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "readdirSync",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "fs.readdir",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "fs.promises.readdir",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "openSync",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "fs.open",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "fs.promises.open",
+      "args": [
+        0
+      ]
+    }
+  ],
+  "sanitizers": [
+    "path.basename",
+    "basename",
+    "sanitize",
+    "sanitizeFilename",
+    "parseInt",
+    "parseFloat",
+    "Number"
+  ]
+}

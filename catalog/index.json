@@ -4,6 +4,8 @@
     "cwe-89-sqli.json",
     "cwe-78-cmdi.json",
     "cwe-79-xss.json",
-    "cwe-943-nosqli.json"
+    "cwe-943-nosqli.json",
+    "cwe-22-path-traversal.json",
+    "cwe-95-code-injection.json"
   ]
 }

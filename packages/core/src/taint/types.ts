@@ -13,6 +13,11 @@ export interface TaintRule {
   args?: readonly number[];
   /** Solo sinks: largo máximo del camino para esta familia (`CweCatalogEntry.maxDepth`). */
   maxDepth?: number;
+  /**
+   * Solo sinks: de qué sources se aceptan caminos, si la familia los restringe
+   * (`CweCatalogEntry.requireCatalogSource`).
+   */
+  sourceFilter?: (node: IRNode) => boolean;
 }
 
 export interface TaintFinding {

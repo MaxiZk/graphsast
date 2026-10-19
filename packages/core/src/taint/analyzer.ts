@@ -25,7 +25,18 @@ export interface TaintAnnotations {
    * Sinks: CWE de la primera regla que los reconoce, argumentos peligrosos y
    * largo máximo del camino si la familia lo fija.
    */
-  sinks: Map<string, { cwe?: number; args?: readonly number[]; maxDepth?: number }>;
+  sinks: Map<string, {
+    cwe?: number;
+    args?: readonly number[];
+    maxDepth?: number;
+    /** Solo cuentan caminos desde una entrada del catálogo (`catalogSourceIds`). */
+    catalogSourceOnly?: boolean;
+  }>;
+  /**
+   * Nodos que son entrada según el catálogo (`req`, `@Body()`…), para los
+   * sinks con `catalogSourceOnly`. Vacío si ninguna familia lo pide.
+   */
+  catalogSourceIds: Set<string>;
   /**
    * Sanitizers: CWE de cada regla que los reconoce (`undefined` = regla sin
    * CWE, vale para todos los sinks).
@@ -44,6 +55,10 @@ export function annotateTaint(graph: IRGraph, rules: TaintRule[]): TaintAnnotati
   const sanitizerRules = rules.filter((r) => r.kind === "sanitizer");
   const sinks: TaintAnnotations["sinks"] = new Map();
   const sanitizers: TaintAnnotations["sanitizers"] = new Map();
+  // Todas las familias que restringen las entradas usan el mismo criterio
+  // (las entradas del catálogo): alcanza con el filtro de cualquiera.
+  const sourceFilter = sinkRules.find((r) => r.sourceFilter)?.sourceFilter;
+  const catalogSourceIds = new Set<string>();
   for (const node of graph.nodes) {
     const sink = sinkRules.find((r) => r.match(node));
     if (sink) {
@@ -51,12 +66,14 @@ export function annotateTaint(graph: IRGraph, rules: TaintRule[]): TaintAnnotati
         cwe: sink.cwe,
         ...(sink.args ? { args: sink.args } : {}),
         ...(sink.maxDepth !== undefined ? { maxDepth: sink.maxDepth } : {}),
+        ...(sink.sourceFilter ? { catalogSourceOnly: true } : {}),
       });
     }
     const cwes = sanitizerRules.filter((r) => r.match(node)).map((r) => r.cwe);
     if (cwes.length > 0) sanitizers.set(node.id, cwes);
+    if (sourceFilter?.(node)) catalogSourceIds.add(node.id);
   }
-  return { sinks, sanitizers };
+  return { sinks, sanitizers, catalogSourceIds };
 }
 
 /**
@@ -132,7 +149,10 @@ export function analyzeTaint(
       maxDepth: config.maxDepth ?? spec.maxDepth,
       propagateEdges: config.propagateEdges,
     };
-    for (const source of sources) {
+    const allowed = spec.catalogSourceOnly
+      ? sources.filter((s) => annotations.catalogSourceIds.has(s.id))
+      : sources;
+    for (const source of allowed) {
       const path = findPath(
         graph,
         source.id,

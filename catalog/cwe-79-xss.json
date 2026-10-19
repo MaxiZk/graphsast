@@ -76,6 +76,8 @@
     "he.escape",
     "parseInt",
     "parseFloat",
-    "Number"
+    "Number",
+    "readFileSync",
+    "readFile"
   ]
 }

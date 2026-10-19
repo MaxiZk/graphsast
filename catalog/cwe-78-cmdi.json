@@ -27,12 +27,6 @@
   ],
   "sinks": [
     {
-      "callee": "eval",
-      "args": [
-        0
-      ]
-    },
-    {
       "callee": "exec",
       "bare": true,
       "args": [
@@ -132,24 +126,6 @@
     },
     {
       "callee": "Bun.spawnSync",
-      "args": [
-        0
-      ]
-    },
-    {
-      "callee": "vm.runInNewContext",
-      "args": [
-        0
-      ]
-    },
-    {
-      "callee": "vm.runInThisContext",
-      "args": [
-        0
-      ]
-    },
-    {
-      "callee": "vm.runInContext",
       "args": [
         0
       ]

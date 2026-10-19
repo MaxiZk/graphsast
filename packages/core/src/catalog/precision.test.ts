@@ -102,3 +102,51 @@ describe("sinks nuevos del catálogo", () => {
     expect(cwesOf(code)).toEqual([cwe]);
   });
 });
+
+describe("CWE-22 Path Traversal", () => {
+  it("la ruta de un request llega a la lectura del archivo", () => {
+    expect(cwesOf(`app.get("/f", (req, res) => {
+      res.send(fs.readFileSync("./files/" + req.query.f));
+    });`)).toEqual([22]);
+  });
+
+  it("leer el archivo no es XSS: lo que se envía es su contenido, no el dato", () => {
+    expect(cwesOf(`app.get("/f", (req, res) => {
+      res.send(fs.readFileSync("./files/" + req.query.f));
+    });`)).not.toContain(79);
+  });
+
+  it("path.basename y una validación del nombre cortan el camino", () => {
+    expect(cwesOf(`app.get("/f", (req, res) => {
+      res.send(fs.readFileSync("./files/" + path.basename(req.query.f)));
+    });`)).toEqual([]);
+    expect(cwesOf(`app.get("/f", (req, res) => {
+      if (!/^[\\w-]+\\.txt$/.test(req.query.f)) return res.status(400).end();
+      res.send(fs.readFileSync("./files/" + req.query.f));
+    });`)).toEqual([]);
+  });
+
+  it("solo cuenta entradas del catálogo: un script que lee la ruta que recibe no es hallazgo", () => {
+    expect(cwesOf(`function leer(nombre) { return fs.readFileSync("./files/" + nombre); }`)).toEqual([]);
+    // Las demás familias siguen tratando a cualquier parámetro como entrada.
+    expect(cwesOf(`function correr(cmd) { exec(cmd); }`)).toEqual([78]);
+  });
+
+  it("escritura y borrado también; el contenido que se escribe no", () => {
+    expect(cwesOf(`app.post("/f", (req, res) => { fs.writeFileSync(req.body.name, "x"); });`)).toEqual([22]);
+    expect(cwesOf(`app.post("/f", (req, res) => { fs.writeFileSync("./log.txt", req.body.texto); });`)).toEqual([]);
+    expect(cwesOf(`app.delete("/f", (req, res) => { fs.unlinkSync("./up/" + req.params.n); });`)).toEqual([22]);
+  });
+});
+
+describe("CWE-95 Code Injection", () => {
+  it("eval, new Function y vm son inyección de código, no de comandos", () => {
+    expect(cwesOf(`app.get("/e", (req, res) => { eval(req.query.expr); });`)).toEqual([95]);
+    expect(cwesOf(`app.get("/e", (req, res) => { const f = new Function("a", req.query.body); });`)).toEqual([95]);
+    expect(cwesOf(`app.get("/e", (req, res) => { vm.runInNewContext(req.query.code); });`)).toEqual([95]);
+  });
+
+  it("Number() corta el camino", () => {
+    expect(cwesOf(`app.get("/e", (req, res) => { eval("1 + " + Number(req.query.n)); });`)).toEqual([]);
+  });
+});

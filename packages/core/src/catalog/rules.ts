@@ -60,7 +60,11 @@ export function callMatchesSink(
  * propio no es el `.save` de Mongoose. El dato entra a la función y el sink,
  * si lo hay, está adentro.
  */
-function sinkRule(entry: CweCatalogEntry, sink: string | SinkSpec): TaintRule {
+function sinkRule(
+  entry: CweCatalogEntry,
+  sink: string | SinkSpec,
+  catalogSource: TaintRule,
+): TaintRule {
   const spec = sinkSpecOf(sink);
   const receiverPattern = spec.receiver === undefined ? null : new RegExp(spec.receiver);
   return {
@@ -70,6 +74,7 @@ function sinkRule(entry: CweCatalogEntry, sink: string | SinkSpec): TaintRule {
     cweName: entry.name,
     ...(spec.args ? { args: spec.args } : {}),
     ...(entry.maxDepth !== undefined ? { maxDepth: entry.maxDepth } : {}),
+    ...(entry.requireCatalogSource ? { sourceFilter: catalogSource.match } : {}),
     match: (n): n is IRCall =>
       n.kind === "Call"
       && n.resolution !== "exact"
@@ -132,16 +137,28 @@ function sourceRule(bundle: CatalogBundle, mode: SourceMode): TaintRule {
   };
 }
 
+/**
+ * Una validación que corta antes de usar el dato (ver `ir/guards.ts`) protege
+ * contra todas las familias: lo que pasa la regex anclada o la lista
+ * permitida no trae los caracteres que hacen falta para inyectar.
+ */
+const GUARD_RULE: TaintRule = {
+  id: "guard-validation",
+  kind: "sanitizer",
+  match: (n) => n.kind === "Call" && (n as IRCall).validates === true,
+};
+
 /** Reglas base + catálogo CWE externo (ADR-4). */
 export function rulesFromCatalog(
   bundle: CatalogBundle,
   sourceMode: SourceMode = "params",
 ): TaintRule[] {
-  const rules: TaintRule[] = [sourceRule(bundle, sourceMode)];
+  const rules: TaintRule[] = [sourceRule(bundle, sourceMode), GUARD_RULE];
+  const catalogSource = sourceRule(bundle, "catalog");
 
   for (const entry of bundle.entries) {
     for (const sink of entry.sinks) {
-      rules.push(sinkRule(entry, sink));
+      rules.push(sinkRule(entry, sink, catalogSource));
     }
     for (const pattern of entry.sanitizers) {
       rules.push(sanitizerRule(entry, pattern));
@@ -155,6 +172,7 @@ export function labelsFromCatalog(bundle: CatalogBundle): CatalogLabels {
   const labels: CatalogLabels = {
     "param-any": "Parámetros de función (excepto res/next)",
     "param-catalog": "Parámetros declarados como source en el catálogo",
+    "guard-validation": "Validación antes del uso (regex anclada, lista permitida, Number.isInteger, validator.isX)",
   };
   for (const entry of bundle.entries) {
     for (const sink of entry.sinks) {

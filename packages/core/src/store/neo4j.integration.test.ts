@@ -81,6 +81,27 @@ describe.skipIf(!enabled)("motor Neo4j (base real)", () => {
     expect((await analyzeWithEngine(graph, { driver, taint: { rules: shortSql } })).findings).toEqual([]);
   });
 
+  it("validaciones, campos de clase y entradas solo del catálogo, como el motor en memoria", async () => {
+    const cases = [
+      // Validación que corta antes del uso: sin hallazgo.
+      `app.get("/b", (req, res) => {
+        if (!/^[a-z]+$/.test(req.query.q)) return res.end();
+        exec("ls " + req.query.q);
+      });`,
+      // El dato pasa por un campo de la clase.
+      `class Svc { constructor(x) { this.x = x; } go() { exec("echo " + this.x); } }
+      app.get("/g", (req, res) => { new Svc(req.body.v).go(); });`,
+      // CWE-22 solo desde una entrada del catálogo: req sí, el parámetro suelto no.
+      `app.get("/f", (req, res) => { res.send(fs.readFileSync("./files/" + req.query.f)); });
+      function leer(nombre) { return fs.readFileSync("./files/" + nombre); }`,
+    ];
+    for (const code of cases) {
+      const graph = analyzeGraph(code, "nuevo.js");
+      const neo = await analyzeWithEngine(graph, { driver });
+      expect(pairs(neo.findings), code).toEqual(pairs(analyzeTaint(graph)));
+    }
+  });
+
   it("no deja nodos del análisis en la base", async () => {
     const graph = analyzeGraph("function h(req) { db.query(req.body.q); }", "left.ts");
     await analyzeWithEngine(graph, { driver });

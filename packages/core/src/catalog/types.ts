@@ -39,6 +39,14 @@ export interface CweCatalogEntry {
    * Sin esto, 15. `--max-depth` lo reemplaza para todas las familias.
    */
   maxDepth?: number;
+  /**
+   * Solo cuentan los caminos que empiezan en una entrada del catálogo
+   * (`req.query`, `@Body()`…), también con `--sources params`. Para familias
+   * donde leer un parámetro es lo normal fuera de un servidor: que un script
+   * lea el archivo cuya ruta recibe no es Path Traversal; que lo haga con la
+   * ruta de un request, sí.
+   */
+  requireCatalogSource?: boolean;
 }
 
 export interface CatalogManifest {
