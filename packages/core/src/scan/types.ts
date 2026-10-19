@@ -57,6 +57,12 @@ export interface ScanResult {
   totals: ScanTotals;
 }
 
+/**
+ * Archivo con sintaxis .gitignore para excluir rutas del análisis sin
+ * sacarlas de git: casos vulnerables a propósito, fixtures, tests.
+ */
+export const GRAPHSAST_IGNORE_FILE = ".graphsastignore";
+
 export interface ScanOptions {
   /** Extensiones a incluir (con punto). */
   extensions?: string[];
@@ -64,7 +70,10 @@ export interface ScanOptions {
   ignore?: string[];
   /** Patrones con sintaxis .gitignore, relativos a cada carpeta escaneada. */
   exclude?: string[];
-  /** Respetar los .gitignore del proyecto analizado (default: true). */
+  /**
+   * Respetar los .gitignore del proyecto analizado (default: true). Los
+   * `.graphsastignore` se respetan siempre.
+   */
   gitignore?: boolean;
   /** Omitir archivos mayores a este tamaño (bytes). */
   maxFileBytes?: number;

@@ -14,6 +14,7 @@ import {
   DEFAULT_EXTENSIONS,
   DEFAULT_IGNORE,
   DEFAULT_MAX_FILE_BYTES,
+  GRAPHSAST_IGNORE_FILE,
   type ScanOptions,
 } from "./types.js";
 
@@ -63,14 +64,28 @@ function isIgnored(absPath: string, root: string, ignore: string[]): boolean {
   return segments.some((seg) => ignore.includes(seg));
 }
 
-function readGitignore(dir: string): IgnoreScope | null {
-  let text: string;
+function readText(file: string): string | null {
   try {
-    text = readFileSync(path.join(dir, ".gitignore"), "utf8");
+    return readFileSync(file, "utf8");
   } catch {
     return null;
   }
-  return { base: dir, rules: ignore().add(text) };
+}
+
+/**
+ * Reglas de exclusión de una carpeta: su `.gitignore` (si `gitignore`) y su
+ * `.graphsastignore`, que se lee siempre porque es configuración de GraphSAST
+ * y no del control de versiones. Van en ese orden, así un `!patrón` del
+ * `.graphsastignore` puede volver a incluir lo que git ignora. Cada archivo es
+ * un scope aparte: ver `discoverFiles`.
+ */
+function readIgnoreScopes(dir: string, gitignore: boolean): IgnoreScope[] {
+  return [
+    gitignore ? readText(path.join(dir, ".gitignore")) : null,
+    readText(path.join(dir, GRAPHSAST_IGNORE_FILE)),
+  ]
+    .filter((t): t is string => t !== null)
+    .map((text) => ({ base: dir, rules: ignore().add(text) }));
 }
 
 /** Veredicto de un scope: true excluye, false re-incluye (`!patrón`), null no opina. */
@@ -86,7 +101,7 @@ function scopeVerdict(scope: IgnoreScope, abs: string, isDir: boolean): boolean 
   return null;
 }
 
-/** Como git: los .gitignore más profundos pisan a los de arriba. */
+/** Como git: los .gitignore (y .graphsastignore) más profundos pisan a los de arriba. */
 function excludedByGitignore(abs: string, isDir: boolean, scopes: IgnoreScope[]): boolean {
   let excluded = false;
   for (const scope of scopes) {
@@ -97,10 +112,10 @@ function excludedByGitignore(abs: string, isDir: boolean, scopes: IgnoreScope[])
 }
 
 /**
- * .gitignore de los ancestros de `dir`, desde la raíz del repositorio hacia
+ * Reglas de los ancestros de `dir`, desde la raíz del repositorio hacia
  * abajo. Fuera de un repositorio git no se sube: solo cuentan los de adentro.
  */
-function ancestorScopes(dir: string): IgnoreScope[] {
+function ancestorScopes(dir: string, gitignore: boolean): IgnoreScope[] {
   const chain: string[] = [];
   let current = dir;
   for (;;) {
@@ -112,8 +127,7 @@ function ancestorScopes(dir: string): IgnoreScope[] {
   }
   return chain
     .reverse()
-    .map(readGitignore)
-    .filter((s): s is IgnoreScope => s !== null);
+    .flatMap((d) => readIgnoreScopes(d, gitignore));
 }
 
 function walk(
@@ -123,8 +137,8 @@ function walk(
   ctx: WalkContext,
   out: string[],
 ): void {
-  const own = ctx.gitignore ? readGitignore(dir) : null;
-  const active = own ? [...scopes, own] : scopes;
+  const own = readIgnoreScopes(dir, ctx.gitignore);
+  const active = own.length > 0 ? [...scopes, ...own] : scopes;
 
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
@@ -158,8 +172,9 @@ function walk(
  * Descubre archivos analizables bajo `target` (archivo o directorio).
  * Devuelve rutas absolutas, ordenadas para que el escaneo sea determinista.
  *
- * Un archivo pasado explícitamente se analiza aunque un .gitignore lo excluya:
- * las exclusiones aplican al recorrer carpetas.
+ * Un archivo o una carpeta pasados explícitamente se analizan aunque un
+ * .gitignore o un .graphsastignore de más arriba los excluya: las exclusiones
+ * aplican a lo que se encuentra al recorrer.
  */
 export function discoverFiles(
   target: string,
@@ -194,7 +209,12 @@ export function discoverFiles(
   };
 
   const out: string[] = [];
-  walk(root, root, ctx.gitignore ? ancestorScopes(root) : [], ctx, out);
+  // Lo que se pide explícitamente se analiza: un archivo de reglas de más
+  // arriba que excluye la propia carpeta pedida no cuenta para este escaneo
+  // (escanear `docs/casos` analiza los casos aunque la raíz los excluya).
+  const ancestors = ancestorScopes(root, ctx.gitignore)
+    .filter((scope) => scopeVerdict(scope, root, true) !== true);
+  walk(root, root, ancestors, ctx, out);
   return out.sort();
 }
 

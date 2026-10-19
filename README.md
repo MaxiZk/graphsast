@@ -149,7 +149,17 @@ npx graphsast scan . --exclude "**/*.test.ts" --exclude fixtures/
 ```
 
 `--exclude` usa la sintaxis de `.gitignore`, relativa a la carpeta escaneada.
-Un archivo pasado explícitamente se analiza aunque un `.gitignore` lo excluya.
+
+Para que una exclusión quede guardada en el proyecto sin tocar git, se usa un
+`.graphsastignore`, con la misma sintaxis que el `.gitignore` y el mismo
+alcance (vale para su carpeta y las de adentro). Lo respetan el CLI y la
+versión web, que muestra cuántos archivos dejó afuera. Este repositorio tiene
+uno: excluye los casos vulnerables a propósito de la validación
+(`docs/validacion/h3/`) y los tests.
+
+Un archivo o una carpeta pasados explícitamente se analizan aunque un
+`.gitignore` o un `.graphsastignore` de más arriba los excluyan:
+`graphsast scan docs/validacion/h3/caso-a` analiza el caso.
 
 ### Formatos de salida
 
@@ -297,7 +307,7 @@ El análisis corre en el navegador, en un Web Worker, con el mismo motor que el
 CLI (`@graphsast/core/browser`, sin Neo4j): se analizan los mismos archivos
 (`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx` de hasta 1 MB, fuera de
 `node_modules`, `dist`, `build` y demás carpetas excluidas, respetando los
-`.gitignore` subidos) y se siguen las llamadas entre archivos igual que en
+`.gitignore` y `.graphsastignore` subidos) y se siguen las llamadas entre archivos igual que en
 `scan`, con los alias de los `tsconfig.json`/`jsconfig.json` subidos.
 
 Sobre el grafo: búsqueda de nodos por nombre, código o `archivo:línea` (Enter

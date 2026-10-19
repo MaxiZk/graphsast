@@ -30,7 +30,9 @@ USO
   graphsast serve [--port <n>] [--root <carpeta>]
 
   Cada ruta puede ser un archivo o una carpeta; las carpetas se recorren
-  en forma recursiva respetando los .gitignore del proyecto. Las llamadas a
+  en forma recursiva respetando los .gitignore y los .graphsastignore del
+  proyecto (misma sintaxis; el segundo excluye del análisis sin tocar git).
+  Las llamadas a
   funciones importadas de otro archivo del escaneo se siguen (imports ES con
   rutas relativas hacia \`function\` declaradas).
 
