@@ -103,6 +103,14 @@ export interface IRCall extends IRNodeBase {
    * Permite reconocer un sink aunque el import tenga otro nombre local.
    */
   qualifiedCallee?: string;
+  /** `new X(...)`: el callee es la clase, y se resuelve a su constructor. */
+  isNew?: true;
+  /**
+   * La llamada valida el dato antes de usarlo (`/^[a-z]+$/.test(x)` en un
+   * `if` que corta si falla). Los usos protegidos por la validación pasan por
+   * este nodo, que vale como sanitizer para todas las familias.
+   */
+  validates?: true;
 }
 
 export type IRNode =

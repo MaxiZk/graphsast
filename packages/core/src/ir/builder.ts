@@ -7,6 +7,9 @@ import {
   type ArrowFunction,
   type FunctionExpression,
   type MethodDeclaration,
+  type ConstructorDeclaration,
+  type ClassDeclaration,
+  type ClassExpression,
   type VariableDeclaration,
   type ParameterDeclaration,
   VariableDeclarationKind,
@@ -16,7 +19,8 @@ import type {
   IRAssignment, FlowRef, Loc,
 } from "./types.js";
 import { EMPTY_FLOW } from "./types.js";
-import { flowSourcesOf } from "./expressions.js";
+import { flowSourcesOf, thisFieldOf } from "./expressions.js";
+import { collectGuards, type Guard } from "./guards.js";
 
 function locOf(node: Node, file: string): Loc {
   const sf = node.getSourceFile();
@@ -42,10 +46,17 @@ function callIdOf(call: Node, file: string): string {
   return idOf("Call", locOf(paren ?? call, file));
 }
 
+/**
+ * Validaciones del archivo que se está construyendo (ver `guards.ts`). Se
+ * fijan al empezar `buildIR` para no pasarlas por cada función que arma un
+ * flujo; `buildIR` es sincrónico y las limpia al terminar.
+ */
+let activeGuards: readonly Guard[] = [];
+
 /** Convierte el resultado del walker en una referencia serializable. */
 function flowRefOf(expr: Node | undefined, file: string): FlowRef {
   if (!expr) return { ...EMPTY_FLOW };
-  const { names, calls } = flowSourcesOf(expr);
+  const { names, calls } = flowSourcesOf(expr, activeGuards);
   return { names, callIds: calls.map((c) => callIdOf(c, file)) };
 }
 
@@ -53,7 +64,8 @@ export type FunctionLike =
   | FunctionDeclaration
   | ArrowFunction
   | FunctionExpression
-  | MethodDeclaration;
+  | MethodDeclaration
+  | ConstructorDeclaration;
 
 function isFunctionLike(node: Node): node is FunctionLike {
   return (
@@ -61,7 +73,14 @@ function isFunctionLike(node: Node): node is FunctionLike {
     || TsNode.isArrowFunction(node)
     || TsNode.isFunctionExpression(node)
     || TsNode.isMethodDeclaration(node)
+    || TsNode.isConstructorDeclaration(node)
   );
+}
+
+type ClassLike = ClassDeclaration | ClassExpression;
+
+function isClassLike(node: Node): node is ClassLike {
+  return TsNode.isClassDeclaration(node) || TsNode.isClassExpression(node);
 }
 
 /** Id del nodo Function que el IR le asigna a una declaración. */
@@ -90,10 +109,15 @@ const BLOCK_SCOPE_KINDS = new Set<SyntaxKind>([
   SyntaxKind.CatchClause,
 ]);
 
+/**
+ * Las clases también abren un ámbito: el de sus campos (`this.repo`), que ven
+ * todos sus métodos y ninguna otra clase.
+ */
 function isScopeNode(node: Node): boolean {
   return (
     TsNode.isSourceFile(node)
     || isFunctionLike(node)
+    || isClassLike(node)
     || BLOCK_SCOPE_KINDS.has(node.getKind())
   );
 }
@@ -177,6 +201,12 @@ function fnIdentityOf(fn: FunctionLike): { name: string; memberOf?: string } {
   const parent = fn.getParent();
 
   if (TsNode.isFunctionDeclaration(fn)) return { name: fn.getName() ?? "" };
+
+  // `new Svc(x)` se resuelve a `Svc.constructor` (ver `FunctionIndex.resolve`).
+  if (TsNode.isConstructorDeclaration(fn)) {
+    const owner = parent && isClassLike(parent) ? containerNameOf(parent) : "";
+    return { name: "constructor", memberOf: owner || undefined };
+  }
 
   if (TsNode.isMethodDeclaration(fn)) {
     const owner = parent && (TsNode.isClassDeclaration(parent)
@@ -336,7 +366,92 @@ function collectFunctionLikes(sourceFile: SourceFile): FunctionLike[] {
   for (const method of sourceFile.getDescendantsOfKind(SyntaxKind.MethodDeclaration)) {
     out.push(method);
   }
+  for (const ctor of sourceFile.getDescendantsOfKind(SyntaxKind.Constructor)) {
+    out.push(ctor);
+  }
   return out;
+}
+
+/** Clase que encierra al nodo, si `this` apunta a ella (no a un objeto literal). */
+function enclosingClass(node: Node): ClassLike | undefined {
+  return node.getFirstAncestor(isClassLike);
+}
+
+/**
+ * Un campo de clase se modela como una variable de la clase: `this.x = x` en
+ * el constructor la escribe y `this.x` en otro método la lee. Sin esto, el
+ * dato se perdía al guardarse en la instancia y el patrón servicio/repositorio
+ * (el dato entra por el constructor y se usa en un método) quedaba sin
+ * hallazgo.
+ *
+ * Se crea una variable por campo y por clase, en el ámbito de la clase: la
+ * ven todos sus métodos y ninguna otra clase. Las escrituras `this.x = ...`
+ * llegan como asignaciones comunes (ver `collectAssignments`); acá se suman
+ * los campos declarados con valor (`repo = crearRepo()`) y los parámetros con
+ * modificador de TypeScript (`constructor(private repo: Repo)`).
+ */
+function emitClassFields(
+  sourceFile: SourceFile,
+  file: string,
+  nodes: IRNode[],
+  assignments: IRAssignment[],
+): void {
+  const fields = new Map<ClassLike, Map<string, { at: Node; init?: Node }>>();
+  const note = (cls: ClassLike, name: string, at: Node, init?: Node) => {
+    let byName = fields.get(cls);
+    if (!byName) fields.set(cls, (byName = new Map()));
+    if (!byName.has(name)) byName.set(name, { at, init });
+  };
+
+  for (const cls of [
+    ...sourceFile.getDescendantsOfKind(SyntaxKind.ClassDeclaration),
+    ...sourceFile.getDescendantsOfKind(SyntaxKind.ClassExpression),
+  ]) {
+    for (const prop of cls.getProperties()) {
+      if (prop.isStatic()) continue;
+      const name = propertyNameText(prop.getNameNode());
+      if (name) note(cls, `this.${name}`, prop, prop.getInitializer());
+    }
+    for (const ctor of cls.getConstructors()) {
+      for (const param of ctor.getParameters()) {
+        if (!param.isParameterProperty()) continue;
+        const name = param.getName();
+        note(cls, `this.${name}`, param);
+        assignments.push({
+          target: `this.${name}`,
+          flow: { names: [name], callIds: [] },
+          ownerFnId: idOf("Function", locOf(ctor, file)),
+          scopePath: scopePathOf(param),
+        });
+      }
+    }
+  }
+
+  for (const bin of sourceFile.getDescendantsOfKind(SyntaxKind.BinaryExpression)) {
+    if (bin.getOperatorToken().getKind() !== SyntaxKind.EqualsToken) continue;
+    const field = thisFieldOf(bin.getLeft());
+    const cls = field ? enclosingClass(bin) : undefined;
+    if (field && cls) note(cls, field, bin.getLeft());
+  }
+
+  for (const [cls, byName] of fields) {
+    const scopePath = [...scopePathOf(cls), scopeIdOf(cls)];
+    for (const [name, { at, init }] of byName) {
+      const loc = locOf(at, file);
+      const initFlow = flowRefOf(init, file);
+      nodes.push({
+        id: idOf("Variable", loc),
+        kind: "Variable",
+        name,
+        code: at.getText(),
+        loc,
+        scopePath,
+        initText: init ? init.getText() : null,
+        initFlow: { names: [...initFlow.names], callIds: [...initFlow.callIds] },
+        ownerFnId: null,
+      } satisfies IRVariable);
+    }
+  }
 }
 
 /**
@@ -565,8 +680,18 @@ function qualifiedCalleeOf(callee: string, bindings: PackageBindings): string | 
  * sean únicos entre archivos y los hallazgos apunten al lugar correcto.
  */
 export function buildIR(sourceFile: SourceFile, fileName?: string): IRModule {
-  const file = fileName ?? sourceFile.getBaseName();
+  const guards = collectGuards(sourceFile);
+  activeGuards = guards;
+  try {
+    return buildModule(sourceFile, fileName ?? sourceFile.getBaseName(), guards);
+  } finally {
+    activeGuards = [];
+  }
+}
+
+function buildModule(sourceFile: SourceFile, file: string, guards: readonly Guard[]): IRModule {
   const nodes: IRNode[] = [];
+  const validators = new Set(guards.map((g) => g.call));
 
   for (const fn of collectFunctionLikes(sourceFile)) {
     emitFunction(fn, file, nodes);
@@ -612,10 +737,38 @@ export function buildIR(sourceFile: SourceFile, fileName?: string): IRModule {
     if (owner) irCall.thisOwner = owner;
     const qualified = qualifiedCalleeOf(irCall.callee, packages);
     if (qualified) irCall.qualifiedCallee = qualified;
+    if (validators.has(call)) irCall.validates = true;
+    nodes.push(irCall);
+  }
+
+  // `new X(args)`: un nodo Call para ligar los argumentos con el constructor
+  // de `X` (y para sinks como `new Function(code)`). El valor de la expresión
+  // sigue siendo transparente (ver `flowSourcesOf`).
+  for (const expr of sourceFile.getDescendantsOfKind(SyntaxKind.NewExpression)) {
+    const args = expr.getArguments() ?? [];
+    const callee = expr.getExpression().getText();
+    const irCall: IRCall = {
+      id: callIdOf(expr, file),
+      kind: "Call",
+      name: `new ${callee}`,
+      code: expr.getText(),
+      loc: locOf(expr, file),
+      scopePath: scopePathOf(expr),
+      callee,
+      argTexts: args.map((a) => a.getText()),
+      argFlows: args.map((a) => flowRefOf(a, file)),
+      receiverFlow: { ...EMPTY_FLOW },
+      ownerFnId: ownerFnIdOf(expr, file),
+      isNew: true,
+    };
+    const qualified = qualifiedCalleeOf(callee, packages);
+    if (qualified) irCall.qualifiedCallee = qualified;
     nodes.push(irCall);
   }
 
   emitPropertyWriteSinks(sourceFile, file, nodes);
 
-  return { file, nodes, assignments: collectAssignments(sourceFile, file) };
+  const assignments = collectAssignments(sourceFile, file);
+  emitClassFields(sourceFile, file, nodes, assignments);
+  return { file, nodes, assignments };
 }

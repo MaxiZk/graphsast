@@ -33,6 +33,8 @@ export const BUILTIN_METHOD_NAMES: ReadonlySet<string> = new Set([
   "listen", "next", "close", "destroy",
   // console
   "log", "info", "warn", "error", "debug", "trace",
+  // Un constructor se llama con `new`, no como método.
+  "constructor",
 ]);
 
 /** `a ?. b . c` → `a.b.c`: el texto del callee sin espacios ni `?.`. */
@@ -94,7 +96,8 @@ export class FunctionIndex {
    * 2. `this.m(...)` → el miembro `m` de la clase u objeto que encierra la
    *    llamada.
    * 3. `X.m(...)` con `X` una clase u objeto con nombre → su miembro `m`.
-   * 4. `algo.m(...)` con receptor desconocido (`this.repo.save()`,
+   * 4. `new X(...)` → el constructor de la clase `X`.
+   * 5. `algo.m(...)` con receptor desconocido (`this.repo.save()`,
    *    `svc.findOne()`) → el miembro `m` solo si es el único con ese nombre y
    *    no es un nombre de la biblioteca estándar. Es una heurística: sin tipos
    *    no se sabe qué hay en `algo`, pero un nombre único en todo el código
@@ -102,6 +105,11 @@ export class FunctionIndex {
    */
   resolve(call: IRCall): Resolution {
     const callee = normalizeCallee(call.callee);
+    // `new Svc(x)` → el constructor de `Svc`, si está en el código analizado.
+    if (call.isNew) {
+      const cls = callee.slice(callee.lastIndexOf(".") + 1);
+      return exactly(this.qualified.get(`${cls}.constructor`));
+    }
     const member = memberName(callee);
     if (member === null) return exactly(this.plain.get(callee));
 
