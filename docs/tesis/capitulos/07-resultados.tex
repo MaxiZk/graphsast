@@ -329,19 +329,32 @@ en el tutorial que incluye la aplicación, restringidas a las familias del
 catálogo. Se registró además si la operación sensible de cada una figura
 en el catálogo, para separar después las omisiones del catálogo de las
 del motor. Las tres invocaciones a \texttt{eval} se cuentan dentro de la
-familia CWE-78, donde el catálogo ubica esa operación, aunque NodeGoat
-las clasifica como inyección de JavaScript en el servidor (CWE-95). A
-partir de la retroalimentación descripta en la
-sección~\ref{sec:validacion-usuarios}, una versión posterior del
-catálogo separó \texttt{eval} en la familia CWE-95; como un hallazgo
-cuenta por archivo y línea, el cambio no altera los resultados de la
-tabla~\ref{tab:nodegoat}. Se
+familia CWE-78, donde el catálogo ubicaba esa operación al momento de la
+medición, aunque NodeGoat las clasifica como inyección de JavaScript en
+el servidor (CWE-95). Se
 analizó el repositorio completo, salvo las pruebas y las bibliotecas de
 terceros copiadas en \texttt{app/assets/vendor}: 2.032 líneas. Un
 hallazgo cuenta para una vulnerabilidad si está en el archivo del
 destino, dentro del rango de líneas etiquetado; los hallazgos sin
 etiqueta se revisaron a mano. El etiquetado completo se encuentra en el
 archivo \texttt{eval-nodegoat.json} del repositorio.
+
+\paragraph{Versión medida.} Los resultados de esta sección se
+obtuvieron el 24 de septiembre de 2026 con el commit \texttt{36fe433}
+del repositorio de GraphSAST, y se reproducen sin cambios desde ese
+commit con el comando del apéndice~\ref{apx:tecnicos}. Las versiones
+posteriores modifican el catálogo. A partir de la retroalimentación
+descripta en la sección~\ref{sec:validacion-usuarios}, \texttt{eval}
+pasó a la familia CWE-95; como un hallazgo cuenta por archivo y línea,
+ese cambio por sí solo no altera la tabla~\ref{tab:nodegoat}. La
+ampliación del catálogo del 10 de octubre, en cambio, agregó operaciones
+de MongoDB como \texttt{find}, \texttt{findOne} e \texttt{insertMany}.
+Con la versión del 19 de octubre, la línea de base detecta además NG-04
+(4 de 6) y GraphSAST mantiene las mismas tres detecciones, mientras que
+los hallazgos sin etiqueta pasan de uno a 9 en la línea de base y a 15
+en GraphSAST, casi todos sobre consultas \texttt{findOne}. Esos
+hallazgos no se etiquetaron ni se revisaron a mano, por lo que la
+lectura de esta sección se limita a la versión medida.
 
 \begin{table}[H]
     \centering
