@@ -34,10 +34,13 @@ si un analizador basado en grafos de flujo de datos detecta
 vulnerabilidades de arquitectura con mayor precisión y menos falsos
 positivos que las herramientas basadas en coincidencia de patrones de
 texto. La respuesta se organiza en torno a las tres hipótesis: H1 y H2
-se contrastan con el banco sintético, con OWASP NodeGoat y con una línea
-de base que usa el mismo catálogo sin seguir el flujo del dato; H3, con
-la validación con usuarios. Todas las cifras corresponden a la versión
-medida del 24 de septiembre (sección~\ref{sec:nodegoat}).
+se contrastan con el banco sintético, con OWASP NodeGoat, con siete
+repositorios de GitHub y con una línea de base que usa el mismo catálogo sin
+seguir el flujo del dato; H3, con la validación con usuarios. Las cifras
+del banco y de NodeGoat corresponden a la versión medida del 24 de
+septiembre (sección~\ref{sec:nodegoat}), y las de los proyectos de
+GitHub, a las versiones del 22 de octubre
+(sección~\ref{sec:proyectos-github}).
 
 % -------------------------------------------------------------
 \section{Respuesta a las hipótesis}\label{sec:respuesta-hipotesis}
@@ -49,22 +52,30 @@ coincidencia de patrones. La respuesta es afirmativa, con un matiz
 importante. Sobre el banco sintético, GraphSAST obtuvo una precisión de
 1,00 frente a 0,85 de la línea de base, con la misma exhaustividad de
 1,00 y un $F_1$ de 1,00 frente a 0,92 (tabla~\ref{tab:metricas}). Sobre
+los proyectos de GitHub, la precisión fue de 0,38 frente a 0,10 y el
+$F_1$, de 0,47 frente a 0,18 (tabla~\ref{tab:github-metricas}). Sobre
 NodeGoat, en cambio, los dos detectores obtuvieron exactamente los mismos
-resultados: precisión de 0,75 y exhaustividad de 0,50. El matiz es que
-la ventaja depende de que el código contenga saneamientos o caminos
-aparentes que el grafo descarta; en NodeGoat los destinos alcanzados
-reciben el dato de forma directa, y en ese escenario seguir el flujo no
-agrega precisión a la coincidencia de nombres. La evidencia favorable
-proviene, además, de un banco construido por el autor.
+resultados: precisión de 0,75 y exhaustividad de 0,50, porque los
+destinos alcanzados reciben el dato de forma directa y en ese escenario
+seguir el flujo no agrega precisión a la coincidencia de nombres. El
+matiz es que la mayor precisión se obtuvo con menor exhaustividad: en los
+proyectos de GitHub la línea de base detectó 28 de 34 vulnerabilidades y
+GraphSAST 21, por restricciones de las reglas del catálogo que evitan
+marcar llamadas inocuas y no por el recorrido del grafo.
 
 \paragraph{H2.} El análisis de contaminación sobre el grafo reduce los
 falsos positivos respecto de la detección por expresiones regulares. La
-respuesta es afirmativa sobre el banco sintético y no demostrada sobre
-código real. En el banco, la línea de base produjo cinco falsos
-positivos, tres en caminos saneados y dos entre variables homónimas sin
-un camino real entre sí, y GraphSAST ninguno. En NodeGoat ambos
-detectores produjeron el mismo falso positivo, en una tarea de
-automatización cuyo argumento no proviene de un usuario remoto. Fuera de
+respuesta es afirmativa. En el banco, la línea de base produjo cinco
+falsos positivos, tres en caminos saneados y dos entre variables
+homónimas sin un camino real entre sí, y GraphSAST ninguno. Sobre los
+proyectos de GitHub, GraphSAST emitió 58 falsas alarmas frente a 370, y
+en los tres proyectos sin vulnerabilidades documentadas, 17 frente a 103.
+En NodeGoat ambos detectores produjeron el mismo falso positivo, en una
+tarea de automatización cuyo argumento no proviene de un usuario remoto.
+La reducción sobre código real, sin embargo, no proviene solo del grafo:
+la mitad de las falsas alarmas de la primera medición eran inserciones
+de MongoDB, y se eliminaron con condiciones sobre la llamada agregadas al
+catálogo. Fuera de
 las mediciones aparecieron dos falsos positivos de GraphSAST que sirven
 de contraejemplo: una llamada a \texttt{RegExp.prototype.exec} reportada
 como inyección de comandos por coincidir en el nombre, y una validación
@@ -101,7 +112,7 @@ su aporte fue identificar errores de detección.
         OE-3 & RF-03 a RF-05; tabla~\ref{tab:confusion} & Cumplido y ampliado & Seis familias en lugar de tres: se sumaron CWE-943, CWE-22 y CWE-95 \\
         OE-4 & RF-10 & Cumplido con cambio de rol & Neo4j opera como motor opcional, con paridad verificada en cada cambio; el recorrido en memoria es el modo por defecto \\
         OE-5 & RF-06, RF-07; capítulo~\ref{cap:marco-tecnologico} & Cumplido & La visualización se publicó como aplicación web que analiza en el navegador y explica cada hallazgo \\
-        OE-6 & Secciones~\ref{sec:pruebas} y~\ref{sec:validacion-usuarios} & Parcial & Validación sobre código real limitada a una aplicación con seis vulnerabilidades; \completar{estado de la validación con usuarios} \\
+        OE-6 & Secciones~\ref{sec:pruebas} y~\ref{sec:validacion-usuarios} & Parcial & Validación sobre código real con NodeGoat y siete repositorios de GitHub (40 vulnerabilidades etiquetadas), revisada por una sola persona; \completar{estado de la validación con usuarios} \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -115,8 +126,9 @@ grafo resultó adecuado para los recorridos explícitos, en los que el dato
 pasa de variable en variable y de función en función hasta el destino:
 el motor los siguió dentro de una función, entre funciones y entre
 archivos, y descartó los caminos saneados. Los límites aparecieron en
-tres lugares. El primero es la cobertura del catálogo: sobre NodeGoat,
-las omisiones se debieron a operaciones que el catálogo no registraba y
+tres lugares. El primero es la cobertura del catálogo: sobre NodeGoat y
+sobre los proyectos de GitHub, casi todas las omisiones se debieron a
+operaciones que el catálogo no registraba o que sus reglas acotaban, y
 no al motor. El segundo es la resolución de llamadas sin información de
 tipos, que obliga a heurísticas para saber qué método atiende una
 llamada sobre un objeto. El tercero es que muchas protecciones del código
@@ -167,7 +179,10 @@ líneas, sin casos en los que un saneamiento proteja un destino, por lo
 que no permite generalizar. Sus cifras corresponden a la versión medida:
 con el catálogo ampliado posteriormente, ambos detectores emiten
 hallazgos sin etiqueta que no se revisaron
-(sección~\ref{sec:nodegoat}).
+(sección~\ref{sec:nodegoat}). Los proyectos de GitHub amplían el corpus a
+34 vulnerabilidades, pero cuatro de los cinco con vulnerabilidades son
+aplicaciones construidas para enseñar, y las etiquetas y la revisión son
+de una sola persona.
 
 \paragraph{De validación.} \completar{Tamaño y origen de la muestra de
 participantes.} El autor cumplió el doble rol de desarrollador y

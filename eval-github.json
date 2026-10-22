@@ -1,0 +1,540 @@
+{
+  "description": "Evaluación sobre proyectos de GitHub: aplicaciones vulnerables a propósito, un banco de casos para analizadores y proyectos normales.",
+  "labeledAt": "2026-10-22",
+  "status": "Etiquetas cerradas el 2026-10-22 antes de ejecutar GraphSAST. reviewedReal se completó después, con la revisión manual de los hallazgos sin etiqueta.",
+  "sources": [
+    "Guías y soluciones publicadas por cada aplicación vulnerable",
+    "Marcas en el código",
+    "Verdad de referencia del banco sast/seeds de vulnerable-node"
+  ],
+  "scope": "Vulnerabilidades documentadas de las familias del catálogo en código JavaScript o TypeScript. Las que están en plantillas (outOfScope) no se cuentan; las que no tienen cwe son controles limpios.",
+  "matching": "Un hallazgo cuenta para una vulnerabilidad si es de la misma familia, está en el mismo archivo y su línea de destino está a 3 líneas o menos de la etiquetada (sin line, cualquier línea del archivo). Los demás hallazgos se agrupan por destino (archivo y línea); los que figuran en reviewedReal son problemas reales y el resto, falsas alarmas.",
+  "lineTolerance": 3,
+  "projects": [
+    {
+      "id": "dvna",
+      "repository": "https://github.com/appsecco/dvna.git",
+      "commit": "9ba473add536f66ac9007966acb2a775dd31277a",
+      "kind": "vulnerable",
+      "exclude": [
+        "test/",
+        "tests/",
+        "**/*.spec.ts",
+        "**/*.test.js",
+        "**/*.test.ts",
+        "**/*.min.js",
+        "public/assets/",
+        "cypress/",
+        "frontend/src/assets/",
+        "**/dist/**"
+      ],
+      "vulnerabilities": [
+        {
+          "id": "DV-01",
+          "cwe": 89,
+          "file": "core/appHandler.js",
+          "line": 11,
+          "description": "SQLi en userSearch (sequelize.query con concatenación)"
+        },
+        {
+          "id": "DV-02",
+          "cwe": 78,
+          "file": "core/appHandler.js",
+          "line": 39,
+          "description": "Inyección de comandos en ping (exec)"
+        },
+        {
+          "id": "DV-03",
+          "cwe": 79,
+          "file": "views/app/products.ejs",
+          "line": 20,
+          "description": "XSS reflejado en plantilla EJS",
+          "outOfScope": "plantilla"
+        },
+        {
+          "id": "DV-04",
+          "cwe": 79,
+          "file": "views/app/products.ejs",
+          "line": 50,
+          "description": "XSS almacenado en plantilla EJS",
+          "outOfScope": "plantilla"
+        },
+        {
+          "id": "DV-05",
+          "cwe": 79,
+          "file": "views/app/adminusers.ejs",
+          "line": 41,
+          "description": "DOM XSS con innerHTML en script dentro de .ejs",
+          "outOfScope": "plantilla"
+        },
+        {
+          "id": "DV-06",
+          "cwe": 95,
+          "file": "core/appHandler.js",
+          "line": 197,
+          "description": "mathjs.eval(req.body.eqn), versión vulnerable de mathjs"
+        }
+      ],
+      "reviewedReal": []
+    },
+    {
+      "id": "vn-seeds",
+      "repository": "https://github.com/cr0hn/vulnerable-node.git",
+      "commit": "d68f2a3c9277ece2c2feb9976052033bdecd7fbe",
+      "kind": "banco",
+      "root": "sast/seeds",
+      "exclude": [
+        "test/",
+        "tests/",
+        "**/*.spec.ts",
+        "**/*.test.js",
+        "**/*.test.ts",
+        "**/*.min.js",
+        "public/assets/",
+        "cypress/",
+        "frontend/src/assets/",
+        "**/dist/**"
+      ],
+      "vulnerabilities": [
+        {
+          "id": "VS-01",
+          "cwe": 89,
+          "file": "sqli-concat.js",
+          "description": "seed SQLi"
+        },
+        {
+          "id": "VS-02",
+          "cwe": 943,
+          "file": "nosql-operator.js",
+          "description": "seed NoSQL"
+        },
+        {
+          "id": "VS-03",
+          "cwe": 79,
+          "file": "xss-raw-echo.js",
+          "description": "seed XSS"
+        },
+        {
+          "id": "VS-04",
+          "cwe": 22,
+          "file": "path-traversal.js",
+          "description": "seed path traversal"
+        },
+        {
+          "id": "VS-05",
+          "cwe": 95,
+          "file": "eval-code.js",
+          "description": "seed eval"
+        },
+        {
+          "id": "VS-C1",
+          "cwe": null,
+          "file": "clean-parameterized.js",
+          "description": "control limpio",
+          "control": true
+        },
+        {
+          "id": "VS-C2",
+          "cwe": null,
+          "file": "clean-escaped.js",
+          "description": "control limpio",
+          "control": true
+        }
+      ],
+      "reviewedReal": [
+        {
+          "file": "deserialization.js",
+          "line": 21,
+          "note": "documentada (bonus CWE-78 del seed)"
+        }
+      ]
+    },
+    {
+      "id": "vn-shop",
+      "repository": "https://github.com/cr0hn/vulnerable-node.git",
+      "commit": "d68f2a3c9277ece2c2feb9976052033bdecd7fbe",
+      "kind": "vulnerable",
+      "exclude": [
+        "test/",
+        "tests/",
+        "**/*.spec.ts",
+        "**/*.test.js",
+        "**/*.test.ts",
+        "**/*.min.js",
+        "public/assets/",
+        "cypress/",
+        "frontend/src/assets/",
+        "**/dist/**",
+        "sast/"
+      ],
+      "vulnerabilities": [
+        {
+          "id": "VN-01",
+          "cwe": 89,
+          "file": "model/db.js",
+          "line": 14,
+          "description": "SQLi en login"
+        },
+        {
+          "id": "VN-02",
+          "cwe": 89,
+          "file": "model/db.js",
+          "line": 26,
+          "description": "SQLi en búsqueda"
+        },
+        {
+          "id": "VN-03",
+          "cwe": 89,
+          "file": "model/db.js",
+          "line": 101,
+          "description": "SQLi en ORDER BY"
+        },
+        {
+          "id": "VN-04",
+          "cwe": 943,
+          "file": "routes/shop.js",
+          "line": 40,
+          "description": "NoSQL en tags-filter"
+        },
+        {
+          "id": "VN-05",
+          "cwe": 943,
+          "file": "routes/shop.js",
+          "line": 57,
+          "description": "NoSQL en meta"
+        },
+        {
+          "id": "VN-06",
+          "cwe": 79,
+          "file": "views/product_detail.ejs",
+          "description": "XSS almacenado en reseñas (<%- %>)",
+          "outOfScope": "plantilla"
+        },
+        {
+          "id": "VN-07",
+          "cwe": 22,
+          "file": "routes/extras.js",
+          "line": 17,
+          "description": "Path traversal en descarga de imágenes"
+        },
+        {
+          "id": "VN-08",
+          "cwe": 78,
+          "file": "routes/extras.js",
+          "line": 33,
+          "description": "Inyección de comandos en ping"
+        }
+      ],
+      "reviewedReal": []
+    },
+    {
+      "id": "dvws",
+      "repository": "https://github.com/snoopysecurity/dvws-node.git",
+      "commit": "8e2e9a52a93604cb86b72cb39c16927d4744cf25",
+      "kind": "vulnerable",
+      "exclude": [
+        "test/",
+        "tests/",
+        "**/*.spec.ts",
+        "**/*.test.js",
+        "**/*.test.ts",
+        "**/*.min.js",
+        "public/assets/",
+        "cypress/",
+        "frontend/src/assets/",
+        "**/dist/**"
+      ],
+      "vulnerabilities": [
+        {
+          "id": "DW-01",
+          "cwe": 89,
+          "file": "src/controllers/passphrase.js",
+          "line": 45,
+          "description": "SQLi al guardar passphrase"
+        },
+        {
+          "id": "DW-02",
+          "cwe": 89,
+          "file": "src/controllers/passphrase.js",
+          "line": 58,
+          "description": "SQLi al leer passphrase"
+        },
+        {
+          "id": "DW-03",
+          "cwe": 943,
+          "file": "src/controllers/notes.js",
+          "line": 175,
+          "description": "NoSQL $where en búsqueda de notas"
+        },
+        {
+          "id": "DW-04",
+          "cwe": 78,
+          "file": "src/controllers/notes.js",
+          "line": 79,
+          "description": "Inyección de comandos en sysinfo"
+        },
+        {
+          "id": "DW-05",
+          "cwe": 22,
+          "file": "src/controllers/files.js",
+          "line": 91,
+          "description": "Path traversal en descarga (res.download)"
+        },
+        {
+          "id": "DW-06",
+          "cwe": 22,
+          "file": "src/controllers/integrations.js",
+          "line": 46,
+          "description": "Path traversal en reporte mensual"
+        },
+        {
+          "id": "DW-07",
+          "cwe": 22,
+          "file": "src/graphql/schema.js",
+          "line": 122,
+          "description": "Escritura arbitraria por GraphQL (writeFile)"
+        },
+        {
+          "id": "DW-08",
+          "cwe": 95,
+          "file": "src/routes/notes.js",
+          "line": 25,
+          "description": "Inyección de plantilla con new Function"
+        },
+        {
+          "id": "DW-09",
+          "cwe": 79,
+          "file": "src/controllers/users.js",
+          "line": 73,
+          "description": "XSS por Content-Type en registro (res.write)"
+        }
+      ],
+      "reviewedReal": [
+        {
+          "file": "src/services/soap/user-service.js",
+          "line": 73,
+          "note": "documentada (21a XSS en SOAP)"
+        },
+        {
+          "file": "src/controllers/users.js",
+          "line": 288,
+          "note": "documentada (12 inyección XML), otra familia"
+        },
+        {
+          "file": "src/controllers/integrations.js",
+          "line": 11,
+          "note": "documentada (45 YAML inseguro), otra familia"
+        },
+        {
+          "file": "src/controllers/users.js",
+          "line": 71,
+          "note": "no documentada: operador NoSQL desde el body"
+        },
+        {
+          "file": "src/controllers/users.js",
+          "line": 148,
+          "note": "no documentada: operador NoSQL desde el body"
+        },
+        {
+          "file": "src/controllers/users.js",
+          "line": 398,
+          "note": "no documentada: operador NoSQL desde el body"
+        },
+        {
+          "file": "src/controllers/users.js",
+          "line": 593,
+          "note": "no documentada: operador NoSQL desde el body"
+        },
+        {
+          "file": "src/controllers/passphrase.js",
+          "line": 85,
+          "note": "no documentada: operador NoSQL desde el body"
+        }
+      ]
+    },
+    {
+      "id": "juice",
+      "repository": "https://github.com/juice-shop/juice-shop.git",
+      "commit": "399fba76194305a312693eee44f4df64bdf0c3ce",
+      "kind": "vulnerable",
+      "exclude": [
+        "test/",
+        "tests/",
+        "**/*.spec.ts",
+        "**/*.test.js",
+        "**/*.test.ts",
+        "**/*.min.js",
+        "public/assets/",
+        "cypress/",
+        "frontend/src/assets/",
+        "**/dist/**",
+        "data/static/codefixes/"
+      ],
+      "vulnerabilities": [
+        {
+          "id": "JS-01",
+          "cwe": 89,
+          "file": "routes/login.ts",
+          "line": 34,
+          "description": "SQLi en login"
+        },
+        {
+          "id": "JS-02",
+          "cwe": 89,
+          "file": "routes/search.ts",
+          "line": 23,
+          "description": "SQLi en búsqueda"
+        },
+        {
+          "id": "JS-03",
+          "cwe": 943,
+          "file": "routes/showProductReviews.ts",
+          "line": 36,
+          "description": "NoSQL $where en reseñas"
+        },
+        {
+          "id": "JS-04",
+          "cwe": 943,
+          "file": "routes/updateProductReviews.ts",
+          "line": 18,
+          "description": "NoSQL en update de reseñas"
+        },
+        {
+          "id": "JS-05",
+          "cwe": 943,
+          "file": "routes/trackOrder.ts",
+          "line": 18,
+          "description": "NoSQL $where en seguimiento de pedido"
+        },
+        {
+          "id": "JS-06",
+          "cwe": 22,
+          "file": "routes/dataErasure.ts",
+          "line": 107,
+          "description": "Lectura de archivo local por layout de res.render"
+        },
+        {
+          "id": "JS-07",
+          "cwe": 95,
+          "file": "routes/b2bOrder.ts",
+          "line": 23,
+          "description": "RCE por vm.runInContext con datos del body"
+        },
+        {
+          "id": "JS-08",
+          "cwe": 95,
+          "file": "routes/userProfile.ts",
+          "line": 65,
+          "description": "SSTI con eval del nombre de usuario (almacenado)"
+        },
+        {
+          "id": "JS-09",
+          "cwe": 79,
+          "file": "frontend/src/app/search-result/search-result.component.ts",
+          "line": 146,
+          "description": "XSS DOM con bypassSecurityTrustHtml"
+        },
+        {
+          "id": "JS-10",
+          "cwe": 79,
+          "file": "frontend/src/app/search-result/search-result.component.ts",
+          "line": 113,
+          "description": "XSS almacenado con bypassSecurityTrustHtml"
+        }
+      ],
+      "reviewedReal": [
+        {
+          "file": "routes/likeProductReviews.ts",
+          "line": 25,
+          "note": "no documentada: operador NoSQL desde el body"
+        },
+        {
+          "file": "routes/likeProductReviews.ts",
+          "line": 43,
+          "note": "no documentada: operador NoSQL desde el body"
+        },
+        {
+          "file": "routes/userProfile.ts",
+          "line": 101,
+          "note": "documentada (usernameXss)"
+        },
+        {
+          "file": "routes/vulnCodeFixes.ts",
+          "line": 83,
+          "note": "real, impacto bajo (solo archivos .info.yml)"
+        },
+        {
+          "file": "routes/vulnCodeSnippet.ts",
+          "line": 90,
+          "note": "real, impacto bajo (solo archivos .info.yml)"
+        }
+      ],
+      "reviewedNotVulnerable": [
+        "routes/fileServer.ts sendFile (sin '/' en el nombre)",
+        "routes/keyServer.ts, logfileServer.ts, quarantineServer.ts (idem)",
+        "routes/captcha.ts eval de una expresión generada por el servidor",
+        "routes/videoHandler.ts readFileSync con nombre de configuración"
+      ]
+    },
+    {
+      "id": "realworld",
+      "repository": "https://github.com/gothinkster/node-express-realworld-example-app.git",
+      "commit": "30b68e1e881462b2f4164ea09ab4c4f5699c7b0b",
+      "kind": "normal",
+      "exclude": [
+        "test/",
+        "tests/",
+        "**/*.spec.ts",
+        "**/*.test.js",
+        "**/*.test.ts",
+        "**/*.min.js",
+        "public/assets/",
+        "cypress/",
+        "frontend/src/assets/",
+        "**/dist/**"
+      ],
+      "vulnerabilities": [],
+      "reviewedReal": []
+    },
+    {
+      "id": "boilerplate",
+      "repository": "https://github.com/hagopj13/node-express-boilerplate.git",
+      "commit": "179ae84efec61b14206d0305d941daed6c6d07f9",
+      "kind": "normal",
+      "exclude": [
+        "test/",
+        "tests/",
+        "**/*.spec.ts",
+        "**/*.test.js",
+        "**/*.test.ts",
+        "**/*.min.js",
+        "public/assets/",
+        "cypress/",
+        "frontend/src/assets/",
+        "**/dist/**"
+      ],
+      "vulnerabilities": [],
+      "reviewedReal": []
+    },
+    {
+      "id": "hackathon",
+      "repository": "https://github.com/sahat/hackathon-starter.git",
+      "commit": "f265523b473509f4f8ca60cfdc101f0af5669ca5",
+      "kind": "normal",
+      "exclude": [
+        "test/",
+        "tests/",
+        "**/*.spec.ts",
+        "**/*.test.js",
+        "**/*.test.ts",
+        "**/*.min.js",
+        "public/assets/",
+        "cypress/",
+        "frontend/src/assets/",
+        "**/dist/**"
+      ],
+      "vulnerabilities": [],
+      "reviewedReal": []
+    }
+  ]
+}

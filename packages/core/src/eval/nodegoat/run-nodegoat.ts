@@ -99,8 +99,8 @@ function summarize(
   };
 }
 
-/** Clona NodeGoat en el commit del manifiesto, o reutiliza la copia en caché. */
-export function ensureCheckout(manifest: NodeGoatManifest, cacheRoot: string): string {
+/** Clona el repositorio en el commit del manifiesto, o reutiliza la copia en caché. */
+export function ensureCheckout(manifest: Pick<NodeGoatManifest, "repository" | "commit">, cacheRoot: string): string {
   const dir = path.join(cacheRoot, manifest.commit.slice(0, 12));
   const head = () =>
     spawnSync("git", ["-C", dir, "rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
