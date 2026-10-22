@@ -28,6 +28,18 @@
   ],
   "sinks": [
     {
+      "callee": "res.sendFile",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "res.download",
+      "args": [
+        0
+      ]
+    },
+    {
       "callee": "readFileSync",
       "args": [
         0
@@ -168,5 +180,325 @@
     "parseInt",
     "parseFloat",
     "Number"
-  ]
+  ],
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "open",
+          "args": [
+            0
+          ],
+          "bare": true
+        },
+        {
+          "callee": "io.open",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "codecs.open",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "send_file",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "FileResponse",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.remove",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.unlink",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.listdir",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "shutil.rmtree",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "os.path.basename",
+        "basename",
+        "secure_filename",
+        "int"
+      ],
+      "fix": "Quedate solo con el nombre del archivo (os.path.basename o secure_filename de Werkzeug) o servilo con send_from_directory, que no deja salir de la carpeta."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": "File",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": "FileInputStream",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "FileOutputStream",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "FileReader",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "FileWriter",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Files.readAllBytes",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Files.readString",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Files.newInputStream",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Files.delete",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "FilenameUtils.getName",
+        ".getFileName",
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString"
+      ],
+      "fix": "Quedate solo con el nombre del archivo (Paths.get(nombre).getFileName() o FilenameUtils.getName) y armá la ruta desde una carpeta fija."
+    },
+    "php": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "include",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "file_get_contents",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "file_put_contents",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "fopen",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "readfile",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "file",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "unlink",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "scandir",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "opendir",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "copy",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": "rename",
+          "args": [
+            0,
+            1
+          ]
+        }
+      ],
+      "sanitizers": [
+        "intval",
+        "floatval",
+        "(int)",
+        "boolval",
+        "basename"
+      ],
+      "fix": "Quedate solo con el nombre (basename($_GET['archivo'])) o elegí el archivo de una lista fija; nunca armes un include con un dato del pedido."
+    },
+    "go": {
+      "sources": [
+        "r",
+        "req",
+        "request",
+        "c",
+        "ctx"
+      ],
+      "sinks": [
+        {
+          "callee": "os.Open",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.OpenFile",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.ReadFile",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "ioutil.ReadFile",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.WriteFile",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.Create",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.Remove",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.RemoveAll",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "http.ServeFile",
+          "args": [
+            2
+          ]
+        },
+        {
+          "callee": ".File",
+          "args": [
+            0
+          ],
+          "receiver": "^(?:c|ctx)$"
+        }
+      ],
+      "sanitizers": [
+        "strconv.Atoi",
+        "strconv.ParseInt",
+        "strconv.ParseUint",
+        "strconv.ParseFloat",
+        "strconv.ParseBool",
+        "uuid.Parse",
+        "filepath.Base",
+        "path.Base"
+      ],
+      "fix": "Quedate solo con el nombre (filepath.Base(nombre)) y armá la ruta desde una carpeta fija, o serví la carpeta con http.FileServer(http.Dir(...)), que no deja salir de ella."
+    }
+  }
 }

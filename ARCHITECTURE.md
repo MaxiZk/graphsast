@@ -10,6 +10,10 @@ describe el estado actual.
 flowchart LR
   A[Código fuente] --> B[Parser<br/>ts-morph]
   B --> C[IR<br/>ir/builder.ts]
+  A --> L[Parser<br/>tree-sitter]
+  L --> M[IR<br/>lang/builder.ts]
+  M --> D
+  M --> E
   C --> D[Call graph<br/>cfg/]
   C --> E[Data-flow<br/>dfg/]
   D --> E
@@ -23,7 +27,12 @@ flowchart LR
 
 1. **Parser** (`parser/`). Texto → `SourceFile` de ts-morph, en un sistema
    de archivos en memoria. Un archivo con errores de sintaxis es un error del
-   escaneo, no un archivo limpio.
+   escaneo, no un archivo limpio. Python, Java, PHP y Go van por `lang/`:
+   tree-sitter (WebAssembly) y un builder genérico guiado por una
+   especificación por lenguaje (`python.ts`, `java.ts`, `php.ts`, `go.ts`)
+   que produce la misma IR. Las gramáticas se cargan una vez
+   (`loadNodeLanguages` en Node, `loadLanguages` en la web); no hay enlace
+   entre archivos para estos lenguajes.
 2. **IR** (`ir/`). El AST se reduce a cinco tipos de nodo: `Function`,
    `Parameter`, `Variable`, `Literal`, `Call`. Cada nodo lleva su ubicación y
    su cadena de ámbitos léxicos (`scopePath`). Las escrituras peligrosas
@@ -72,6 +81,7 @@ algunos argumentos.
 catalog/              familias CWE: sources, sinks y sanitizers (JSON)
 packages/core/src/
   parser/             texto → SourceFile
+  lang/               Python, Java, PHP y Go: tree-sitter → IR
   ir/                 AST → IR; expressions.ts extrae las raíces de flujo
   cfg/                resolución de llamadas (resolve.ts) y call graph
   dfg/                data-flow, ámbitos (scope.ts) e inter-procedural

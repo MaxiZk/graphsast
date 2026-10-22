@@ -65,11 +65,218 @@
       "args": [
         0
       ]
+    },
+    {
+      "callee": "setTimeout",
+      "bare": true,
+      "args": [
+        0
+      ],
+      "onlyIf": {
+        "firstArg": "^\\s*['\"`]"
+      }
+    },
+    {
+      "callee": "setInterval",
+      "bare": true,
+      "args": [
+        0
+      ],
+      "onlyIf": {
+        "firstArg": "^\\s*['\"`]"
+      }
     }
   ],
   "sanitizers": [
     "parseInt",
     "parseFloat",
     "Number"
-  ]
+  ],
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "eval",
+          "args": [
+            0
+          ],
+          "bare": true
+        },
+        {
+          "callee": "exec",
+          "args": [
+            0
+          ],
+          "bare": true
+        },
+        {
+          "callee": "compile",
+          "args": [
+            0
+          ],
+          "bare": true
+        },
+        {
+          "callee": "render_template_string",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "jinja2.Template",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "int",
+        "float"
+      ],
+      "fix": "No evalúes texto del usuario. Para datos, usá json.loads o ast.literal_eval; para plantillas, render_template con el dato como variable."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": ".eval",
+          "args": [
+            0
+          ],
+          "receiver": "[Ee]ngine"
+        },
+        {
+          "callee": ".eval",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "receiverInit": "getEngineBy"
+          }
+        },
+        {
+          "callee": ".parseExpression",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".evaluate",
+          "args": [
+            0
+          ],
+          "receiver": "[Ss]hell"
+        }
+      ],
+      "sanitizers": [
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString"
+      ],
+      "fix": "No evalúes texto del usuario con ScriptEngine, SpEL ni Groovy; elegí la operación de una lista fija y pasá el dato como valor."
+    },
+    "php": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "eval",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "assert",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "create_function",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": "call_user_func",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "call_user_func_array",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "intval",
+        "floatval",
+        "(int)",
+        "boolval"
+      ],
+      "fix": "No evalúes texto del usuario; si tiene que elegir una operación, buscala en un array fijo de funciones permitidas."
+    },
+    "go": {
+      "sources": [
+        "r",
+        "req",
+        "request",
+        "c",
+        "ctx"
+      ],
+      "sinks": [
+        {
+          "callee": ".Parse",
+          "args": [
+            0
+          ],
+          "receiver": "[Tt]emplate\\.New\\(|^tmpl$|^t$"
+        },
+        {
+          "callee": ".RunString",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".Run",
+          "args": [
+            0
+          ],
+          "receiver": "^vm$|[Oo]tto"
+        }
+      ],
+      "sanitizers": [
+        "strconv.Atoi",
+        "strconv.ParseInt",
+        "strconv.ParseUint",
+        "strconv.ParseFloat",
+        "strconv.ParseBool",
+        "uuid.Parse"
+      ],
+      "fix": "No uses el dato como plantilla ni como código: parseá una plantilla fija y pasale el dato al ejecutarla (tmpl.Execute(w, datos))."
+    }
+  }
 }

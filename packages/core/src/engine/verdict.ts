@@ -62,8 +62,8 @@ export function buildVerdict(input: VerdictInput): Verdict {
       detail:
         `El parser encontró ${plural(syntaxErrors, "error", "errores")} de `
         + "sintaxis, así que no llegó a construir el grafo. "
-        + "GraphSAST solo analiza JavaScript y "
-        + `TypeScript: si esto es Go, Python, Java o PHP, no está soportado.${muestra}`,
+        + "GraphSAST analiza JavaScript, TypeScript, Python, Java, PHP y Go, "
+        + `y elige el lenguaje por la extensión del archivo: revisá que coincidan.${muestra}`,
     };
   }
 

@@ -1,0 +1,11 @@
+const { exec } = require("child_process");
+const express = require("express");
+const app = express();
+
+app.post("/dns", (req, res) => {
+  const dominio = req.body.dominio;
+  if (!/^[a-zA-Z0-9.-]+$/.test(dominio)) {
+    return res.status(400).send("dominio inválido");
+  }
+  exec(`nslookup ${dominio}`, (err, out) => res.type("text/plain").send(out));
+});

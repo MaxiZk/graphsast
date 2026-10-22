@@ -19,7 +19,7 @@ import type {
   IRAssignment, FlowRef, Loc,
 } from "./types.js";
 import { EMPTY_FLOW } from "./types.js";
-import { EQ_OPERATOR, flowSourcesOf, isEqOperator, thisFieldOf } from "./expressions.js";
+import { EQ_OPERATOR, browserInputOf, flowSourcesOf, isEqOperator, isOutermostBrowserInput, thisFieldOf } from "./expressions.js";
 import { collectGuards, type Guard } from "./guards.js";
 
 function locOf(node: Node, file: string): Loc {
@@ -52,6 +52,9 @@ function callIdOf(call: Node, file: string): string {
  * flujo; `buildIR` es sincrónico y las limpia al terminar.
  */
 let activeGuards: readonly Guard[] = [];
+
+/** `$("#q").val()` sin argumentos: lee lo que escribió el usuario. */
+const JQUERY_VAL = /^(?:\$|jQuery)\([\s\S]*\)\.val$/;
 
 /** Convierte el resultado del walker en una referencia serializable. */
 function flowRefOf(expr: Node | undefined, file: string): FlowRef {
@@ -691,7 +694,7 @@ export function buildIR(sourceFile: SourceFile, fileName?: string): IRModule {
 
 function buildModule(sourceFile: SourceFile, file: string, guards: readonly Guard[]): IRModule {
   const nodes: IRNode[] = [];
-  const validators = new Set(guards.map((g) => g.call));
+  const validators = new Map(guards.map((g) => [g.call, g]));
 
   for (const fn of collectFunctionLikes(sourceFile)) {
     emitFunction(fn, file, nodes);
@@ -744,11 +747,21 @@ function buildModule(sourceFile: SourceFile, file: string, guards: readonly Guar
     if (owner) irCall.thisOwner = owner;
     const qualified = qualifiedCalleeOf(irCall.callee, packages);
     if (qualified) irCall.qualifiedCallee = qualified;
-    if (validators.has(call)) irCall.validates = true;
+    const guard = validators.get(call);
+    if (guard) {
+      irCall.validates = true;
+      if (guard.cwe !== undefined) irCall.validatesCwe = guard.cwe;
+    }
+    if (JQUERY_VAL.test(irCall.callee) && args.length === 0) irCall.input = true;
     const callee = call.getExpression();
     if (TsNode.isPropertyAccessExpression(callee) && TsNode.isIdentifier(callee.getExpression())) {
       const init = initializers.get(`${irCall.ownerFnId}\t${callee.getExpression().getText()}`);
       if (init !== undefined) irCall.receiverInit = init;
+    }
+    const [firstArg] = args;
+    if (firstArg && TsNode.isIdentifier(firstArg)) {
+      const init = initializers.get(`${irCall.ownerFnId}\t${firstArg.getText()}`);
+      if (init !== undefined) irCall.firstArgInit = init;
     }
     nodes.push(irCall);
   }
@@ -771,6 +784,27 @@ function buildModule(sourceFile: SourceFile, file: string, guards: readonly Guar
       argFlows: [flowRefOf(value, file)],
       receiverFlow: { ...EMPTY_FLOW },
       ownerFnId: ownerFnIdOf(prop, file),
+    });
+  }
+
+  // `location.hash`, `input.value`: la lectura tiene un nodo Call propio, sin
+  // argumentos, que el catálogo trata como origen (ver `browserInputOf`).
+  for (const access of sourceFile.getDescendantsOfKind(SyntaxKind.PropertyAccessExpression)) {
+    if (!isOutermostBrowserInput(access)) continue;
+    const name = browserInputOf(access)!;
+    nodes.push({
+      id: callIdOf(access, file),
+      kind: "Call",
+      name,
+      code: access.getText(),
+      loc: locOf(access, file),
+      scopePath: scopePathOf(access),
+      callee: name,
+      argTexts: [],
+      argFlows: [],
+      receiverFlow: { ...EMPTY_FLOW },
+      ownerFnId: ownerFnIdOf(access, file),
+      input: true,
     });
   }
 

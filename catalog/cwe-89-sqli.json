@@ -198,5 +198,423 @@
     "parseInt",
     "parseFloat",
     "Number"
-  ]
+  ],
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": ".execute",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".executemany",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".executescript",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".raw",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".extra",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "sqlalchemy.text",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".read_sql",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".read_sql_query",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "int",
+        "float",
+        ".escape_string"
+      ],
+      "fix": "Pasá los valores como parámetros del driver: cursor.execute(\"SELECT * FROM users WHERE id = %s\", (user_id,)) (o ? en sqlite3). Nunca armes el texto de la consulta con +, % o f-strings."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": ".executeQuery",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".executeUpdate",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".executeLargeUpdate",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".execute",
+          "args": [
+            0
+          ],
+          "receiver": "[Ss]tatement|[Ss]tmt|[Jj]dbc|[Tt]emplate|^st$"
+        },
+        {
+          "callee": ".addBatch",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".prepareStatement",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".prepareCall",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".createQuery",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".createNativeQuery",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".createSQLQuery",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".query",
+          "args": [
+            0
+          ],
+          "receiver": "[Jj]dbc|[Tt]emplate"
+        },
+        {
+          "callee": ".queryForObject",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".queryForList",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".queryForMap",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".queryForRowSet",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".update",
+          "args": [
+            0
+          ],
+          "receiver": "[Jj]dbc|[Tt]emplate"
+        },
+        {
+          "callee": ".batchUpdate",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString",
+        ".encodeForSQL"
+      ],
+      "fix": "Usá PreparedStatement con ? y setString/setInt (o los parámetros de JdbcTemplate y de JPA: :nombre con setParameter); nunca concatenes el dato en el texto de la consulta."
+    },
+    "php": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "mysqli_query",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": "mysqli_multi_query",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": "mysqli_real_query",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": "mysql_query",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "pg_query",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": "pg_send_query",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": "sqlsrv_query",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": ".query",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".exec",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".prepare",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".multi_query",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".real_query",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "DB.raw",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "DB.select",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "DB.statement",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".whereRaw",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".orderByRaw",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".selectRaw",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "intval",
+        "floatval",
+        "(int)",
+        "boolval",
+        "mysqli_real_escape_string",
+        "mysql_real_escape_string",
+        ".real_escape_string",
+        ".quote",
+        "pg_escape_string",
+        "pg_escape_literal"
+      ],
+      "fix": "Usá consultas preparadas: $stmt = $pdo->prepare(\"SELECT * FROM users WHERE id = ?\"); $stmt->execute([$id]); (o bind_param con mysqli). No interpoles el dato en el texto de la consulta."
+    },
+    "go": {
+      "sources": [
+        "r",
+        "req",
+        "request",
+        "c",
+        "ctx"
+      ],
+      "sinks": [
+        {
+          "callee": ".Query",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".QueryRow",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".Exec",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".Prepare",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".QueryContext",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": ".QueryRowContext",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": ".ExecContext",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": ".PrepareContext",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": ".Raw",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".Where",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".Select",
+          "args": [
+            0
+          ],
+          "receiver": "[Dd][Bb]$|[Ss]qlx$"
+        },
+        {
+          "callee": ".Get",
+          "args": [
+            1
+          ],
+          "receiver": "[Dd][Bb]$|[Ss]qlx$"
+        }
+      ],
+      "sanitizers": [
+        "strconv.Atoi",
+        "strconv.ParseInt",
+        "strconv.ParseUint",
+        "strconv.ParseFloat",
+        "strconv.ParseBool",
+        "uuid.Parse"
+      ],
+      "fix": "Pasá los valores como argumentos de la consulta: db.Query(\"SELECT * FROM users WHERE id = $1\", id) (o ? según el driver); no armes el texto con + ni fmt.Sprintf."
+    }
+  }
 }

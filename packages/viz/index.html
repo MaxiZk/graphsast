@@ -27,7 +27,7 @@
           <circle cx="8" cy="24" r="4.5" fill="#ef4444" />
         </svg>
         <div>
-          <p class="kicker">Análisis estático de seguridad · JavaScript y TypeScript</p>
+          <p class="kicker">Análisis estático de seguridad · JavaScript, TypeScript, Python, Java, PHP y Go</p>
           <h1><span class="brand-name">GraphSAST</span> <span id="engine-badge" class="engine-badge memory" hidden>Memoria</span></h1>
           <p>Busca los lugares donde un dato que manda el usuario llega sin control a una operación peligrosa. Por ahí entran los ataques más comunes contra aplicaciones web:</p>
           <ul class="threats" aria-label="Ataques que busca">
@@ -88,16 +88,23 @@
               <path d="M12 16V4M7 9l5-5 5 5" />
               <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
             </svg>
-            <p class="drop-title">Arrastrá una carpeta o archivos .js / .ts acá</p>
+            <p class="drop-title">Arrastrá una carpeta o archivos de código acá</p>
             <div class="btn-row drop-actions">
               <label class="btn-primary file-btn">Analizar carpeta<input type="file" id="folder-input" webkitdirectory multiple hidden /></label>
-              <label class="btn-ghost file-btn">Analizar archivos<input type="file" id="files-input" multiple accept=".js,.jsx,.mjs,.cjs,.ts,.tsx" hidden /></label>
+              <label class="btn-ghost file-btn">Analizar archivos<input type="file" id="files-input" multiple accept=".js,.jsx,.mjs,.cjs,.ts,.tsx,.py,.java,.php,.go" hidden /></label>
             </div>
-            <p class="privacy">El análisis corre en tu navegador: el código no se sube a ningún servidor. Solo si usás el chat de Resultado se envía el hallazgo que preguntás.</p>
+            <form id="github-form" class="github-form">
+              <label class="field-label" for="github-url">O un repositorio público de GitHub</label>
+              <div class="github-row">
+                <input id="github-url" class="select github-url" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://github.com/usuario/repositorio" />
+                <button id="github-submit" class="btn-ghost" type="submit">Analizar</button>
+              </div>
+            </form>
+            <p class="privacy">El análisis corre en tu navegador: el código no se sube a ningún servidor. Con una dirección de GitHub, el navegador baja los archivos directo de GitHub. Solo si usás el chat de Resultado se envía el hallazgo que preguntás.</p>
           </div>
 
           <ol class="how-steps" aria-label="Qué pasa con lo que subís">
-            <li>GraphSAST lee los archivos JavaScript y TypeScript de la carpeta y sus subcarpetas (salvo <code>node_modules</code>, <code>dist</code> y similares).</li>
+            <li>GraphSAST lee los archivos JavaScript, TypeScript, Python, Java, PHP y Go de la carpeta y sus subcarpetas (salvo <code>node_modules</code>, <code>dist</code> y similares).</li>
             <li>Sigue cada dato que entra desde afuera (por ejemplo <code>req.query</code>) por variables, funciones y archivos.</li>
             <li>Si llega a una operación peligrosa sin pasar por un filtro, lo marca en el grafo (2) y lo explica en Resultado (3).</li>
           </ol>

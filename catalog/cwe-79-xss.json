@@ -46,6 +46,36 @@
       "unlessFirstArg": "^\\s*[\\[{]"
     },
     {
+      "callee": ".send",
+      "args": [
+        0
+      ],
+      "receiver": "^(?:res|response)(?:\\.(?:status|set|header|append|cookie|clearCookie|vary|location|links)\\([^)]*\\))+$",
+      "unlessFirstArg": "^\\s*[\\[{]"
+    },
+    {
+      "callee": ".send",
+      "args": [
+        0
+      ],
+      "receiver": "\\.(?:type|contentType)\\(\\s*['\"`](?:text/)?html",
+      "unlessFirstArg": "^\\s*[\\[{]"
+    },
+    {
+      "callee": "res.write",
+      "args": [
+        0
+      ],
+      "unlessFirstArg": "^\\s*(?:[\\[{]|JSON\\.stringify\\()"
+    },
+    {
+      "callee": "res.end",
+      "args": [
+        0
+      ],
+      "unlessFirstArg": "^\\s*(?:[\\[{]|JSON\\.stringify\\()"
+    },
+    {
       "callee": ".html",
       "args": [
         0
@@ -80,5 +110,339 @@
     "Number",
     "readFileSync",
     "readFile"
-  ]
+  ],
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "@route.return",
+          "args": [
+            0
+          ],
+          "unlessFirstArg": "^\\s*(?:[\\[{]|(?:flask\\.)?(?:jsonify|send_file|send_from_directory|render_template|render_template_string|redirect|make_response|Response|abort|url_for)\\()"
+        },
+        {
+          "callee": "make_response",
+          "args": [
+            0
+          ],
+          "unlessFirstArg": "^\\s*(?:[\\[{]|jsonify\\()"
+        },
+        {
+          "callee": "Response",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "HttpResponse",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "HTMLResponse",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Markup",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "mark_safe",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "escape",
+        "html.escape",
+        "markupsafe.escape",
+        "bleach.clean",
+        "conditional_escape",
+        "int",
+        "float"
+      ],
+      "fix": "Escapá el dato antes de ponerlo en el HTML (markupsafe.escape o html.escape) o usá render_template, que escapa solo; no lo envuelvas en Markup ni mark_safe."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": "@route.return",
+          "args": [
+            0
+          ],
+          "unlessFirstArg": "^\\s*(?:new\\s+(?!String\\b)|ResponseEntity\\b|Map\\.of|List\\.of|Collections\\.)"
+        },
+        {
+          "callee": ".print",
+          "args": [
+            0
+          ],
+          "receiver": "getWriter\\(\\)$|^out$|^writer$|^pw$"
+        },
+        {
+          "callee": ".println",
+          "args": [
+            0
+          ],
+          "receiver": "getWriter\\(\\)$|^out$|^writer$|^pw$"
+        },
+        {
+          "callee": ".write",
+          "args": [
+            0
+          ],
+          "receiver": "getWriter\\(\\)$|^out$|^writer$|^pw$"
+        },
+        {
+          "callee": ".printf",
+          "args": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "receiver": "getWriter\\(\\)$|^out$|^writer$|^pw$"
+        },
+        {
+          "callee": ".format",
+          "args": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "receiver": "getWriter\\(\\)$|^writer$|^pw$"
+        }
+      ],
+      "sanitizers": [
+        "HtmlUtils.htmlEscape",
+        "StringEscapeUtils.escapeHtml4",
+        "Encode.forHtml",
+        "Encode.forHtmlContent",
+        ".encodeForHTML",
+        "Jsoup.clean",
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString",
+        "Files.readString",
+        "Files.readAllBytes",
+        "Files.readAllLines"
+      ],
+      "fix": "Escapá el dato antes de escribirlo en el HTML (HtmlUtils.htmlEscape de Spring o Encode.forHtml del OWASP Java Encoder), o devolvé una vista con Thymeleaf, que escapa solo."
+    },
+    "php": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "echo",
+          "args": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "callee": "print",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "printf",
+          "args": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "callee": "vprintf",
+          "args": [
+            0,
+            1
+          ]
+        }
+      ],
+      "sanitizers": [
+        "intval",
+        "floatval",
+        "(int)",
+        "boolval",
+        "htmlspecialchars",
+        "htmlentities",
+        "strip_tags",
+        "urlencode",
+        "rawurlencode",
+        "e",
+        "esc_html",
+        "esc_attr",
+        "json_encode"
+      ],
+      "fix": "Escapá todo lo que imprimís en HTML con htmlspecialchars($dato, ENT_QUOTES, 'UTF-8') (en Laravel, {{ $dato }} en Blade ya lo hace)."
+    },
+    "go": {
+      "sources": [
+        "r",
+        "req",
+        "request",
+        "c",
+        "ctx"
+      ],
+      "sinks": [
+        {
+          "callee": "fmt.Fprintf",
+          "args": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*(?:w|rw|res|resp|writer|response|c\\.Writer)\\s*$"
+          }
+        },
+        {
+          "callee": "fmt.Fprint",
+          "args": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*(?:w|rw|res|resp|writer|response|c\\.Writer)\\s*$"
+          }
+        },
+        {
+          "callee": "fmt.Fprintln",
+          "args": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*(?:w|rw|res|resp|writer|response|c\\.Writer)\\s*$"
+          }
+        },
+        {
+          "callee": "io.WriteString",
+          "args": [
+            1
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*(?:w|rw|res|resp|writer|response|c\\.Writer)\\s*$"
+          }
+        },
+        {
+          "callee": ".Write",
+          "args": [
+            0
+          ],
+          "receiver": "^(?:w|rw|res|resp|writer|response|c\\.Writer)$"
+        },
+        {
+          "callee": ".WriteString",
+          "args": [
+            0
+          ],
+          "receiver": "^(?:w|rw|res|resp|writer|response|c\\.Writer)$"
+        },
+        {
+          "callee": "template.HTML",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".HTML",
+          "args": [
+            1
+          ],
+          "receiver": "^(?:c|ctx)$",
+          "onlyIf": {
+            "code": "\\.HTML\\(\\s*[^,]+,(?!\\s*\"[^\"]*\\.(?:html|tmpl)\")"
+          }
+        }
+      ],
+      "sanitizers": [
+        "strconv.Atoi",
+        "strconv.ParseInt",
+        "strconv.ParseUint",
+        "strconv.ParseFloat",
+        "strconv.ParseBool",
+        "uuid.Parse",
+        "html.EscapeString",
+        "template.HTMLEscapeString",
+        "template.JSEscapeString",
+        "url.QueryEscape",
+        "os.ReadFile",
+        "ioutil.ReadFile",
+        ".Output",
+        ".CombinedOutput"
+      ],
+      "fix": "Generá el HTML con html/template, que escapa cada valor según el contexto, o escapá el dato con html.EscapeString antes de escribirlo; no lo conviertas a template.HTML."
+    }
+  }
 }

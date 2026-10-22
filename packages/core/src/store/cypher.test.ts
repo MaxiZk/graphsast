@@ -38,7 +38,15 @@ describe("store/cypher — mismas reglas que el motor en memoria", () => {
     expect(nodeStmt("db.query")).toContain("sinkCwe: 89");
     expect(nodeStmt("db.query")).toContain("sinkArgs: [0]");
     expect(nodeStmt("User.findOne")).toContain("sinkCwe: 943");
-    expect(nodeStmt("User.findOne")).toContain("sinkArgs: null");
+    expect(nodeStmt("User.findOne")).toContain("sinkArgs: [0]");
+  });
+
+  it(".save() recibe el documento en el receptor: no restringe argumentos", () => {
+    const save = analyzeGraph(`function h(req) { const doc = new User(req.body); doc.save(); }`, "s.ts");
+    const saveStmts = buildPersistStatements(save, getTaintRoles(save), annotateTaint(save, rules));
+    const stmt = saveStmts.find((s) => s.startsWith("CREATE") && s.includes(`callee: "doc.save"`))!;
+    expect(stmt).toContain("sinkCwe: 943");
+    expect(stmt).toContain("sinkArgs: null");
   });
 
   it("el sanitizer lleva las CWE para las que vale", () => {

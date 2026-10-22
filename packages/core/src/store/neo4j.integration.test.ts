@@ -107,10 +107,54 @@ describe.skipIf(!enabled)("motor Neo4j (base real)", () => {
         res.send({ name: req.body.name });
         res.send("<p>" + req.body.name + "</p>");
       });`,
+      // Entradas del navegador, startsWith sobre la ruta resuelta, spawn con
+      // y sin shell, res.status().send con texto y con un objeto.
+      `document.getElementById("t").innerHTML = location.hash;
+      document.getElementById("u").textContent = location.hash;
+      app.get("/j", (req, res) => {
+        const ruta = path.resolve(BASE, req.query.f);
+        if (!ruta.startsWith(BASE)) return res.end();
+        fs.readFileSync(ruta);
+        res.send("<p>" + ruta + "</p>");
+        spawn("ls", [req.query.d]);
+        spawn("sh", ["-c", req.query.d]);
+        const result = { q: req.query.q };
+        res.status(200).send(result);
+        res.status(400).send("No existe " + req.query.q);
+      });`,
     ];
     for (const code of cases) {
       const graph = analyzeGraph(code, "nuevo.js");
       const neo = await analyzeWithEngine(graph, { driver });
+      expect(pairs(neo.findings), code).toEqual(pairs(analyzeTaint(graph)));
+    }
+  });
+
+  it("Python, Java, PHP y Go, con las reglas de su lenguaje", async () => {
+    const files: [string, string][] = [
+      ["app.py", `from flask import request
+@app.route("/u")
+def u():
+    cursor.execute("SELECT * FROM t WHERE id = " + request.args["id"])
+    cursor.execute("SELECT * FROM t WHERE id = %s", (request.args["id"],))
+    return "<b>" + escape(request.args["n"]) + "</b>"`],
+      ["App.java", `class C { void h(HttpServletRequest request) throws Exception {
+  st.executeQuery("SELECT " + request.getParameter("id"));
+  new ProcessBuilder("ping", request.getParameter("h")).start();
+} }`],
+      ["index.php", `<?php echo $_GET["a"]; echo htmlspecialchars($_GET["b"]); mysqli_query($c, "SELECT " . (int) $_GET["id"]);`],
+      ["main.go", `package main
+func h(w http.ResponseWriter, r *http.Request) {
+  id := r.FormValue("id")
+  db.Query("SELECT * FROM t WHERE id = " + id)
+  exec.Command("sh", "-c", "ping " + id).Run()
+}`],
+    ];
+    for (const [file, code] of files) {
+      const graph = analyzeGraph(code, file);
+      expect(graph.language, file).not.toBe("javascript");
+      const neo = await analyzeWithEngine(graph, { driver });
+      expect(neo.findings.length, file).toBeGreaterThan(0);
       expect(pairs(neo.findings), code).toEqual(pairs(analyzeTaint(graph)));
     }
   });

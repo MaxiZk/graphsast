@@ -76,6 +76,7 @@ npm run cve:run          # advisories de npm
 npm run scan -- scan docs/validacion/h3/caso-a --verbose
 npm run baseline         # linea de base en el banco
 npm run nodegoat         # NodeGoat, commit c5cb68a
+npm run github-eval      # proyectos de GitHub
 \end{lstlisting}
 
 El evaluador de NodeGoat clona el repositorio en el commit
@@ -83,7 +84,11 @@ El evaluador de NodeGoat clona el repositorio en el commit
 manifiesto \texttt{eval-nodegoat.json} junto con las vulnerabilidades
 etiquetadas, el alcance del análisis y la regla de conteo. La copia se
 guarda en el directorio temporal del sistema, o en el indicado por la
-variable \texttt{NODEGOAT\_CACHE}.
+variable \texttt{NODEGOAT\_CACHE}. El evaluador de los proyectos de
+GitHub sigue el mismo esquema con el manifiesto \texttt{eval-github.json},
+que fija el commit de cada repositorio, y la variable
+\texttt{GITHUB\_EVAL\_CACHE}; informa por proyecto los dos modelos de
+origen y la línea de base.
 
 Las cifras de NodeGoat del capítulo~\ref{cap:resultados} corresponden al
 commit \texttt{36fe433} de GraphSAST, del 24 de septiembre de 2026. Para

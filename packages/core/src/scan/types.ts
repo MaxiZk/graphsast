@@ -93,7 +93,7 @@ export interface ScanOptions {
   aliases?: AliasResolver;
 }
 
-export const DEFAULT_EXTENSIONS = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"];
+export const DEFAULT_EXTENSIONS = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".py", ".java", ".php", ".go"];
 
 /** Carpetas excluidas siempre, aunque `ignore` reemplace la lista por defecto. */
 export const ALWAYS_IGNORE = ["node_modules", ".git", "dist", "build", "coverage"];

@@ -108,6 +108,8 @@ La teoría clásica de compiladores establece que el procesamiento del código f
 
 En el marco de este proyecto, el proceso de parsing se fundamenta en la API del compilador oficial de TypeScript a través de la biblioteca ts-morph. Esta herramienta permite consumir código fuente escrito en JavaScript/TypeScript y extraer una representación estructurada compuesta por nodos sintácticos (tales como declaraciones de funciones, asignaciones de variables, llamadas a métodos e identificadores).
 
+Para Python, Java, PHP y Go se emplea tree-sitter \citep{treesitter}, un generador de analizadores sintácticos que produce un árbol de sintaxis concreta a partir de una gramática por lenguaje y que tolera errores de sintaxis sin abandonar el análisis del resto del archivo. Un traductor por lenguaje recorre ese árbol y lo convierte en la misma representación intermedia que produce el análisis de JavaScript, de modo que la construcción del grafo y el análisis de contaminación no dependen del lenguaje de origen.
+
 \subsection{Representación del Código mediante Grafos: Call Graph y Data Flow Graph (DFG)}\label{sec:n3.2.3}
 
 Aunque el AST proporciona la estructura sintáctica del programa, no modela de forma explícita las relaciones de dependencia ni el recorrido de los datos a través de las diferentes funciones y módulos \citep{yamaguchi2014}. Para superar esta limitación, la literatura propone construir dos representaciones sobre el AST:

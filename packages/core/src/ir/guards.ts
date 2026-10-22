@@ -28,7 +28,18 @@ export interface Guard {
   to: number;
   /** La llamada que valida: los usos protegidos pasan por su nodo. */
   call: Node;
+  /** Familia a la que se limita la protección; sin valor, a todas. */
+  cwe?: number;
 }
+
+/**
+ * `ruta.startsWith(BASE)` sobre una ruta ya resuelta (`path.resolve`,
+ * `path.join`, `path.normalize`, `realpath`): la ruta no sale de `BASE`. Sin
+ * resolverla antes, `BASE/../secreto` pasaría la verificación. Acota solo la
+ * ruta: el mismo dato puede seguir inyectando HTML o SQL.
+ */
+const RESOLVED_PATH = /^\s*(?:await\s+)?(?:path\.)?(?:resolve|join|normalize|realpathSync|realpath)\(/;
+const PATH_TRAVERSAL_CWE = 22;
 
 /** `validator.isX(x)`: formatos que no admiten metacaracteres. */
 const VALIDATOR_FORMATS = new Set([
@@ -98,6 +109,29 @@ function regexConstants(sourceFile: SourceFile): Map<string, string> {
   return out;
 }
 
+/** Inicializador de cada variable simple del archivo, por nombre. */
+function initializersOf(sourceFile: SourceFile): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const decl of sourceFile.getDescendantsOfKind(SyntaxKind.VariableDeclaration)) {
+    const init = decl.getInitializer();
+    if (init && TsNode.isIdentifier(decl.getNameNode()) && !out.has(decl.getName())) {
+      out.set(decl.getName(), init.getText());
+    }
+  }
+  return out;
+}
+
+/** `ruta.startsWith(BASE)` con `ruta` resuelta: la expresión validada. */
+function prefixCheckedPath(call: Node, inits: ReadonlyMap<string, string>): Node | undefined {
+  if (!TsNode.isCallExpression(call)) return undefined;
+  const callee = call.getExpression();
+  if (!TsNode.isPropertyAccessExpression(callee) || callee.getName() !== "startsWith") return undefined;
+  const receiver = callee.getExpression();
+  if (!TsNode.isIdentifier(receiver) || call.getArguments().length === 0) return undefined;
+  const init = inits.get(receiver.getText());
+  return init !== undefined && RESOLVED_PATH.test(init) ? receiver : undefined;
+}
+
 /** Si la llamada valida un dato, la expresión validada. */
 function validatedExpr(call: Node, consts: ReadonlyMap<string, string>): Node | undefined {
   if (!TsNode.isCallExpression(call)) return undefined;
@@ -150,6 +184,7 @@ function alwaysExits(stmt: Node): boolean {
 /** Validaciones del archivo y la zona que protege cada una. */
 export function collectGuards(sourceFile: SourceFile): Guard[] {
   const consts = regexConstants(sourceFile);
+  const inits = initializersOf(sourceFile);
   const guards: Guard[] = [];
   for (const stmt of sourceFile.getDescendantsOfKind(SyntaxKind.IfStatement)) {
     let condition = unwrapParens(stmt.getExpression());
@@ -158,20 +193,22 @@ export function collectGuards(sourceFile: SourceFile): Guard[] {
     if (TsNode.isPrefixUnaryExpression(condition) && negated) {
       condition = unwrapParens(condition.getOperand());
     }
-    const expr = validatedExpr(condition, consts);
+    const prefixed = prefixCheckedPath(condition, inits);
+    const expr = prefixed ?? validatedExpr(condition, consts);
     if (!expr) continue;
     const key = normalizeExpr(expr.getText());
+    const scope = prefixed ? { cwe: PATH_TRAVERSAL_CWE } : {};
 
     if (negated) {
       // `if (!valido(x)) return;` → protege lo que sigue en el mismo bloque.
       if (!alwaysExits(stmt.getThenStatement())) continue;
       const container = stmt.getParent();
       if (!container) continue;
-      guards.push({ key, from: stmt.getEnd(), to: container.getEnd(), call: condition });
+      guards.push({ key, from: stmt.getEnd(), to: container.getEnd(), call: condition, ...scope });
     } else {
       // `if (valido(x)) { ... }` → protege el bloque del `if`.
       const then = stmt.getThenStatement();
-      guards.push({ key, from: then.getStart(), to: then.getEnd(), call: condition });
+      guards.push({ key, from: then.getStart(), to: then.getEnd(), call: condition, ...scope });
     }
   }
   return guards;

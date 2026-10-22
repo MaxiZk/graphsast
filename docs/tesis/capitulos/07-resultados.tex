@@ -142,7 +142,9 @@ historial de cambios.
         Integración continua & Pruebas de punta a punta de la línea de comandos, paridad con Neo4j en cada cambio e imagen de contenedor & 11/10/2026 \\
         Explicación & Explicación de cada hallazgo en la interfaz, ejemplos por familia y asistente sobre el hallazgo & 13/10/2026 \\
         Retroalimentación & Validaciones que cortan el camino, campos de clase y familias CWE-22 y CWE-95, a partir de la prueba libre & 19/10/2026 \\
-        Proyectos de GitHub & Condiciones de destino para inserciones, Sequelize, \texttt{\$eq} y respuestas JSON, a partir del análisis de siete proyectos públicos & 22/10/2026 \\
+        Proyectos de GitHub & Etiquetado y análisis de siete repositorios públicos, y condiciones de destino para inserciones, Sequelize, \texttt{\$eq} y respuestas JSON & 22/10/2026 \\
+        Pares de código & Entradas del navegador, \texttt{execFile} y \texttt{spawn} sin intérprete, validación de rutas con \texttt{startsWith} y destinos nuevos, a partir de 54 pares vulnerable/corregido & 22/10/2026 \\
+        Otros lenguajes & Python, Java, PHP y Go con tree-sitter sobre la misma representación intermedia, con 48 pares vulnerable/corregido & 22/10/2026 \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -382,9 +384,12 @@ de MongoDB como \texttt{find}, \texttt{findOne} e \texttt{insertMany}.
 Con la versión del 19 de octubre, la línea de base detecta además NG-04
 (4 de 6) y GraphSAST mantiene las mismas tres detecciones, mientras que
 los hallazgos sin etiqueta pasan de uno a 9 en la línea de base y a 15
-en GraphSAST, casi todos sobre consultas \texttt{findOne}. Esos
-hallazgos no se etiquetaron ni se revisaron a mano, por lo que la
-lectura de esta sección se limita a la versión medida.
+en GraphSAST, casi todos sobre consultas \texttt{findOne}. En la versión
+final, que restringe las consultas de MongoDB a su filtro
+(sección~\ref{sec:proyectos-github}), GraphSAST mantiene las tres
+detecciones y baja a 7 hallazgos sin etiqueta, mientras que la línea de
+base pasa a 11. Esos hallazgos no se etiquetaron ni se revisaron a mano,
+por lo que la lectura de esta sección se limita a la versión medida.
 
 \begin{table}[H]
     \centering
@@ -470,6 +475,289 @@ dato directamente, sin saneamiento intermedio, y el banco sintético fue
 construido por el autor, por lo que la diferencia observada proviene
 solo de este último.
 
+\subsection{Proyectos de GitHub}\label{sec:proyectos-github}
+
+\paragraph{Diseño.} Para medir el sistema sobre más de una aplicación
+real se analizaron siete repositorios públicos de GitHub, cada uno
+fijado en un commit: cuatro aplicaciones Node.js vulnerables a propósito
+(DVNA, vulnerable-node, dvws-node y OWASP Juice Shop) y tres proyectos sin
+vulnerabilidades documentadas que se usan como punto de partida de
+aplicaciones Express. El banco de casos que vulnerable-node publica para
+comparar analizadores se analizó por separado de la aplicación, lo que da
+ocho unidades de análisis. El 22 de octubre de 2026, antes de ejecutar el
+analizador, se etiquetaron las vulnerabilidades que cada aplicación
+documenta en sus guías, en sus soluciones o en marcas del código,
+restringidas a las familias del catálogo: 34 en código JavaScript o
+TypeScript, más dos controles limpios del banco. Otras seis, ubicadas en
+plantillas EJS, quedaron fuera porque el analizador no procesa
+plantillas. Se excluyeron las pruebas, los archivos minificados y los
+fragmentos de corrección de Juice Shop, que no compilan a propósito.
+
+Un hallazgo cuenta para una vulnerabilidad si es de la misma familia,
+está en el mismo archivo y su destino está a tres líneas o menos de la
+línea etiquetada. Los demás hallazgos se agrupan por destino, que es lo
+que la versión web presenta como una vulnerabilidad, y se revisaron a
+mano: 14 resultaron problemas reales no etiquetados, de los cuales cinco
+están documentados por el propio proyecto en otra parte, siete son
+consultas de MongoDB con un valor del cuerpo de la petición que puede
+llegar como objeto y dos son de bajo impacto; el resto se cuenta como
+falsa alarma. Se midieron los dos
+modelos de origen descriptos en el capítulo~\ref{cap:marco-tecnologico}
+y la línea de base de la sección~\ref{sec:linea-base}, sobre los mismos
+archivos. El manifiesto con los commits, las etiquetas y la revisión es
+el archivo \texttt{eval-github.json} del repositorio, y el comando
+\texttt{npm run github-eval} reproduce las cifras.
+
+\paragraph{Versiones medidas.} La primera medición se hizo con el commit
+\texttt{9261519}, vigente al etiquetar. Su análisis de las falsas
+alarmas dio lugar a las condiciones de destino descriptas en el
+capítulo~\ref{cap:marco-tecnologico}, y la medición se repitió con el
+commit \texttt{4cf721b}, que las incorpora. Las dos versiones detectan
+las mismas vulnerabilidades y difieren solo en las falsas alarmas. La
+línea de base se midió con el catálogo de la segunda versión. Una tercera
+medición, con la versión final, incorpora las correcciones que surgieron
+de los pares de código de la sección~\ref{sec:pares}; la
+tabla~\ref{tab:github-proyectos} detalla las dos primeras y la
+tabla~\ref{tab:github-metricas} resume las tres.
+
+\begin{table}[H]
+    \centering
+    \caption{Resultados por proyecto de GitHub con el modelo de origen por defecto}
+    \label{tab:github-proyectos}
+    \footnotesize
+    \setlength{\tabcolsep}{3pt}
+    \begin{tabular}{l r c c r r r r}
+        \toprule
+        & & \multicolumn{2}{c}{\tb{Detectadas}} & & \multicolumn{3}{c}{\tb{Falsas alarmas}} \\
+        \cmidrule(lr){3-4} \cmidrule(lr){6-8}
+        \tb{Proyecto} & \tb{Archivos} & \tb{GraphSAST} & \tb{\makecell{Línea\\de base}} & \tb{\makecell{Reales\\extra}} & \tb{\makecell{GraphSAST\\antes}} & \tb{\makecell{GraphSAST\\después}} & \tb{\makecell{Línea\\de base}} \\
+        \midrule
+        DVNA & 12 & 3/3 & 3/3 & 0 & 10 & 1 & 17 \\
+        vulnerable-node, banco & 14 & 5/5 & 5/5 & 1 & 0 & 0 & 5 \\
+        vulnerable-node, tienda & 21 & 5/7 & 7/7 & 0 & 1 & 1 & 22 \\
+        dvws-node & 42 & 5/9 & 7/9 & 8 & 37 & 22 & 67 \\
+        Juice Shop & 300 & 3/10 & 6/10 & 5 & 60 & 17 & 156 \\
+        realworld (normal) & 32 & -- & -- & 0 & 3 & 1 & 3 \\
+        boilerplate (normal) & 40 & -- & -- & 0 & 15 & 11 & 25 \\
+        hackathon (normal) & 20 & -- & -- & 0 & 48 & 5 & 75 \\
+        \midrule
+        Total & 481 & 21/34 & 28/34 & 14 & 174 & 58 & 370 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{Métricas sobre los proyectos de GitHub por versión}
+    \label{tab:github-metricas}
+    \small
+    \begin{tabular}{l l r r r r r}
+        \toprule
+        \tb{Versión} & \tb{Detector} & \tb{FP} & \tb{FN} & \tb{Precisión} & \tb{Exhaustividad} & \tb{$F_1$} \\
+        \midrule
+        \texttt{9261519} & GraphSAST, origen por defecto & 174 & 13 & 0,17 & 0,62 & 0,26 \\
+        \texttt{9261519} & GraphSAST, origen del catálogo & 135 & 15 & 0,19 & 0,56 & 0,29 \\
+        \midrule
+        \texttt{4cf721b} & Línea de base & 370 & 6 & 0,10 & 0,82 & 0,18 \\
+        \texttt{4cf721b} & GraphSAST, origen por defecto & 58 & 13 & 0,38 & 0,62 & 0,47 \\
+        \texttt{4cf721b} & GraphSAST, origen del catálogo & 37 & 15 & 0,46 & 0,56 & 0,51 \\
+        \midrule
+        Final & Línea de base & 421 & 4 & 0,09 & 0,88 & 0,17 \\
+        Final & GraphSAST, origen por defecto & 60 & 6 & 0,41 & 0,82 & 0,55 \\
+        Final & GraphSAST, origen del catálogo & 32 & 8 & 0,55 & 0,76 & 0,64 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+La precisión se calcula por destino: los aciertos son las
+vulnerabilidades etiquetadas detectadas más los problemas reales sin
+etiqueta, y la exhaustividad se calcula solo sobre las 34 etiquetadas.
+La revisión manual se hizo sobre los hallazgos de GraphSAST, de modo que
+los destinos que solo marca la línea de base no se revisaron uno por
+uno; su precisión de 0,10 es, por lo tanto, una cota inferior.
+
+\paragraph{Resultados.} Sobre código real el análisis del flujo mostró la
+ventaja en precisión que el banco sintético anticipaba y que NodeGoat no
+permitía observar: GraphSAST emitió 58 falsas alarmas frente a 370 de la
+línea de base, con una precisión de 0,38 frente a 0,10. En los tres
+proyectos sin vulnerabilidades documentadas, la línea de base marcó 103
+destinos y GraphSAST 17. La línea de base, en cambio, detectó siete
+vulnerabilidades más (28 frente a 21), porque marca toda llamada a un
+destino del catálogo sin exigir que el dato provenga de un origen ni
+respetar las restricciones del receptor.
+
+Las condiciones de destino redujeron las falsas alarmas de GraphSAST de
+174 a 58 con el modelo por defecto y de 135 a 37 con el del catálogo, sin
+perder ninguna detección ni ninguno de los 14 problemas reales extra. En
+la primera medición, la mitad de las falsas alarmas provenía de
+inserciones de MongoDB tratadas como consultas (\texttt{.save} y
+\texttt{.create}); el resto, de modelos de Sequelize confundidos con
+MongoDB, de consultas protegidas con \texttt{\$eq}, de respuestas JSON
+tratadas como HTML y de valores que no pueden ser un objeto, como los
+datos de un token verificado.
+
+De las 13 vulnerabilidades omitidas por GraphSAST, 12 se deben a la
+cobertura del catálogo y una al motor. Cinco son consultas \texttt{find}
+sobre colecciones nombradas en minúscula, como \texttt{col.find}, que la
+regla del destino no acepta porque exige un receptor con mayúscula o una
+llamada a \texttt{collection}; seis llegan a operaciones que el catálogo
+no registra, como \texttt{res.download}, \texttt{res.write}, la
+actualización de MongoDB, las opciones de \texttt{res.render} y
+\texttt{bypassSecurityTrustHtml} de Angular; y una es una escritura de
+archivo en un resolver de GraphQL, donde el dato llega como argumento y la
+familia CWE-22 solo acepta orígenes del catálogo. La omisión atribuible
+al motor ocurre en Juice Shop, donde el dato entra a
+\texttt{vm.runInContext} dentro del objeto de contexto y no en el código
+que se ejecuta. Este resultado coincide con el de NodeGoat: sobre código
+real, la exhaustividad está limitada por el catálogo más que por el
+recorrido del grafo.
+
+\paragraph{Versión final.} La mayoría de las correcciones de la versión
+final surgió de los pares de código (sección~\ref{sec:pares}). Al
+revisar su efecto sobre estos proyectos y sobre NodeGoat se hicieron
+tres ajustes más para no sumar falsas alarmas: los métodos que devuelven
+texto, como \texttt{trim}, cuentan como saneamiento de NoSQL; una
+respuesta con una variable inicializada como objeto se reconoce como
+JSON; y las consultas de MongoDB reciben el dato solo por su filtro y su
+actualización, no por el objeto sobre el que se invocan. Esta medición,
+por lo tanto, ya no es independiente de los ajustes, como sí lo era la
+primera. La detección subió de 21 a 28 de las 34 vulnerabilidades, con
+60 falsas alarmas en lugar de 58: la precisión
+pasó de 0,38 a 0,41 y el $F_1$, de 0,47 a 0,55
+(tabla~\ref{tab:github-metricas}). Con el modelo del catálogo, la
+precisión llegó a 0,55. Se recuperaron las cinco consultas \texttt{find},
+la descarga con \texttt{res.download} y la escritura con
+\texttt{res.write}. La línea de base también ganó detecciones, porque usa
+el mismo catálogo, y con él sus falsas alarmas subieron a 421. Quedan seis
+omisiones: la actualización de MongoDB con el método \texttt{update}, en
+desuso; las opciones de \texttt{res.render}; los dos casos de Angular; la
+escritura de archivo desde GraphQL y el contexto de \texttt{vm}. Las tres
+primeras causas son de catálogo y las dos últimas, del modelo de origen y
+del motor.
+
+\paragraph{Comparación publicada.} El repositorio de vulnerable-node
+publica los resultados de Semgrep y njsscan sobre su banco de casos. En
+los cinco casos de las familias del catálogo, GraphSAST detectó los
+cinco con el modelo por defecto, Semgrep cuatro y njsscan dos, y solo
+GraphSAST no marcó los controles limpios. Las cifras de Semgrep y njsscan
+son las publicadas por ese repositorio y no se volvieron a medir. Con el
+modelo del catálogo, GraphSAST detecta tres de los cinco, porque dos
+casos reciben el dato en un parámetro con otro nombre.
+
+\paragraph{Alcance del resultado.} Las etiquetas y la revisión son de una
+sola persona, y las siete consultas de MongoDB clasificadas como reales
+no se explotaron. Cuatro de los cinco proyectos con vulnerabilidades son
+aplicaciones construidas para enseñar, cuya densidad de fallas no es la
+de un proyecto habitual. Las cifras son posteriores al congelamiento de
+las mediciones de NodeGoat y corresponden a las versiones indicadas.
+
+\subsection{Pares de código vulnerable y corregido}\label{sec:pares}
+
+\paragraph{Diseño.} Una forma habitual de evaluar un analizador es
+presentarle dos versiones del mismo código, una vulnerable y otra
+corregida, y verificar que marque solo la primera. Para medir el sistema
+en ese escenario se escribieron pares de ese tipo en las seis familias
+del catálogo, con las formas que muestran la documentación de OWASP y
+los cursos de desarrollo seguro: concatenación frente a consulta
+parametrizada, HTML armado con el dato frente a su escape, \texttt{exec}
+frente a \texttt{execFile} con los argumentos en una lista, una ruta del
+usuario frente a \texttt{path.basename} o una verificación del prefijo, y
+\texttt{eval} frente a una tabla de funciones permitidas. Un par es
+correcto si el archivo vulnerable produce al menos un hallazgo de su
+familia y el corregido ninguno, analizando cada archivo por separado con
+el modelo de origen de la versión web.
+
+Se escribieron dos conjuntos el 22 de octubre de 2026, cada uno antes de
+ejecutar el analizador sobre él. El primero, de 33 pares con Express,
+Node.js y código de la página, se usó para ajustar: sus fallas guiaron
+las correcciones. El segundo, de 21 pares con otros marcos (Koa, Fastify,
+NestJS y Next.js) y otras bibliotecas, se escribió después de esas
+correcciones para medir si generalizaban. Los dos conjuntos están en la
+carpeta \texttt{docs/validacion/pares} del repositorio y se ejecutan
+como prueba automatizada en cada cambio.
+
+\begin{table}[H]
+    \centering
+    \caption{Pares vulnerable/corregido resueltos correctamente}
+    \label{tab:pares}
+    \small
+    \begin{tabular}{l r r r}
+        \toprule
+        \tb{Conjunto} & \tb{Pares} & \tb{Primera ejecución} & \tb{Versión final} \\
+        \midrule
+        Ajuste (JavaScript/TypeScript) & 33 & 20 & 33 \\
+        Control (JavaScript/TypeScript) & 21 & 19 & 21 \\
+        Python & 12 & 9 & 12 \\
+        Java & 12 & 6 & 12 \\
+        PHP & 12 & 11 & 12 \\
+        Go & 12 & 8 & 12 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Resultados.} En el conjunto de ajuste fallaron 13 pares, nueve
+por un vulnerable sin hallazgo y cuatro por un corregido con hallazgo. Las
+fallas se agruparon en pocas causas, que se corrigieron de forma general
+y no caso por caso:
+
+\begin{itemize}
+    \item El código de la página no tenía orígenes: el motor solo trataba
+    como entrada a los parámetros de función, y \texttt{location.hash} o
+    el valor de un campo de formulario no lo son (cuatro pares). Se
+    agregaron las entradas del navegador como origen.
+    \item \texttt{execFile} y \texttt{spawn} con los argumentos en una
+    lista, que es la corrección recomendada para la inyección de comandos,
+    se marcaban como vulnerables (tres pares). Ahora solo cuenta el
+    programa a ejecutar, salvo que se pida un intérprete de comandos.
+    \item Faltaban destinos: \texttt{res.write}, \texttt{res.sendFile},
+    \texttt{res.download} y \texttt{setTimeout} con un texto (cuatro
+    pares), y la regla de \texttt{find} de MongoDB no aceptaba colecciones
+    nombradas en minúscula (un par).
+    \item La verificación \texttt{ruta.startsWith(BASE)} sobre una ruta
+    resuelta no se reconocía como validación (un par). Se agregó, limitada
+    a la familia CWE-22, porque acotar una ruta no impide inyectar HTML con
+    el mismo dato.
+\end{itemize}
+
+El conjunto de control dio 19 de 21 en su primera ejecución. Los dos
+pares que fallaron compartían un patrón, \texttt{res.status(400).send}
+con un texto armado con el dato, que la regla de \texttt{res.send} no
+reconocía; se corrigió después, de modo que el 21 de 21 final ya no es una
+medición independiente. Con el modelo de origen del catálogo fallan dos
+pares, uno por conjunto, ambos de código de la página que recibe el dato
+como argumento de un componente de React o de una función invocada con
+la respuesta de \texttt{fetch}: ese modelo no los considera entradas, por
+diseño. Al revisar las fallas se encontró además que el recorrido armaba
+la lista de adyacencia del grafo por cada par de origen y destino;
+armarla una vez por grafo redujo el análisis de Juice Shop, que con las
+reglas nuevas demandaba 74 segundos, a 5, con los mismos resultados.
+
+\paragraph{Otros lenguajes.} Con el soporte de Python, Java, PHP y Go se
+escribió un conjunto de 12 pares por lenguaje, dos por familia, con los
+marcos más usados en cada uno (Flask, Django y FastAPI; servlets y Spring;
+mysqli, PDO y plantillas de PHP; net/http, gin, database/sql y gorm), cada
+conjunto antes de ejecutar el analizador sobre él. La
+tabla~\ref{tab:pares} muestra la primera ejecución y la versión final. En
+Java, la primera ejecución falló en los 12 pares porque el catálogo usaba
+una expresión regular con una sintaxis que JavaScript no admite; la cifra
+de la tabla es la de la primera ejecución después de corregirla, y se
+agregó una prueba que compila todas las expresiones del catálogo. Las
+fallas restantes se repartieron entre construcciones que el traductor
+todavía no modelaba (la conversión \texttt{(string)} de PHP, el
+inicializador de una colección declarada fuera de la función), destinos
+demasiado amplios (cualquier \texttt{return} de un controlador de Spring,
+aunque devolviera un objeto que se serializa como JSON; \texttt{Paths.get},
+que solo arma una ruta) y una expresión regular cuyo patrón opcional dejaba
+pasar todo, el mismo error que en la opción \texttt{shell: false} de
+JavaScript. Estos conjuntos, como el de ajuste, guiaron las correcciones,
+por lo que el 12 de 12 final no es una medición independiente.
+
+\paragraph{Alcance del resultado.} Los pares los escribió el autor y son
+cortos: miden si el sistema distingue la forma vulnerable de la corregida
+en los casos típicos, no su desempeño sobre un proyecto completo, que es
+lo que mide la sección~\ref{sec:proyectos-github}. Para Python, Java, PHP
+y Go no hubo una medición sobre proyectos reales.
+
 \subsection{Rendimiento}
 
 Sobre el banco sintético el análisis demandó 0,27\,ms por línea en la
@@ -477,7 +765,10 @@ línea de comandos. En la versión web, el análisis de un proyecto de 78
 archivos y unas 8.500 líneas demandó alrededor de 2,8\,s en el equipo de
 desarrollo. Sobre NodeGoat, con 2.032 líneas, el análisis en la línea de
 comandos demandó 161\,ms (mediana de cinco ejecuciones), unos 0,08\,s
-por cada 1.000 líneas, frente a 8\,ms de la línea de base.
+por cada 1.000 líneas, frente a 8\,ms de la línea de base. Con la
+versión final, los 300 archivos analizados de Juice Shop demandan unos
+5\,s en la línea de comandos con el modelo de origen por defecto
+(sección~\ref{sec:pares}).
 \completar{Tiempo de análisis de NodeGoat en la versión web.}
 
 % -------------------------------------------------------------
@@ -566,9 +857,10 @@ caso.
             informaba como XSS, y \texttt{eval}, como inyección de
             comandos. & Agregar al catálogo las familias CWE-22 y CWE-95,
             con su explicación y su corrección. & Implementado \\
-        Prueba libre & Soporte para Go. & Requiere otro analizador
-            sintáctico que produzca la misma representación intermedia;
-            el grafo y el análisis se reutilizan. & Trabajo futuro \\
+        Prueba libre & Soporte para Go. & Otro analizador sintáctico
+            (tree-sitter) que produce la misma representación intermedia,
+            con el grafo y el análisis reutilizados; se sumaron también
+            Python, Java y PHP. & Implementado \\
         Prueba libre & Uso desde el editor. & Empaquetar el motor como
             extensión de Visual Studio Code que marque los hallazgos en
             el código. & Trabajo futuro \\
@@ -587,21 +879,30 @@ corregida. El resultado no confirma ni refuta la efectividad del sistema,
 porque las fallas del corpus no son recorridos de un origen a un
 destino, pero deja sin evidencia sobre código real a la validación
 prevista en el capítulo~\ref{cap:metodologia}. La evidencia sobre código
-real proviene, por lo tanto, de NodeGoat (sección~\ref{sec:nodegoat}).
+real proviene, por lo tanto, de NodeGoat (sección~\ref{sec:nodegoat}) y
+de los proyectos de GitHub (sección~\ref{sec:proyectos-github}).
 
-\paragraph{Sin diferencia frente a la línea de base sobre código real.}
+\paragraph{Menor exhaustividad que la línea de base sobre código real.}
 Sobre NodeGoat, GraphSAST y la línea de base obtuvieron los mismos
 aciertos, las mismas omisiones y el mismo falso positivo
-(tabla~\ref{tab:metricas}). La ventaja del análisis sobre el grafo solo
-se observó en el banco sintético, que contiene casos saneados construidos
-por el autor. El corpus de código real tiene seis vulnerabilidades y
-ningún caso en el que un saneamiento proteja un destino, por lo que no
-alcanza para confirmar ni para descartar esa ventaja.
+(tabla~\ref{tab:metricas}). Sobre los proyectos de GitHub la línea de
+base detectó 28 de las 34 vulnerabilidades etiquetadas y GraphSAST 21
+(tabla~\ref{tab:github-metricas}). La diferencia no proviene del
+recorrido del dato sino de las restricciones que GraphSAST agrega para
+no marcar llamadas inocuas: cinco de las siete vulnerabilidades que solo
+detectó la línea de base son consultas \texttt{find} sobre un receptor
+que la regla del destino no acepta. Precisión y exhaustividad se
+intercambian en estas reglas, y la línea de base las resuelve marcando
+todo, al costo de 370 falsas alarmas. En la versión final, que amplió
+el catálogo y la regla de \texttt{find}, la diferencia se redujo a 30
+frente a 28.
 
 \paragraph{Omisiones por operaciones fuera del catálogo.} Las tres
 vulnerabilidades de NodeGoat que ningún detector encontró llegan a
 operaciones que el catálogo no registra: la consulta \texttt{find} de
-MongoDB y la emisión de datos en plantillas HTML. La cobertura del
+MongoDB y la emisión de datos en plantillas HTML. En los proyectos de
+GitHub, 12 de las 13 omisiones de la primera medición tienen la misma
+causa, y 4 de las 6 que quedan en la versión final. La cobertura del
 catálogo limitó la exhaustividad sobre código real más que el motor de
 análisis.
 
@@ -650,8 +951,8 @@ capítulo~\ref{cap:conclusiones}.
         \toprule
         \tb{Hipótesis} & \tb{Evidencia obtenida} & \tb{Sección} \\
         \midrule
-        H1 & Banco sintético: 29 de 29 casos vulnerables detectados, incluidos recorridos entre funciones y entre archivos; la línea de base también detecta los 29. NodeGoat: 3 de 6 vulnerabilidades detectadas por ambos detectores; las 3 omisiones llegan a operaciones fuera del catálogo. & \ref{sec:pruebas} \\
-        H2 & Banco sintético: 0 falsos positivos en 14 casos seguros, tres de ellos saneados y tres con nombres engañosos; dos casos vulnerables con saneamientos que no protegen el destino se detectan. La línea de base produce 5 falsos positivos en el banco. En NodeGoat, 1 falso positivo en ambos detectores. Un falso positivo por coincidencia de nombres fuera del banco. & \ref{sec:pruebas}, \ref{sec:resultados-negativos} \\
+        H1 & Banco sintético: 29 de 29 casos vulnerables detectados, incluidos recorridos entre funciones y entre archivos; la línea de base también detecta los 29. NodeGoat: 3 de 6 vulnerabilidades detectadas por ambos detectores; las 3 omisiones llegan a operaciones fuera del catálogo. Proyectos de GitHub, versión final: precisión de 0,41 frente a 0,09 de la línea de base, con exhaustividad de 0,82 frente a 0,88. Pares vulnerable/corregido: 54 de 54 en la versión final; 19 de 21 en la primera ejecución del conjunto de control. & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:pares} \\
+        H2 & Banco sintético: 0 falsos positivos en 14 casos seguros, tres de ellos saneados y tres con nombres engañosos; dos casos vulnerables con saneamientos que no protegen el destino se detectan. La línea de base produce 5 falsos positivos en el banco. En NodeGoat, 1 falso positivo en ambos detectores. En los proyectos de GitHub, versión final, 60 falsas alarmas frente a 421 de la línea de base, y 18 frente a 117 en los tres proyectos sin vulnerabilidades documentadas. Un falso positivo por coincidencia de nombres fuera del banco. & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:resultados-negativos} \\
         H3 & \completar{Resultados de las sesiones y de la entrevista.} & \ref{sec:validacion-usuarios} \\
         \bottomrule
     \end{tabularx}

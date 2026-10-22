@@ -1,10 +1,9 @@
 import type { Driver } from "neo4j-driver";
-import { graphFromSourceFile } from "../ir/graph.js";
-import { parseSource } from "../parser/parser.js";
 import { analyzeWithEngine } from "../engine/analyze.js";
 import {
   analysisPayload,
   notAnalyzablePayload,
+  prepareAnalysis,
   type AnalysisPayload,
 } from "../engine/payload.js";
 
@@ -19,10 +18,9 @@ export async function analyzeCode(
   options: { driver?: Driver } = {},
 ): Promise<AnalysisPayload> {
   const started = performance.now();
-  const parsed = parseSource(code, file);
-  if (parsed.syntaxErrors > 0) return notAnalyzablePayload(code, file, parsed, started);
+  const { parse, graph } = prepareAnalysis(code, file);
+  if (!graph) return notAnalyzablePayload(code, file, parse, started);
 
-  const graph = graphFromSourceFile(parsed.sourceFile, file);
   const { engine, findings } = await analyzeWithEngine(graph, { driver: options.driver });
-  return analysisPayload({ code, file, parsed, graph, engine, findings, started });
+  return analysisPayload({ code, file, parsed: parse, graph, engine, findings, started });
 }

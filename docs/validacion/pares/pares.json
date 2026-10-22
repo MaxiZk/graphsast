@@ -1,0 +1,523 @@
+{
+  "descripcion": "Pares de código vulnerable y corregido, como los de una evaluación docente. Cada vulnerable tiene que dar al menos un hallazgo de su familia y cada seguro, ninguno, con el modelo de origen de la versión web. Los archivos llevan .txt al final para que el análisis de código de GitHub no los tome como código del proyecto; la prueba los analiza con su nombre real.",
+  "conjuntos": {
+    "ajuste": "Escritos el 2026-10-22 antes de correr el analizador; sus fallas guiaron las correcciones del catálogo y del motor.",
+    "control": "Escritos después de esas correcciones y antes de correrlos, sin usarlos para ajustar nada. Miden si las correcciones generalizan.",
+    "python": "Python (Flask, Django, FastAPI), escritos el 2026-10-22 antes de correr el analizador sobre ellos.",
+    "java": "Java (servlets y Spring), escritos el 2026-10-22 antes de correr el analizador sobre ellos.",
+    "php": "PHP (mysqli, PDO, plantillas, MongoDB), escritos el 2026-10-22 antes de correr el analizador sobre ellos.",
+    "go": "Go (net/http, gin, database/sql, gorm, MongoDB), escritos el 2026-10-22 antes de correr el analizador sobre ellos."
+  },
+  "pares": [
+    {
+      "conjunto": "ajuste",
+      "nombre": "sql-mysql-concat",
+      "cwe": 89
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "sql-pg-template",
+      "cwe": 89
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "sql-sqlite-var",
+      "cwe": 89
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "sql-sequelize-raw",
+      "cwe": 89
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "sql-helper-function",
+      "cwe": 89
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "sql-knex-raw",
+      "cwe": 89
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "sql-ts-controller",
+      "cwe": 89
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "sql-mysql-escape",
+      "cwe": 89
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "xss-res-send",
+      "cwe": 79
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "xss-template-literal",
+      "cwe": 79
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "xss-res-write",
+      "cwe": 79
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "xss-dom-innerhtml",
+      "cwe": 79
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "xss-dom-hash",
+      "cwe": 79
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "xss-react-dangerously",
+      "cwe": 79
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "xss-document-write",
+      "cwe": 79
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "xss-jquery-html",
+      "cwe": 79
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "cmd-exec-ping",
+      "cwe": 78
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "cmd-execsync-template",
+      "cwe": 78
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "cmd-validation",
+      "cwe": 78
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "cmd-spawn-shell",
+      "cwe": 78
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "path-sendfile",
+      "cwe": 22
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "path-readfile-startswith",
+      "cwe": 22
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "path-download",
+      "cwe": 22
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "path-createreadstream",
+      "cwe": 22
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "eval-calc",
+      "cwe": 95
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "eval-function",
+      "cwe": 95
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "eval-settimeout",
+      "cwe": 95
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "eval-json",
+      "cwe": 95
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "nosql-login",
+      "cwe": 943
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "nosql-collection-find",
+      "cwe": 943
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "nosql-where",
+      "cwe": 943
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "nosql-gt-operator",
+      "cwe": 943
+    },
+    {
+      "conjunto": "ajuste",
+      "nombre": "nosql-update",
+      "cwe": 943
+    },
+    {
+      "conjunto": "control",
+      "nombre": "sql-mysql2-promise",
+      "cwe": 89
+    },
+    {
+      "conjunto": "control",
+      "nombre": "sql-better-sqlite",
+      "cwe": 89
+    },
+    {
+      "conjunto": "control",
+      "nombre": "sql-koa",
+      "cwe": 89
+    },
+    {
+      "conjunto": "control",
+      "nombre": "sql-nest-service",
+      "cwe": 89
+    },
+    {
+      "conjunto": "control",
+      "nombre": "sql-orderby-whitelist",
+      "cwe": 89
+    },
+    {
+      "conjunto": "control",
+      "nombre": "sql-parseint",
+      "cwe": 89
+    },
+    {
+      "conjunto": "control",
+      "nombre": "xss-fastify",
+      "cwe": 79
+    },
+    {
+      "conjunto": "control",
+      "nombre": "xss-error-message",
+      "cwe": 79
+    },
+    {
+      "conjunto": "control",
+      "nombre": "xss-dom-search-form",
+      "cwe": 79
+    },
+    {
+      "conjunto": "control",
+      "nombre": "xss-insertadjacent",
+      "cwe": 79
+    },
+    {
+      "conjunto": "control",
+      "nombre": "xss-next-api",
+      "cwe": 79
+    },
+    {
+      "conjunto": "control",
+      "nombre": "cmd-git-log",
+      "cwe": 78
+    },
+    {
+      "conjunto": "control",
+      "nombre": "cmd-util-promisify",
+      "cwe": 78
+    },
+    {
+      "conjunto": "control",
+      "nombre": "cmd-number-guard",
+      "cwe": 78
+    },
+    {
+      "conjunto": "control",
+      "nombre": "path-fs-promises",
+      "cwe": 22
+    },
+    {
+      "conjunto": "control",
+      "nombre": "path-unlink",
+      "cwe": 22
+    },
+    {
+      "conjunto": "control",
+      "nombre": "path-writefile",
+      "cwe": 22
+    },
+    {
+      "conjunto": "control",
+      "nombre": "eval-vm",
+      "cwe": 95
+    },
+    {
+      "conjunto": "control",
+      "nombre": "eval-template",
+      "cwe": 95
+    },
+    {
+      "conjunto": "control",
+      "nombre": "nosql-mongoose-ts",
+      "cwe": 943
+    },
+    {
+      "conjunto": "control",
+      "nombre": "nosql-deletemany",
+      "cwe": 943
+    },
+    {
+      "conjunto": "python",
+      "nombre": "sql-flask-sqlite",
+      "cwe": 89
+    },
+    {
+      "conjunto": "python",
+      "nombre": "sql-django-cursor",
+      "cwe": 89
+    },
+    {
+      "conjunto": "python",
+      "nombre": "cmd-flask-ping",
+      "cwe": 78
+    },
+    {
+      "conjunto": "python",
+      "nombre": "cmd-os-system",
+      "cwe": 78
+    },
+    {
+      "conjunto": "python",
+      "nombre": "xss-flask-return",
+      "cwe": 79
+    },
+    {
+      "conjunto": "python",
+      "nombre": "xss-django-httpresponse",
+      "cwe": 79
+    },
+    {
+      "conjunto": "python",
+      "nombre": "nosql-pymongo-login",
+      "cwe": 943
+    },
+    {
+      "conjunto": "python",
+      "nombre": "nosql-collection-find",
+      "cwe": 943
+    },
+    {
+      "conjunto": "python",
+      "nombre": "path-flask-sendfile",
+      "cwe": 22
+    },
+    {
+      "conjunto": "python",
+      "nombre": "path-open",
+      "cwe": 22
+    },
+    {
+      "conjunto": "python",
+      "nombre": "eval-calculadora",
+      "cwe": 95
+    },
+    {
+      "conjunto": "python",
+      "nombre": "ssti-render-template-string",
+      "cwe": 95
+    },
+    {
+      "conjunto": "java",
+      "nombre": "sql-servlet-statement",
+      "cwe": 89
+    },
+    {
+      "conjunto": "java",
+      "nombre": "sql-spring-jdbctemplate",
+      "cwe": 89
+    },
+    {
+      "conjunto": "java",
+      "nombre": "cmd-runtime-exec",
+      "cwe": 78
+    },
+    {
+      "conjunto": "java",
+      "nombre": "cmd-processbuilder-shell",
+      "cwe": 78
+    },
+    {
+      "conjunto": "java",
+      "nombre": "xss-servlet-writer",
+      "cwe": 79
+    },
+    {
+      "conjunto": "java",
+      "nombre": "xss-restcontroller",
+      "cwe": 79
+    },
+    {
+      "conjunto": "java",
+      "nombre": "nosql-document-parse",
+      "cwe": 943
+    },
+    {
+      "conjunto": "java",
+      "nombre": "nosql-filters-where",
+      "cwe": 943
+    },
+    {
+      "conjunto": "java",
+      "nombre": "path-new-file",
+      "cwe": 22
+    },
+    {
+      "conjunto": "java",
+      "nombre": "path-files-read",
+      "cwe": 22
+    },
+    {
+      "conjunto": "java",
+      "nombre": "eval-scriptengine",
+      "cwe": 95
+    },
+    {
+      "conjunto": "java",
+      "nombre": "eval-spel",
+      "cwe": 95
+    },
+    {
+      "conjunto": "php",
+      "nombre": "sql-mysqli",
+      "cwe": 89
+    },
+    {
+      "conjunto": "php",
+      "nombre": "sql-pdo-login",
+      "cwe": 89
+    },
+    {
+      "conjunto": "php",
+      "nombre": "cmd-system-ping",
+      "cwe": 78
+    },
+    {
+      "conjunto": "php",
+      "nombre": "cmd-backticks",
+      "cwe": 78
+    },
+    {
+      "conjunto": "php",
+      "nombre": "xss-echo",
+      "cwe": 79
+    },
+    {
+      "conjunto": "php",
+      "nombre": "xss-plantilla",
+      "cwe": 79
+    },
+    {
+      "conjunto": "php",
+      "nombre": "nosql-mongo-login",
+      "cwe": 943
+    },
+    {
+      "conjunto": "php",
+      "nombre": "nosql-collection-find",
+      "cwe": 943
+    },
+    {
+      "conjunto": "php",
+      "nombre": "path-include",
+      "cwe": 22
+    },
+    {
+      "conjunto": "php",
+      "nombre": "path-file-get-contents",
+      "cwe": 22
+    },
+    {
+      "conjunto": "php",
+      "nombre": "eval-calculadora",
+      "cwe": 95
+    },
+    {
+      "conjunto": "php",
+      "nombre": "eval-call-user-func",
+      "cwe": 95
+    },
+    {
+      "conjunto": "go",
+      "nombre": "sql-database-sql",
+      "cwe": 89
+    },
+    {
+      "conjunto": "go",
+      "nombre": "sql-gorm-raw",
+      "cwe": 89
+    },
+    {
+      "conjunto": "go",
+      "nombre": "cmd-sh-c",
+      "cwe": 78
+    },
+    {
+      "conjunto": "go",
+      "nombre": "cmd-programa-del-usuario",
+      "cwe": 78
+    },
+    {
+      "conjunto": "go",
+      "nombre": "xss-fprintf",
+      "cwe": 79
+    },
+    {
+      "conjunto": "go",
+      "nombre": "xss-template-html",
+      "cwe": 79
+    },
+    {
+      "conjunto": "go",
+      "nombre": "nosql-mapa-decodificado",
+      "cwe": 943
+    },
+    {
+      "conjunto": "go",
+      "nombre": "nosql-where",
+      "cwe": 943
+    },
+    {
+      "conjunto": "go",
+      "nombre": "path-readfile",
+      "cwe": 22
+    },
+    {
+      "conjunto": "go",
+      "nombre": "path-servefile",
+      "cwe": 22
+    },
+    {
+      "conjunto": "go",
+      "nombre": "ssti-template-parse",
+      "cwe": 95
+    },
+    {
+      "conjunto": "go",
+      "nombre": "eval-otto",
+      "cwe": 95
+    }
+  ]
+}

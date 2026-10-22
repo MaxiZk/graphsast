@@ -132,7 +132,7 @@ export function analyzeTaint(
   graph: IRGraph,
   config: TaintConfig = {},
 ): TaintFinding[] {
-  const rules = config.rules ?? defaultTaintRules();
+  const rules = config.rules ?? defaultTaintRules(graph.language);
   const sources = rootSources(
     graph,
     nodesMatching(rules, "source", graph.nodes),
@@ -201,7 +201,7 @@ export function getTaintRoles(
   graph: IRGraph,
   config: TaintConfig = {},
 ): TaintRoles {
-  const rules = config.rules ?? defaultTaintRules();
+  const rules = config.rules ?? defaultTaintRules(graph.language);
   const sources = rootSources(
     graph,
     nodesMatching(rules, "source", graph.nodes),

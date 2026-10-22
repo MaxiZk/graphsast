@@ -35,27 +35,129 @@
     },
     {
       "callee": ".create",
+      "args": [
+        0
+      ],
       "unlessFirstArg": "^\\s*\\{(?![\\s\\S]*\\.\\.\\.)"
     },
-    "findByIdAndUpdate",
-    "findByIdAndDelete",
-    "insertOne",
-    "updateOne",
-    "findOne",
-    "findOneAndUpdate",
-    "findOneAndDelete",
-    "findOneAndReplace",
-    "updateMany",
-    "deleteOne",
-    "deleteMany",
-    "replaceOne",
-    "insertMany",
-    "countDocuments",
-    "aggregate",
-    ".$where",
+    {
+      "callee": "findByIdAndUpdate",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "findByIdAndDelete",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "insertOne",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "updateOne",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "findOne",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "findOneAndUpdate",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "findOneAndDelete",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "findOneAndReplace",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "updateMany",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "deleteOne",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "deleteMany",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "replaceOne",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "insertMany",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "countDocuments",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "aggregate",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".$where",
+      "args": [
+        0
+      ]
+    },
     {
       "callee": ".find",
-      "receiver": "^[A-Z][A-Za-z0-9_]*$|\\.collection\\(.*\\)$"
+      "args": [
+        0
+      ],
+      "receiver": "^[A-Z][A-Za-z0-9_]*$|\\.collection\\(.*\\)$|[Cc]ollection$"
+    },
+    {
+      "callee": ".find",
+      "args": [
+        0
+      ],
+      "onlyIf": {
+        "receiverInit": "\\.collection\\(",
+        "firstArg": "^\\s*\\{"
+      }
     }
   ],
   "sanitizers": [
@@ -68,7 +170,315 @@
     "parseInt",
     "parseFloat",
     "Number",
-    "$eq"
+    "$eq",
+    ".toString",
+    ".trim",
+    ".toLowerCase",
+    ".toUpperCase",
+    ".replace",
+    ".replaceAll"
   ],
-  "unlessFirstArg": "(?<![\\w$])['\\\"]?where['\\\"]?\\s*:"
+  "unlessFirstArg": "(?<![\\w$])['\\\"]?where['\\\"]?\\s*:",
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": ".find",
+          "args": [
+            0
+          ],
+          "receiver": "(?:^|\\.)db(?:\\.|\\[)|[Cc]ollection|(?:^|\\.)coll?$|\\]$"
+        },
+        {
+          "callee": ".find",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*\\{",
+            "receiverInit": "MongoClient|get_collection\\(|get_database\\(|\\[\\s*['\"][^'\"]+['\"]\\s*\\]\\s*$"
+          }
+        },
+        {
+          "callee": ".find_one",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".find_one_and_update",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".find_one_and_delete",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".update_one",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".update_many",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".replace_one",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".delete_one",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".delete_many",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".count_documents",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".aggregate",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "str",
+        "int",
+        "float",
+        "ObjectId",
+        "bson.ObjectId",
+        "$eq"
+      ],
+      "fix": "Convertí cada valor al tipo esperado antes de la consulta (str(), int()) o compará con {\"$eq\": valor}: un dict del JSON del pedido puede traer operadores como $ne o $where."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": "Filters.where",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Document.parse",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "BasicDBObject.parse",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "BasicQuery",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "BasicDBObject",
+          "args": [
+            0,
+            1
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*\"\\$where\""
+          }
+        }
+      ],
+      "sanitizers": [
+        "String.valueOf",
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString"
+      ],
+      "fix": "Armá el filtro con Filters.eq(\"campo\", valor) o con los métodos de Spring Data; no parsees JSON del usuario como consulta ni uses $where con su texto."
+    },
+    "php": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": ".find",
+          "args": [
+            0
+          ],
+          "receiver": "[Cc]ollection|[Cc]oll?$|^db\\."
+        },
+        {
+          "callee": ".find",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*\\["
+          }
+        },
+        {
+          "callee": ".findOne",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".updateOne",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".updateMany",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".deleteOne",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".deleteMany",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".countDocuments",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".aggregate",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "intval",
+        "floatval",
+        "(int)",
+        "boolval",
+        "strval",
+        "(string)"
+      ],
+      "fix": "Convertí cada valor a texto antes de la consulta ((string) $_POST['usuario'] o strval): en PHP, ?usuario[$ne]=x llega como un array con un operador de MongoDB."
+    },
+    "go": {
+      "sources": [
+        "r",
+        "req",
+        "request",
+        "c",
+        "ctx"
+      ],
+      "sinks": [
+        {
+          "callee": ".Find",
+          "args": [
+            1
+          ],
+          "onlyIf": {
+            "code": "\\.Find\\(\\s*[^,]+,(?!\\s*bson\\.[MD]\\s*\\{)|\"\\$where\""
+          }
+        },
+        {
+          "callee": ".FindOne",
+          "args": [
+            1
+          ],
+          "onlyIf": {
+            "code": "\\.FindOne\\(\\s*[^,]+,(?!\\s*bson\\.[MD]\\s*\\{)|\"\\$where\""
+          }
+        },
+        {
+          "callee": ".UpdateOne",
+          "args": [
+            1,
+            2
+          ],
+          "onlyIf": {
+            "code": "\\.UpdateOne\\(\\s*[^,]+,(?!\\s*bson\\.[MD]\\s*\\{)|\"\\$where\""
+          }
+        },
+        {
+          "callee": ".DeleteMany",
+          "args": [
+            1
+          ],
+          "onlyIf": {
+            "code": "\\.DeleteMany\\(\\s*[^,]+,(?!\\s*bson\\.[MD]\\s*\\{)|\"\\$where\""
+          }
+        },
+        {
+          "callee": ".CountDocuments",
+          "args": [
+            1
+          ],
+          "onlyIf": {
+            "code": "\\.CountDocuments\\(\\s*[^,]+,(?!\\s*bson\\.[MD]\\s*\\{)|\"\\$where\""
+          }
+        }
+      ],
+      "sanitizers": [
+        "strconv.Atoi",
+        "strconv.ParseInt",
+        "strconv.ParseUint",
+        "strconv.ParseFloat",
+        "strconv.ParseBool",
+        "uuid.Parse"
+      ],
+      "fix": "Decodificá el pedido en un struct con campos de tipo string y armá el filtro vos (bson.M{\"usuario\": cred.Usuario}); no pases a la consulta un mapa decodificado del JSON del usuario."
+    }
+  }
 }

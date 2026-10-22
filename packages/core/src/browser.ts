@@ -38,4 +38,8 @@ export type {
   ScanTotals,
 } from "./scan/types.js";
 export { isProjectConfigName } from "./project/config-name.js";
+export { loadLanguages, isLanguageLoaded } from "./lang/runtime.js";
+export type { GrammarSource, RuntimeOptions } from "./lang/runtime.js";
+export { languageOf, isForeignLanguage, LANGUAGE_NAMES, FOREIGN_LANGUAGES } from "./lang/language.js";
+export type { Language, ForeignLanguage } from "./lang/language.js";
 export { VERSION } from "./version.js";

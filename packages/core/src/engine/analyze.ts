@@ -36,13 +36,13 @@ export async function analyzeWithEngine(
   graph: IRGraph,
   options: EngineOptions = {},
 ): Promise<EngineResult> {
-  const config = { rules: options.taint?.rules ?? defaultTaintRules(), ...options.taint };
+  const config = { rules: options.taint?.rules ?? defaultTaintRules(graph.language), ...options.taint };
   if (!options.driver) {
     return { engine: "memory", findings: analyzeTaint(graph, config) };
   }
 
   const roles = getTaintRoles(graph, config);
-  const annotations = annotateTaint(graph, config.rules ?? defaultTaintRules());
+  const annotations = annotateTaint(graph, config.rules ?? defaultTaintRules(graph.language));
   const run = await persistGraph(options.driver, graph, roles, options.database, annotations);
   let raw: TaintFinding[];
   try {
@@ -54,7 +54,7 @@ export async function analyzeWithEngine(
   } finally {
     await deleteRun(options.driver, run, options.database);
   }
-  const rules = config.rules ?? defaultTaintRules();
+  const rules = config.rules ?? defaultTaintRules(graph.language);
   const findings = enrichFindings(graph, raw, rules);
   return { engine: "neo4j", findings };
 }
