@@ -1,0 +1,4 @@
+name: "graphsast codeql config"
+
+paths-ignore:
+  - docs/validacion/pares/**
