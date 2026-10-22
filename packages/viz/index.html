@@ -93,7 +93,14 @@
               <label class="btn-primary file-btn">Analizar carpeta<input type="file" id="folder-input" webkitdirectory multiple hidden /></label>
               <label class="btn-ghost file-btn">Analizar archivos<input type="file" id="files-input" multiple accept=".js,.jsx,.mjs,.cjs,.ts,.tsx" hidden /></label>
             </div>
-            <p class="privacy">El análisis corre en tu navegador: el código no se sube a ningún servidor. Solo si usás el chat de Resultado se envía el hallazgo que preguntás.</p>
+            <form id="github-form" class="github-form">
+              <label class="field-label" for="github-url">O un repositorio público de GitHub</label>
+              <div class="github-row">
+                <input id="github-url" class="select github-url" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://github.com/usuario/repositorio" />
+                <button id="github-submit" class="btn-ghost" type="submit">Analizar</button>
+              </div>
+            </form>
+            <p class="privacy">El análisis corre en tu navegador: el código no se sube a ningún servidor. Con una dirección de GitHub, el navegador baja los archivos directo de GitHub. Solo si usás el chat de Resultado se envía el hallazgo que preguntás.</p>
           </div>
 
           <ol class="how-steps" aria-label="Qué pasa con lo que subís">

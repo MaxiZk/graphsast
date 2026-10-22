@@ -1019,6 +1019,24 @@ body {
   display: inline-block;
 }
 
+.github-form {
+  margin: 0.9rem auto 0;
+  max-width: 34rem;
+  text-align: left;
+}
+
+.github-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.github-row .github-url {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
 .privacy {
   margin: 0.75rem 0 0;
   font-size: 0.74rem;

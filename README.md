@@ -327,8 +327,9 @@ Publicada en https://graph-sast.vercel.app/. Para correrla en local:
 npm start          # http://localhost:5173
 ```
 
-El usuario elige o arrastra una carpeta (o archivos sueltos) de su proyecto y,
-al terminar el análisis, ve las vulnerabilidades encontradas, una por cada
+El usuario elige o arrastra una carpeta (o archivos sueltos) de su proyecto, o
+pega la dirección de un repositorio público de GitHub, y al terminar el
+análisis ve las vulnerabilidades encontradas, una por cada
 línea peligrosa (varios caminos al mismo destino se agrupan). Para la elegida,
 la explicación responde cuatro preguntas: de dónde viene el dato y por qué no
 es confiable, a dónde llega y por qué es peligroso (con un ataque de ejemplo),
@@ -347,6 +348,14 @@ CLI (`@graphsast/core/browser`, sin Neo4j): se analizan los mismos archivos
 `node_modules`, `dist`, `build` y demás carpetas excluidas, respetando los
 `.gitignore` y `.graphsastignore` subidos) y se siguen las llamadas entre archivos igual que en
 `scan`, con los alias de los `tsconfig.json`/`jsconfig.json` subidos.
+
+Con una dirección de GitHub (`https://github.com/usuario/repo`, también con
+`/tree/rama/carpeta` o como `usuario/repo`), el navegador pide el árbol de
+archivos a la API de GitHub y baja de `raw.githubusercontent.com` solo los
+que el análisis usaría, sin pasar por ningún servidor de GraphSAST. Son dos
+consultas a la API por importación, de las 60 por hora que GitHub permite sin
+iniciar sesión, y un tope de 1.500 archivos; para repositorios privados o más
+grandes, se clona y se sube la carpeta.
 
 Sobre el grafo: búsqueda de nodos por nombre, código o `archivo:línea` (Enter
 encuadra la primera coincidencia), y exportación a PNG (lo dibujado) y a JSON

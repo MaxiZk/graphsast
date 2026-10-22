@@ -55,6 +55,7 @@ import {
   filesFromInput,
   selectUploads,
 } from "./upload.js";
+import { GithubImportError, importGithubRepo, parseGithubUrl } from "./github.js";
 
 type AnalysisStats = AnalysisPayload["stats"];
 
@@ -99,6 +100,9 @@ const folderInput = document.querySelector<HTMLInputElement>("#folder-input")!;
 const filesInput = document.querySelector<HTMLInputElement>("#files-input")!;
 const selectionSummary = document.querySelector<HTMLParagraphElement>("#selection-summary")!;
 const scanProgress = document.querySelector<HTMLProgressElement>("#scan-progress")!;
+const githubForm = document.querySelector<HTMLFormElement>("#github-form")!;
+const githubUrl = document.querySelector<HTMLInputElement>("#github-url")!;
+const githubSubmit = document.querySelector<HTMLButtonElement>("#github-submit")!;
 const projectFilesEl = document.querySelector<HTMLDivElement>("#project-files")!;
 const fileList = document.querySelector<HTMLUListElement>("#file-list")!;
 const onlyVulnerable = document.querySelector<HTMLInputElement>("#only-vulnerable")!;
@@ -1149,6 +1153,7 @@ async function scanUploads(uploads: UploadedFile[]) {
   lastUploads = uploads;
   folderInput.disabled = true;
   filesInput.disabled = true;
+  githubSubmit.disabled = true;
   sourceModeSelect.disabled = true;
   dropZone.classList.add("busy");
   scanProgress.hidden = false;
@@ -1181,12 +1186,63 @@ async function scanUploads(uploads: UploadedFile[]) {
   } finally {
     folderInput.disabled = false;
     filesInput.disabled = false;
+    githubSubmit.disabled = false;
     sourceModeSelect.disabled = false;
     dropZone.classList.remove("busy");
     scanProgress.hidden = true;
     analyzing = false;
     renderPipeline();
   }
+}
+
+/**
+ * Baja un repositorio público de GitHub y lo analiza como una carpeta subida.
+ * Los archivos vienen directo de GitHub al navegador (ver `github.ts`).
+ */
+async function scanGithub() {
+  const target = parseGithubUrl(githubUrl.value);
+  if (!target) {
+    statusEl.textContent = "Esa dirección no es la de un repositorio de GitHub. Por ejemplo: https://github.com/usuario/repositorio";
+    return;
+  }
+  if (folderInput.disabled) return;
+  folderInput.disabled = true;
+  filesInput.disabled = true;
+  githubSubmit.disabled = true;
+  dropZone.classList.add("busy");
+  scanProgress.hidden = false;
+  scanProgress.value = 0;
+  selectionSummary.hidden = true;
+  statusEl.textContent = `Pidiendo a GitHub los archivos de ${target.owner}/${target.repo}…`;
+  let imported;
+  try {
+    imported = await importGithubRepo(target, {
+      onProgress: (done, total, path) => {
+        scanProgress.max = total;
+        scanProgress.value = done;
+        statusEl.textContent = `Bajando de GitHub ${done} de ${total}: ${path}`;
+      },
+    });
+  } catch (err) {
+    statusEl.textContent = err instanceof GithubImportError
+      ? err.message
+      : `No se pudo bajar el repositorio de GitHub: ${err instanceof Error ? err.message : String(err)}`;
+    return;
+  } finally {
+    folderInput.disabled = false;
+    filesInput.disabled = false;
+    githubSubmit.disabled = false;
+    dropZone.classList.remove("busy");
+    scanProgress.hidden = true;
+  }
+  await scanUploads(imported.files);
+  const { owner, repo, ref, dir } = imported.target;
+  const notes = [`GitHub: ${owner}/${repo} (${ref}${dir ? `, carpeta ${dir}` : ""})`];
+  if (imported.omitted > 0) {
+    notes.push(`${imported.omitted} archivos más quedaron afuera por el tope de la importación; para el repositorio entero, clonalo y subí la carpeta`);
+  }
+  if (imported.truncated) notes.push("GitHub devolvió la lista de archivos incompleta por el tamaño del repositorio");
+  selectionSummary.textContent = [...notes, selectionSummary.textContent].filter(Boolean).join(" · ");
 }
 
 /** Cambia de pestaña y vuelve a dibujar lo que corresponde a cada una. */
@@ -1361,6 +1417,10 @@ folderInput.addEventListener("change", () => {
   const uploads = filesFromInput(folderInput.files!);
   folderInput.value = "";
   void scanUploads(uploads);
+});
+githubForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  void scanGithub();
 });
 filesInput.addEventListener("change", () => {
   const uploads = filesFromInput(filesInput.files!);
