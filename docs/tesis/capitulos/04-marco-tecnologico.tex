@@ -86,7 +86,7 @@ Se implementaron las tres debilidades definidas en el diseño arquitectónico, s
     \end{tabularx}
 \end{table}
 
-Las operaciones sensibles registradas corresponden a llamadas habituales del ecosistema analizado: controladores de bases de datos relacionales, mapeadores objeto-documento, ejecución de procesos del sistema operativo, manipulación del modelo de objetos del documento, acceso al sistema de archivos y evaluación dinámica de código. Las operaciones de saneamiento reconocidas comprenden tanto funciones genéricas de validación y escapado como bibliotecas específicas del dominio. Las seis familias comparten un mismo conjunto de 19 orígenes, que corresponden a las entradas de Express, Koa y NestJS. Cada familia incluye además el texto que la interfaz muestra al explicar un hallazgo: el riesgo, un ejemplo de ataque y la corrección. Para la familia CWE-22 solo cuentan como origen las entradas del catálogo, dado que leer un archivo con una ruta que arma el propio programa es habitual y no constituye un riesgo.
+Las operaciones sensibles registradas corresponden a llamadas habituales del ecosistema analizado: controladores de bases de datos relacionales, mapeadores objeto-documento, ejecución de procesos del sistema operativo, manipulación del modelo de objetos del documento, acceso al sistema de archivos y evaluación dinámica de código. Las operaciones de saneamiento reconocidas comprenden tanto funciones genéricas de validación y escapado como bibliotecas específicas del dominio. Las seis familias comparten un mismo conjunto de 19 orígenes, que corresponden a las entradas de Express, Koa y NestJS. Cada familia incluye además una sección por lenguaje para Python, Java, PHP y Go, con sus propios orígenes (como \texttt{request.args} de Flask, las anotaciones de Spring o \texttt{\$\_GET} de PHP), destinos, saneamientos y corrección. Cada familia incluye además el texto que la interfaz muestra al explicar un hallazgo: el riesgo, un ejemplo de ataque y la corrección. Para la familia CWE-22 solo cuentan como origen las entradas del catálogo, dado que leer un archivo con una ruta que arma el propio programa es habitual y no constituye un riesgo.
 
 \subsection{Verificación y resultados}\label{sec:n4.2.4}
 
@@ -180,7 +180,7 @@ En consecuencia, esta validación no permite afirmar la efectividad del sistema 
 
 \paragraph{Motor de consultas por defecto.} El sistema implementa los dos motores de resolución previstos en el diseño arquitectónico: el recorrido en memoria y la consulta declarativa en Cypher sobre el grafo persistido en Neo4j. El motor sobre base de datos opera, no obstante, de manera opcional, dado que requiere una instancia activa y la configuración de la variable de entorno correspondiente; en ausencia de dicha instancia la aplicación recurre al recorrido en memoria, que constituye el modo de operación por defecto. La paridad entre ambos motores se verificó sobre casos sintéticos y no sobre proyectos de escala.
 
-\paragraph{Lenguajes analizados.} El análisis se limita a JavaScript y TypeScript. En aplicaciones cuyo servidor está escrito en otro lenguaje, como Go, solo se analiza la parte escrita en JavaScript o TypeScript.
+\paragraph{Lenguajes analizados.} El análisis cubre JavaScript, TypeScript, Python, Java, PHP y Go. Los cuatro últimos, incorporados al final del desarrollo, tienen menos precisión que JavaScript: no se siguen llamadas entre archivos, los ámbitos son las funciones y las clases y no los bloques, y las validaciones con \texttt{if} no cortan el camino, solo los saneamientos del catálogo. Las plantillas (Jinja, Thymeleaf, Blade, \texttt{html/template}) no se analizan.
 
 \paragraph{Validación con usuarios.} La validación con usuarios externos se limita a la descripta en la sección~\ref{sec:validacion-usuarios}, instancia requerida para la validación de la hipótesis relativa a la utilidad de la visualización.
 
@@ -205,6 +205,7 @@ La selección de tecnologías respondió a criterios explícitos de viabilidad, 
         Node.js & — & Entorno de ejecución & Ejecución del motor de análisis \\
         Web Workers & — & Ejecución & Análisis en segundo plano en el navegador \\
         ts-morph & 28.0 & Análisis sintáctico & Generación y recorrido del AST, con el compilador de TypeScript 6.0 incluido \\
+        web-tree-sitter & 0.27 & Análisis sintáctico & Árboles de Python, Java, PHP y Go, con gramáticas compiladas a WebAssembly \\
         Cytoscape.js & 3.34 & Visualización & Renderizado interactivo del grafo \\
         Vite & 8.3 & Construcción & Empaquetado y servidor de desarrollo \\
         Vitest & 5.0 & Pruebas & Ejecución de la suite automatizada \\
@@ -223,6 +224,8 @@ La selección de tecnologías respondió a criterios explícitos de viabilidad, 
 Se decidió utilizar la biblioteca ts-morph en lugar de programar un analizador sintáctico propio. Desarrollar un parser completo para la gramática de TypeScript y sus continuas actualizaciones habría consumido gran parte del tiempo del proyecto sin aportar valor diferencial. El aporte de GraphSAST está en los algoritmos de construcción del grafo de flujo de datos, el análisis de taint y la visualización del riesgo.
 
 ts-morph simplifica la interacción con el compilador oficial de TypeScript y expone una API clara para recorrer los nodos del AST, lo que reduce de manera considerable el código necesario para navegar la estructura del programa.
+
+Para Python, Java, PHP y Go se siguió el mismo criterio con tree-sitter \citep{treesitter}, a través de su versión en WebAssembly, que corre igual en Node.js y en el navegador. Cada lenguaje aporta una especificación breve de su árbol: qué nodos son funciones, parámetros, asignaciones, llamadas y accesos a miembros, y qué construcciones propias se modelan como llamadas, como \texttt{echo} e \texttt{include} en PHP o el retorno de una vista de Flask. Un único traductor recorre el árbol con esa especificación y produce la representación intermedia; el grafo, el análisis de contaminación, el motor sobre Neo4j y la interfaz se reutilizan sin cambios. Las gramáticas se cargan una sola vez de forma asíncrona y, en la versión web, solo cuando el proyecto contiene archivos de esos lenguajes.
 
 \subsection{Lenguaje del motor}\label{sec:n4.3.2}
 

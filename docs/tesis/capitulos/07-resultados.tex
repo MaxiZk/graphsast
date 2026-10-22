@@ -144,6 +144,7 @@ historial de cambios.
         Retroalimentación & Validaciones que cortan el camino, campos de clase y familias CWE-22 y CWE-95, a partir de la prueba libre & 19/10/2026 \\
         Proyectos de GitHub & Etiquetado y análisis de siete repositorios públicos, y condiciones de destino para inserciones, Sequelize, \texttt{\$eq} y respuestas JSON & 22/10/2026 \\
         Pares de código & Entradas del navegador, \texttt{execFile} y \texttt{spawn} sin intérprete, validación de rutas con \texttt{startsWith} y destinos nuevos, a partir de 54 pares vulnerable/corregido & 22/10/2026 \\
+        Otros lenguajes & Python, Java, PHP y Go con tree-sitter sobre la misma representación intermedia, con 48 pares vulnerable/corregido & 22/10/2026 \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -684,8 +685,12 @@ como prueba automatizada en cada cambio.
         \toprule
         \tb{Conjunto} & \tb{Pares} & \tb{Primera ejecución} & \tb{Versión final} \\
         \midrule
-        Ajuste & 33 & 20 & 33 \\
-        Control & 21 & 19 & 21 \\
+        Ajuste (JavaScript/TypeScript) & 33 & 20 & 33 \\
+        Control (JavaScript/TypeScript) & 21 & 19 & 21 \\
+        Python & 12 & 9 & 12 \\
+        Java & 12 & 6 & 12 \\
+        PHP & 12 & 11 & 12 \\
+        Go & 12 & 8 & 12 \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -727,10 +732,31 @@ la lista de adyacencia del grafo por cada par de origen y destino;
 armarla una vez por grafo redujo el análisis de Juice Shop, que con las
 reglas nuevas demandaba 74 segundos, a 5, con los mismos resultados.
 
+\paragraph{Otros lenguajes.} Con el soporte de Python, Java, PHP y Go se
+escribió un conjunto de 12 pares por lenguaje, dos por familia, con los
+marcos más usados en cada uno (Flask, Django y FastAPI; servlets y Spring;
+mysqli, PDO y plantillas de PHP; net/http, gin, database/sql y gorm), cada
+conjunto antes de ejecutar el analizador sobre él. La
+tabla~\ref{tab:pares} muestra la primera ejecución y la versión final. En
+Java, la primera ejecución falló en los 12 pares porque el catálogo usaba
+una expresión regular con una sintaxis que JavaScript no admite; la cifra
+de la tabla es la de la primera ejecución después de corregirla, y se
+agregó una prueba que compila todas las expresiones del catálogo. Las
+fallas restantes se repartieron entre construcciones que el traductor
+todavía no modelaba (la conversión \texttt{(string)} de PHP, el
+inicializador de una colección declarada fuera de la función), destinos
+demasiado amplios (cualquier \texttt{return} de un controlador de Spring,
+aunque devolviera un objeto que se serializa como JSON; \texttt{Paths.get},
+que solo arma una ruta) y una expresión regular cuyo patrón opcional dejaba
+pasar todo, el mismo error que en la opción \texttt{shell: false} de
+JavaScript. Estos conjuntos, como el de ajuste, guiaron las correcciones,
+por lo que el 12 de 12 final no es una medición independiente.
+
 \paragraph{Alcance del resultado.} Los pares los escribió el autor y son
 cortos: miden si el sistema distingue la forma vulnerable de la corregida
 en los casos típicos, no su desempeño sobre un proyecto completo, que es
-lo que mide la sección~\ref{sec:proyectos-github}.
+lo que mide la sección~\ref{sec:proyectos-github}. Para Python, Java, PHP
+y Go no hubo una medición sobre proyectos reales.
 
 \subsection{Rendimiento}
 
@@ -831,9 +857,10 @@ caso.
             informaba como XSS, y \texttt{eval}, como inyección de
             comandos. & Agregar al catálogo las familias CWE-22 y CWE-95,
             con su explicación y su corrección. & Implementado \\
-        Prueba libre & Soporte para Go. & Requiere otro analizador
-            sintáctico que produzca la misma representación intermedia;
-            el grafo y el análisis se reutilizan. & Trabajo futuro \\
+        Prueba libre & Soporte para Go. & Otro analizador sintáctico
+            (tree-sitter) que produce la misma representación intermedia,
+            con el grafo y el análisis reutilizados; se sumaron también
+            Python, Java y PHP. & Implementado \\
         Prueba libre & Uso desde el editor. & Empaquetar el motor como
             extensión de Visual Studio Code que marque los hallazgos en
             el código. & Trabajo futuro \\

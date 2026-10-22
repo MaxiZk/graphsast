@@ -1,7 +1,7 @@
 # GraphSAST
 
 Analizador estático que representa el flujo de datos de un programa
-JavaScript/TypeScript como un grafo y rastrea el recorrido de las entradas no
+JavaScript, TypeScript, Python, Java, PHP o Go como un grafo y rastrea el recorrido de las entradas no
 confiables hasta los puntos críticos, para detectar vulnerabilidades **antes**
 de ejecutar la aplicación.
 
@@ -28,7 +28,8 @@ GraphSAST se usa como **página web**, como **CLI** (terminal y CI/CD) o como
 ## Cómo funciona
 
 ```
-código fuente → AST (ts-morph) → IR → grafo (CALLS / FLOWS_TO / BINDS_TO / RETURNS)
+código fuente → AST (ts-morph para JS/TS, tree-sitter para Python/Java/PHP/Go)
+             → IR → grafo (CALLS / FLOWS_TO / BINDS_TO / RETURNS)
                                           ↓
                  enlace entre archivos (llamadas a funciones importadas)
                                           ↓
@@ -122,6 +123,27 @@ las familias. Los dos motores lo respetan.
 En `sources`, `req.body` aporta la raíz `req`, y `@Body` los parámetros
 decorados con `@Body()`. Solo se usan con `--sources catalog`.
 
+### Otros lenguajes
+
+Python, Java, PHP y Go se parsean con
+[tree-sitter](https://tree-sitter.github.io/) (`web-tree-sitter`, con las
+gramáticas en [`packages/core/grammars/`](packages/core/grammars/)) y se
+traducen a la misma representación intermedia: el grafo, el recorrido, Neo4j y
+la web son los mismos. El lenguaje se elige por la extensión (`.py`, `.java`,
+`.php`, `.go`). Cada familia del catálogo tiene una sección
+`languages.<lenguaje>` con sus orígenes, destinos, saneamientos y la
+corrección que muestra la web:
+
+| Lenguaje | Entradas | Además del catálogo |
+|---|---|---|
+| Python | `request.args`, `request.form`, `request.get_json()`... de Flask; el `request` de Django; parámetros de FastAPI | En una vista de Flask, lo que retorna es HTML (`@route.return`); `self.x` es un campo y `__init__` el constructor; imports con alias |
+| Java | `request` de un servlet; `@RequestParam`, `@PathVariable`, `@RequestBody`... | El `return` de un `@RestController` que devuelve `String` es HTML; `m(x)` dentro de la clase es `this.m(x)` |
+| PHP | `$_GET`, `$_POST`, `$_REQUEST`, `$_COOKIE`, `$_FILES`, las claves del pedido en `$_SERVER`, `php://input` | `echo`, `print`, `<?= ?>`, `include` y las comillas invertidas son destinos; `(int)` y `(string)` sanean |
+| Go | `r *http.Request`, `c *gin.Context` | `Decode(&x)` escribe en `x`; `a, err := f()`; imports con alias |
+
+Los 48 pares vulnerable/corregido de estos lenguajes están en
+[`docs/validacion/pares/`](docs/validacion/pares/) y corren con `npm test`.
+
 ## Instalación
 
 Requiere Node.js 22 o superior (el CI usa 22) y npm.
@@ -177,7 +199,7 @@ npx graphsast scan ./src                        # una carpeta, recursiva
 npx graphsast scan src lib                      # varias rutas
 ```
 
-En una carpeta se analizan `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs` y `.cjs`.
+En una carpeta se analizan `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.py`, `.java`, `.php` y `.go`.
 Siempre se excluyen `node_modules/`, `dist/`, `build/`, `coverage/` y `.git/`,
 y se respetan los `.gitignore` del proyecto analizado, incluidos los de las
 carpetas superiores hasta la raíz del repositorio. Para excluir algo más:
@@ -343,8 +365,9 @@ línea, para SQL Injection, XSS y NoSQL Injection, uno de Command Injection y
 uno en el que el dato cruza dos funciones. También se puede pegar código.
 
 El análisis corre en el navegador, en un Web Worker, con el mismo motor que el
-CLI (`@graphsast/core/browser`, sin Neo4j): se analizan los mismos archivos
-(`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx` de hasta 1 MB, fuera de
+CLI (`@graphsast/core/browser`, sin Neo4j; las gramáticas de tree-sitter se bajan
+solo si hay archivos de esos lenguajes): se analizan los mismos archivos
+(`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.py`, `.java`, `.php` y `.go` de hasta 1 MB, fuera de
 `node_modules`, `dist`, `build` y demás carpetas excluidas, respetando los
 `.gitignore` y `.graphsastignore` subidos) y se siguen las llamadas entre archivos igual que en
 `scan`, con los alias de los `tsconfig.json`/`jsconfig.json` subidos.
@@ -577,9 +600,16 @@ modificador de TypeScript, `constructor(private repo)`). Los campos de objetos
 literales y los de `static` no se siguen.
 
 **Precisión general.** El análisis no es sensible al contexto de llamada ni
-al camino de ejecución, y la profundidad máxima de un camino es 15 pasos. Solo
-se analiza JavaScript y TypeScript; un archivo que el parser no entiende es un
-error, no un archivo limpio. Las métricas del benchmark clasifican por
+al camino de ejecución, y la profundidad máxima de un camino es 15 pasos. Se
+analizan JavaScript, TypeScript, Python, Java, PHP y Go; un archivo que el
+parser no entiende es un error, no un archivo limpio.
+
+**Python, Java, PHP y Go.** Tienen menos precisión que JavaScript: no se
+siguen llamadas entre archivos, los ámbitos son las funciones y las clases (no
+los bloques), y las validaciones con `if` (regex, lista permitida,
+`startsWith`) no cortan el camino; solo lo cortan los saneamientos del
+catálogo. Las plantillas (Jinja, Thymeleaf, Blade, `html/template`) no se
+analizan. Las métricas del benchmark clasifican por
 snippet, lo que puede inflar la precisión.
 
 **API local.** Pensada para una sola persona en su máquina: no tiene

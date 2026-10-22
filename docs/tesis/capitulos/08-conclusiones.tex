@@ -172,8 +172,11 @@ de \texttt{node\_modules} ni las importaciones con ruta calculada. Los
 métodos sobre objetos de tipo desconocido se resuelven por una heurística
 de nombre único. Los destinos sensibles se reconocen por nombre,
 calificado por el módulo importado o el objeto receptor, y las
-validaciones solo cortan el camino en las formas reconocidas. El
-análisis se limita a JavaScript y TypeScript.
+validaciones solo cortan el camino en las formas reconocidas. Python,
+Java, PHP y Go se analizan con menos precisión que JavaScript: sin
+llamadas entre archivos ni validaciones que corten el camino, y sin
+medición sobre proyectos reales; su evidencia se limita a 12 pares por
+lenguaje escritos por el autor.
 
 \paragraph{De datos.} El banco sintético fue construido por el autor y
 concentra 26 de sus 43 casos en inyección SQL. El corpus de advisories
@@ -226,10 +229,10 @@ análisis sobre el grafo puede mostrar su ventaja.
 \section{Trabajo futuro}\label{sec:trabajo-futuro}
 % -------------------------------------------------------------
 
-Quedan fuera del alcance entregado: el soporte para otros lenguajes, en
-particular Go, pedido en la prueba libre, que requiere otro analizador
-sintáctico que produzca la misma representación intermedia mientras el
-grafo y el análisis se reutilizan; una extensión para Visual Studio Code
+Quedan fuera del alcance entregado: para Python, Java, PHP y Go, el
+seguimiento de llamadas entre archivos, las validaciones que cortan el
+camino y una medición sobre proyectos reales, como la de JavaScript; una
+extensión para Visual Studio Code
 que marque los hallazgos en el editor; el análisis de motores de
 plantillas; nuevas familias del catálogo, como la falsificación de
 peticiones del lado del servidor (CWE-918) y la redirección abierta
