@@ -130,6 +130,35 @@ describe.skipIf(!enabled)("motor Neo4j (base real)", () => {
     }
   });
 
+  it("Python, Java, PHP y Go, con las reglas de su lenguaje", async () => {
+    const files: [string, string][] = [
+      ["app.py", `from flask import request
+@app.route("/u")
+def u():
+    cursor.execute("SELECT * FROM t WHERE id = " + request.args["id"])
+    cursor.execute("SELECT * FROM t WHERE id = %s", (request.args["id"],))
+    return "<b>" + escape(request.args["n"]) + "</b>"`],
+      ["App.java", `class C { void h(HttpServletRequest request) throws Exception {
+  st.executeQuery("SELECT " + request.getParameter("id"));
+  new ProcessBuilder("ping", request.getParameter("h")).start();
+} }`],
+      ["index.php", `<?php echo $_GET["a"]; echo htmlspecialchars($_GET["b"]); mysqli_query($c, "SELECT " . (int) $_GET["id"]);`],
+      ["main.go", `package main
+func h(w http.ResponseWriter, r *http.Request) {
+  id := r.FormValue("id")
+  db.Query("SELECT * FROM t WHERE id = " + id)
+  exec.Command("sh", "-c", "ping " + id).Run()
+}`],
+    ];
+    for (const [file, code] of files) {
+      const graph = analyzeGraph(code, file);
+      expect(graph.language, file).not.toBe("javascript");
+      const neo = await analyzeWithEngine(graph, { driver });
+      expect(neo.findings.length, file).toBeGreaterThan(0);
+      expect(pairs(neo.findings), code).toEqual(pairs(analyzeTaint(graph)));
+    }
+  });
+
   it("no deja nodos del análisis en la base", async () => {
     const graph = analyzeGraph("function h(req) { db.query(req.body.q); }", "left.ts");
     await analyzeWithEngine(graph, { driver });

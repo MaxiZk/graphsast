@@ -478,6 +478,81 @@
         "escapeshellcmd"
       ],
       "fix": "Escapá cada argumento con escapeshellarg($host) (no el comando entero) o evitá el shell; mejor todavía, validá el dato contra una lista de valores permitidos."
+    },
+    "go": {
+      "sources": [
+        "r",
+        "req",
+        "request",
+        "c",
+        "ctx"
+      ],
+      "sinks": [
+        {
+          "callee": "exec.Command",
+          "args": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*\"(?:/(?:usr/)?bin/)?(?:ba|z|da)?sh\""
+          }
+        },
+        {
+          "callee": "exec.Command",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "exec.CommandContext",
+          "args": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "onlyIf": {
+            "code": "CommandContext\\(\\s*[^,]+,\\s*\"(?:/(?:usr/)?bin/)?(?:ba|z|da)?sh\""
+          }
+        },
+        {
+          "callee": "exec.CommandContext",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": "syscall.Exec",
+          "args": [
+            0,
+            1
+          ]
+        }
+      ],
+      "sanitizers": [
+        "strconv.Atoi",
+        "strconv.ParseInt",
+        "strconv.ParseUint",
+        "strconv.ParseFloat",
+        "strconv.ParseBool",
+        "uuid.Parse",
+        "shellescape.Quote"
+      ],
+      "fix": "Ejecutá el programa con sus argumentos por separado: exec.Command(\"ping\", \"-c\", \"1\", host), sin sh -c, y validá el dato contra lo que esperás."
     }
   }
 }

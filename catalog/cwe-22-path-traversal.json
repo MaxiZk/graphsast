@@ -416,6 +416,89 @@
         "basename"
       ],
       "fix": "Quedate solo con el nombre (basename($_GET['archivo'])) o elegí el archivo de una lista fija; nunca armes un include con un dato del pedido."
+    },
+    "go": {
+      "sources": [
+        "r",
+        "req",
+        "request",
+        "c",
+        "ctx"
+      ],
+      "sinks": [
+        {
+          "callee": "os.Open",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.OpenFile",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.ReadFile",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "ioutil.ReadFile",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.WriteFile",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.Create",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.Remove",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.RemoveAll",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "http.ServeFile",
+          "args": [
+            2
+          ]
+        },
+        {
+          "callee": ".File",
+          "args": [
+            0
+          ],
+          "receiver": "^(?:c|ctx)$"
+        }
+      ],
+      "sanitizers": [
+        "strconv.Atoi",
+        "strconv.ParseInt",
+        "strconv.ParseUint",
+        "strconv.ParseFloat",
+        "strconv.ParseBool",
+        "uuid.Parse",
+        "filepath.Base",
+        "path.Base"
+      ],
+      "fix": "Quedate solo con el nombre (filepath.Base(nombre)) y armá la ruta desde una carpeta fija, o serví la carpeta con http.FileServer(http.Dir(...)), que no deja salir de ella."
     }
   }
 }

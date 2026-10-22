@@ -413,6 +413,72 @@
         "(string)"
       ],
       "fix": "Convertí cada valor a texto antes de la consulta ((string) $_POST['usuario'] o strval): en PHP, ?usuario[$ne]=x llega como un array con un operador de MongoDB."
+    },
+    "go": {
+      "sources": [
+        "r",
+        "req",
+        "request",
+        "c",
+        "ctx"
+      ],
+      "sinks": [
+        {
+          "callee": ".Find",
+          "args": [
+            1
+          ],
+          "onlyIf": {
+            "code": "\\.Find\\(\\s*[^,]+,(?!\\s*bson\\.[MD]\\s*\\{)|\"\\$where\""
+          }
+        },
+        {
+          "callee": ".FindOne",
+          "args": [
+            1
+          ],
+          "onlyIf": {
+            "code": "\\.FindOne\\(\\s*[^,]+,(?!\\s*bson\\.[MD]\\s*\\{)|\"\\$where\""
+          }
+        },
+        {
+          "callee": ".UpdateOne",
+          "args": [
+            1,
+            2
+          ],
+          "onlyIf": {
+            "code": "\\.UpdateOne\\(\\s*[^,]+,(?!\\s*bson\\.[MD]\\s*\\{)|\"\\$where\""
+          }
+        },
+        {
+          "callee": ".DeleteMany",
+          "args": [
+            1
+          ],
+          "onlyIf": {
+            "code": "\\.DeleteMany\\(\\s*[^,]+,(?!\\s*bson\\.[MD]\\s*\\{)|\"\\$where\""
+          }
+        },
+        {
+          "callee": ".CountDocuments",
+          "args": [
+            1
+          ],
+          "onlyIf": {
+            "code": "\\.CountDocuments\\(\\s*[^,]+,(?!\\s*bson\\.[MD]\\s*\\{)|\"\\$where\""
+          }
+        }
+      ],
+      "sanitizers": [
+        "strconv.Atoi",
+        "strconv.ParseInt",
+        "strconv.ParseUint",
+        "strconv.ParseFloat",
+        "strconv.ParseBool",
+        "uuid.Parse"
+      ],
+      "fix": "Decodificá el pedido en un struct con campos de tipo string y armá el filtro vos (bson.M{\"usuario\": cred.Usuario}); no pases a la consulta un mapa decodificado del JSON del usuario."
     }
   }
 }

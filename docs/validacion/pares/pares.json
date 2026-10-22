@@ -5,7 +5,8 @@
     "control": "Escritos después de esas correcciones y antes de correrlos, sin usarlos para ajustar nada. Miden si las correcciones generalizan.",
     "python": "Python (Flask, Django, FastAPI), escritos el 2026-10-23 antes de correr el analizador sobre ellos.",
     "java": "Java (servlets y Spring), escritos el 2026-10-23 antes de correr el analizador sobre ellos.",
-    "php": "PHP (mysqli, PDO, plantillas, MongoDB), escritos el 2026-10-23 antes de correr el analizador sobre ellos."
+    "php": "PHP (mysqli, PDO, plantillas, MongoDB), escritos el 2026-10-23 antes de correr el analizador sobre ellos.",
+    "go": "Go (net/http, gin, database/sql, gorm, MongoDB), escritos el 2026-10-23 antes de correr el analizador sobre ellos."
   },
   "pares": [
     {
@@ -456,6 +457,66 @@
     {
       "conjunto": "php",
       "nombre": "eval-call-user-func",
+      "cwe": 95
+    },
+    {
+      "conjunto": "go",
+      "nombre": "sql-database-sql",
+      "cwe": 89
+    },
+    {
+      "conjunto": "go",
+      "nombre": "sql-gorm-raw",
+      "cwe": 89
+    },
+    {
+      "conjunto": "go",
+      "nombre": "cmd-sh-c",
+      "cwe": 78
+    },
+    {
+      "conjunto": "go",
+      "nombre": "cmd-programa-del-usuario",
+      "cwe": 78
+    },
+    {
+      "conjunto": "go",
+      "nombre": "xss-fprintf",
+      "cwe": 79
+    },
+    {
+      "conjunto": "go",
+      "nombre": "xss-template-html",
+      "cwe": 79
+    },
+    {
+      "conjunto": "go",
+      "nombre": "nosql-mapa-decodificado",
+      "cwe": 943
+    },
+    {
+      "conjunto": "go",
+      "nombre": "nosql-where",
+      "cwe": 943
+    },
+    {
+      "conjunto": "go",
+      "nombre": "path-readfile",
+      "cwe": 22
+    },
+    {
+      "conjunto": "go",
+      "nombre": "path-servefile",
+      "cwe": 22
+    },
+    {
+      "conjunto": "go",
+      "nombre": "ssti-template-parse",
+      "cwe": 95
+    },
+    {
+      "conjunto": "go",
+      "nombre": "eval-otto",
       "cwe": 95
     }
   ]

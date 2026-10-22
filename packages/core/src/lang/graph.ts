@@ -7,6 +7,7 @@ import { markSanitizedEdges } from "../taint/sanitized.js";
 import { defaultTaintRules } from "../taint/rules.js";
 import { buildForeignModule } from "./builder.js";
 import { LANGUAGE_NAMES, type ForeignLanguage } from "./language.js";
+import { goSpec } from "./go.js";
 import { javaSpec } from "./java.js";
 import { phpSpec } from "./php.js";
 import { pythonSpec } from "./python.js";
@@ -22,8 +23,8 @@ export function specFor(language: ForeignLanguage): LanguageSpec {
       return javaSpec();
     case "php":
       return phpSpec();
-    default:
-      throw new Error(`${LANGUAGE_NAMES[language]} todavía no está soportado.`);
+    case "go":
+      return goSpec();
   }
 }
 

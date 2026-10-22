@@ -237,6 +237,46 @@
         "boolval"
       ],
       "fix": "No evalúes texto del usuario; si tiene que elegir una operación, buscala en un array fijo de funciones permitidas."
+    },
+    "go": {
+      "sources": [
+        "r",
+        "req",
+        "request",
+        "c",
+        "ctx"
+      ],
+      "sinks": [
+        {
+          "callee": ".Parse",
+          "args": [
+            0
+          ],
+          "receiver": "[Tt]emplate\\.New\\(|^tmpl$|^t$"
+        },
+        {
+          "callee": ".RunString",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".Run",
+          "args": [
+            0
+          ],
+          "receiver": "^vm$|[Oo]tto"
+        }
+      ],
+      "sanitizers": [
+        "strconv.Atoi",
+        "strconv.ParseInt",
+        "strconv.ParseUint",
+        "strconv.ParseFloat",
+        "strconv.ParseBool",
+        "uuid.Parse"
+      ],
+      "fix": "No uses el dato como plantilla ni como código: parseá una plantilla fija y pasale el dato al ejecutarla (tmpl.Execute(w, datos))."
     }
   }
 }

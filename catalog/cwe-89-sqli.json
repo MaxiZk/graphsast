@@ -521,6 +521,100 @@
         "pg_escape_literal"
       ],
       "fix": "Usá consultas preparadas: $stmt = $pdo->prepare(\"SELECT * FROM users WHERE id = ?\"); $stmt->execute([$id]); (o bind_param con mysqli). No interpoles el dato en el texto de la consulta."
+    },
+    "go": {
+      "sources": [
+        "r",
+        "req",
+        "request",
+        "c",
+        "ctx"
+      ],
+      "sinks": [
+        {
+          "callee": ".Query",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".QueryRow",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".Exec",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".Prepare",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".QueryContext",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": ".QueryRowContext",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": ".ExecContext",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": ".PrepareContext",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": ".Raw",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".Where",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".Select",
+          "args": [
+            0
+          ],
+          "receiver": "[Dd][Bb]$|[Ss]qlx$"
+        },
+        {
+          "callee": ".Get",
+          "args": [
+            1
+          ],
+          "receiver": "[Dd][Bb]$|[Ss]qlx$"
+        }
+      ],
+      "sanitizers": [
+        "strconv.Atoi",
+        "strconv.ParseInt",
+        "strconv.ParseUint",
+        "strconv.ParseFloat",
+        "strconv.ParseBool",
+        "uuid.Parse"
+      ],
+      "fix": "Pasá los valores como argumentos de la consulta: db.Query(\"SELECT * FROM users WHERE id = $1\", id) (o ? según el driver); no armes el texto con + ni fmt.Sprintf."
     }
   }
 }
