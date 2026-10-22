@@ -19,6 +19,12 @@ export { defaultTaintRules, getRuleLabels, getCatalogBundle, RULE_LABELS } from 
 export { findPath, reaches, DEFAULT_MAX_DEPTH, DEFAULT_TAINT_PROPAGATE_EDGES } from "./taint/reach.js";
 export type { TaintConfig, TaintFinding, TaintRule, TaintRoles } from "./taint/types.js";
 
+export { loadNodeLanguages, grammarPath } from "./lang/node.js";
+export { loadLanguages, isLanguageLoaded } from "./lang/runtime.js";
+export type { GrammarSource, RuntimeOptions } from "./lang/runtime.js";
+export { languageOf, LANGUAGE_NAMES, FOREIGN_LANGUAGES, LANGUAGE_EXTENSIONS } from "./lang/language.js";
+export type { Language, ForeignLanguage } from "./lang/language.js";
+
 export { loadCatalogBundle, defaultCatalogDir } from "./catalog/load.js";
 export { rulesFromCatalog, labelsFromCatalog, calleeMatchesPattern } from "./catalog/rules.js";
 export type { CweCatalogEntry, CatalogBundle } from "./catalog/types.js";

@@ -1,3 +1,4 @@
+import type { ForeignLanguage } from "../lang/language.js";
 /**
  * Un sink con restricciones. El string suelto (`"db.query"`) equivale a
  * `{ "callee": "db.query" }`: cualquier argumento y el receptor cuentan.
@@ -36,6 +37,19 @@ export interface SinkSpec {
   onlyIf?: { receiverInit?: string; firstArg?: string; code?: string };
 }
 
+/**
+ * Orígenes, destinos y saneamientos de una familia para un lenguaje que no es
+ * JavaScript. Mismo formato que los de la raíz de la entrada.
+ */
+export interface LanguageCatalog {
+  sources?: string[];
+  sinks: (string | SinkSpec)[];
+  sanitizers: string[];
+  unlessFirstArg?: string;
+  /** Corrección con la API de ese lenguaje; sin valor, la de la familia. */
+  fix?: string;
+}
+
 export interface CweCatalogEntry {
   cwe: number;
   name: string;
@@ -67,6 +81,8 @@ export interface CweCatalogEntry {
    * y no una consulta de MongoDB.
    */
   unlessFirstArg?: string;
+  /** Python, Java, PHP y Go: sus orígenes, destinos y saneamientos. */
+  languages?: Partial<Record<ForeignLanguage, LanguageCatalog>>;
 }
 
 export interface CatalogManifest {

@@ -1,11 +1,11 @@
 import { loadCatalogBundle } from "../catalog/load.js";
 import { labelsFromCatalog, rulesFromCatalog, type SourceMode } from "../catalog/rules.js";
 import type { CatalogBundle, CatalogLabels } from "../catalog/types.js";
+import type { Language } from "../lang/language.js";
 import type { TaintRule } from "./types.js";
 
 let cachedBundle: CatalogBundle | null = null;
-let cachedRules: TaintRule[] | null = null;
-let cachedCatalogSourceRules: TaintRule[] | null = null;
+const cachedRules = new Map<string, TaintRule[]>();
 let cachedLabels: CatalogLabels | null = null;
 
 export function getCatalogBundle(): CatalogBundle {
@@ -13,19 +13,20 @@ export function getCatalogBundle(): CatalogBundle {
   return cachedBundle;
 }
 
-/** Reglas de taint desde el catálogo CWE (catalog/*.json). */
-export function defaultTaintRules(): TaintRule[] {
-  if (!cachedRules) cachedRules = rulesFromCatalog(getCatalogBundle());
-  return cachedRules;
+/** Reglas según el modelo de source (ver `SourceMode`) y el lenguaje del código. */
+export function taintRulesFor(mode: SourceMode = "params", language: Language = "javascript"): TaintRule[] {
+  const key = `${mode}\t${language}`;
+  let rules = cachedRules.get(key);
+  if (!rules) {
+    rules = rulesFromCatalog(getCatalogBundle(), mode, language);
+    cachedRules.set(key, rules);
+  }
+  return rules;
 }
 
-/** Reglas según el modelo de source (ver `SourceMode`). */
-export function taintRulesFor(mode: SourceMode = "params"): TaintRule[] {
-  if (mode === "params") return defaultTaintRules();
-  if (!cachedCatalogSourceRules) {
-    cachedCatalogSourceRules = rulesFromCatalog(getCatalogBundle(), "catalog");
-  }
-  return cachedCatalogSourceRules;
+/** Reglas de taint desde el catálogo CWE (catalog/*.json), con el modelo de source por defecto. */
+export function defaultTaintRules(language: Language = "javascript"): TaintRule[] {
+  return taintRulesFor("params", language);
 }
 
 /** Etiquetas legibles por id de regla (para UI e informes). */

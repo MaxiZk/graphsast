@@ -14,7 +14,7 @@ import type { UploadedFile } from "./protocol.js";
  * El navegador pide el árbol de archivos a la API de GitHub (dos pedidos:
  * el repositorio y el árbol) y baja cada archivo de raw.githubusercontent.com,
  * que no cuenta para el límite de la API. Solo se bajan los archivos que el
- * análisis usaría: JS/TS, configuraciones de alias y los .gitignore. El código
+ * análisis usaría: código de los lenguajes soportados, configuraciones de alias y los .gitignore. El código
  * no pasa por ningún servidor de GraphSAST, igual que al subir una carpeta.
  */
 
@@ -130,8 +130,8 @@ export async function importGithubRepo(
     .sort((a, b) => a.relative.localeCompare(b.relative));
   if (candidates.length === 0) {
     throw new GithubImportError(dir
-      ? `No hay archivos JavaScript o TypeScript en ${dir}.`
-      : "El repositorio no tiene archivos JavaScript o TypeScript para analizar.");
+      ? `No hay archivos de código para analizar en ${dir}.`
+      : "El repositorio no tiene archivos de JavaScript, TypeScript, Python, Java, PHP ni Go para analizar.");
   }
   const chosen = candidates.slice(0, MAX_GITHUB_FILES);
 

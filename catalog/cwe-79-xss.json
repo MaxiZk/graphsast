@@ -110,5 +110,68 @@
     "Number",
     "readFileSync",
     "readFile"
-  ]
+  ],
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "@route.return",
+          "args": [
+            0
+          ],
+          "unlessFirstArg": "^\\s*(?:[\\[{]|(?:flask\\.)?(?:jsonify|send_file|send_from_directory|render_template|render_template_string|redirect|make_response|Response|abort|url_for)\\()"
+        },
+        {
+          "callee": "make_response",
+          "args": [
+            0
+          ],
+          "unlessFirstArg": "^\\s*(?:[\\[{]|jsonify\\()"
+        },
+        {
+          "callee": "Response",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "HttpResponse",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "HTMLResponse",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Markup",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "mark_safe",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "escape",
+        "html.escape",
+        "markupsafe.escape",
+        "bleach.clean",
+        "conditional_escape",
+        "int",
+        "float"
+      ],
+      "fix": "Escapá el dato antes de ponerlo en el HTML (markupsafe.escape o html.escape) o usá render_template, que escapa solo; no lo envuelvas en Markup ni mark_safe."
+    }
+  }
 }

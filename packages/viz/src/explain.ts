@@ -32,7 +32,16 @@ export interface FindingExplanation {
 }
 
 /** Lo que la explicación usa de una familia del catálogo. */
-export type ExplainEntry = Pick<CweCatalogEntry, "cwe" | "name" | "description" | "attack" | "fix" | "sanitizers">;
+export type ExplainEntry = Pick<CweCatalogEntry, "cwe" | "name" | "description" | "attack" | "fix" | "sanitizers">
+  & Partial<Pick<CweCatalogEntry, "languages">>;
+
+/** La familia con la corrección y los saneamientos del lenguaje del archivo. */
+function entryForLanguage(graph: IRGraph, entry: ExplainEntry | undefined): ExplainEntry | undefined {
+  const language = graph.language;
+  if (!entry || !language || language === "javascript") return entry;
+  const own = entry.languages?.[language];
+  return own ? { ...entry, fix: own.fix ?? entry.fix, sanitizers: own.sanitizers } : entry;
+}
 
 /** Parámetros que en Express, Koa o Fetch son el request HTTP. */
 const REQUEST_NAMES = new Set(["req", "request", "ctx"]);
@@ -52,6 +61,10 @@ export function whereOf(node: IRNode): string {
 
 /** Por qué GraphSAST trata a este nodo como entrada no confiable. */
 function sourceWhy(graph: IRGraph, node: IRNode): string {
+  if (node.kind === "Call" && node.input) {
+    return "Es una entrada del usuario: lo que llega en el pedido (parámetros, formulario, "
+      + "cookies) o en la URL de la página lo decide quien la arma.";
+  }
   if (node.kind !== "Parameter") {
     return "Es el punto donde el dato entra al código analizado.";
   }
@@ -82,8 +95,9 @@ function sanitizerExamples(entry: ExplainEntry | undefined): string {
 export function explainFinding(
   graph: IRGraph,
   finding: TaintFinding,
-  entry?: ExplainEntry,
+  familyEntry?: ExplainEntry,
 ): FindingExplanation | null {
+  const entry = entryForLanguage(graph, familyEntry);
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
   const nodes = finding.path.map((id) => byId.get(id)).filter((n): n is IRNode => n !== undefined);
   const first = nodes[0];

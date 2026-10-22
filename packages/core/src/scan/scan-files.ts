@@ -7,6 +7,8 @@ import type { TaintFinding } from "../taint/types.js";
 import { extractLinks, projectIndexOf, type ModuleLinks } from "../project/links.js";
 import { buildCrossModuleEdges, connectedComponents } from "../project/link.js";
 import { aliasResolverFor, isProjectConfigName } from "../project/tsconfig.js";
+import { foreignGraph } from "../lang/graph.js";
+import { isForeignLanguage, languageOf } from "../lang/language.js";
 import type {
   ScanFinding,
   ScanFileResult,
@@ -63,7 +65,7 @@ function syntaxErrorOf(parsed: ParseResult): string | null {
   if (parsed.syntaxErrors === 0) return null;
   const sample = parsed.messages[0] ? ` (${parsed.messages[0]})` : "";
   return `No se pudo analizar: ${parsed.syntaxErrors} error(es) de sintaxis`
-    + `. Solo se admite JavaScript/TypeScript${sample}`;
+    + ` de JavaScript/TypeScript${sample}`;
 }
 
 function filterCwe(raw: TaintFinding[], options: ScanOptions): TaintFinding[] {
@@ -71,6 +73,30 @@ function filterCwe(raw: TaintFinding[], options: ScanOptions): TaintFinding[] {
     ? raw.filter((f) => f.cwe !== undefined && options.cwe!.includes(f.cwe))
     : raw;
 }
+
+/**
+ * Grafo de un archivo según su lenguaje, con los vínculos para el análisis
+ * entre archivos (solo JavaScript/TypeScript; los demás no tienen).
+ */
+function graphOf(code: string, rel: string): { graph: IRGraph; links: ModuleLinks } | { error: string } {
+  const language = languageOf(rel);
+  if (isForeignLanguage(language)) {
+    const result = foreignGraph(code, rel, language);
+    return "error" in result ? result : { graph: result.graph, links: NO_LINKS };
+  }
+  const parsed = parseSource(code, rel);
+  const error = syntaxErrorOf(parsed);
+  if (error) return { error };
+  return { graph: graphFromSourceFile(parsed.sourceFile, rel), links: extractLinks(parsed.sourceFile, rel) };
+}
+
+const NO_LINKS: ModuleLinks = {
+  imports: new Map(),
+  functions: new Map(),
+  localExports: new Map(),
+  reExports: new Map(),
+  starExports: [],
+};
 
 function failedFile(rel: string, lineCount: number, elapsedMs: number, error: string): ScanFileResult {
   return { file: rel, findings: [], lineCount, nodeCount: 0, edgeCount: 0, elapsedMs, error };
@@ -83,13 +109,12 @@ export function scanSource(
   options: ScanOptions = {},
 ): ScanFileResult {
   const started = performance.now();
-  const parsed = parseSource(code, relPath);
   const lineCount = code.split("\n").length;
-  const error = syntaxErrorOf(parsed);
-  if (error) return failedFile(relPath, lineCount, performance.now() - started, error);
+  const built = graphOf(code, relPath);
+  if ("error" in built) return failedFile(relPath, lineCount, performance.now() - started, built.error);
 
-  const graph = graphFromSourceFile(parsed.sourceFile, relPath);
-  const raw = analyzeTaint(graph, { maxDepth: options.maxDepth, rules: taintRulesFor(options.sources) });
+  const { graph } = built;
+  const raw = analyzeTaint(graph, { maxDepth: options.maxDepth, rules: taintRulesFor(options.sources, graph.language) });
   return {
     file: relPath,
     findings: toScanFindings(relPath, graph, filterCwe(raw, options)),
@@ -210,17 +235,16 @@ export function scanFilesWithGraphs(
     try {
       const code = input.content;
       const lineCount = code.split("\n").length;
-      const result = parseSource(code, rel);
-      const error = syntaxErrorOf(result);
-      if (error) {
-        failed.set(rel, failedFile(rel, lineCount, performance.now() - started, error));
+      const built = graphOf(code, rel);
+      if ("error" in built) {
+        failed.set(rel, failedFile(rel, lineCount, performance.now() - started, built.error));
         return;
       }
       parsed.push({
         abs: `/${rel}`,
         rel,
-        graph: graphFromSourceFile(result.sourceFile, rel),
-        links: extractLinks(result.sourceFile, rel),
+        graph: built.graph,
+        links: built.links,
         lineCount,
         elapsedMs: performance.now() - started,
       });
@@ -246,7 +270,8 @@ export function scanFilesWithGraphs(
     const started = performance.now();
     const members = component.map((abs) => byAbs.get(abs)!);
     const graph = members.length === 1 ? members[0]!.graph : mergeGraphs(members, cross.edges, cross.exactCallIds);
-    const raw = filterCwe(analyzeTaint(graph, { maxDepth: options.maxDepth, rules: taintRulesFor(options.sources) }), options);
+    const rules = taintRulesFor(options.sources, members[0]!.graph.language);
+    const raw = filterCwe(analyzeTaint(graph, { maxDepth: options.maxDepth, rules }), options);
     const scanFindings = toScanFindings(members[0]!.rel, graph, raw);
     for (const f of scanFindings) {
       const list = findingsByFile.get(f.file);

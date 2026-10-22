@@ -91,5 +91,52 @@
     "parseInt",
     "parseFloat",
     "Number"
-  ]
+  ],
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "eval",
+          "args": [
+            0
+          ],
+          "bare": true
+        },
+        {
+          "callee": "exec",
+          "args": [
+            0
+          ],
+          "bare": true
+        },
+        {
+          "callee": "compile",
+          "args": [
+            0
+          ],
+          "bare": true
+        },
+        {
+          "callee": "render_template_string",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "jinja2.Template",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "int",
+        "float"
+      ],
+      "fix": "No evalúes texto del usuario. Para datos, usá json.loads o ast.literal_eval; para plantillas, render_template con el dato como variable."
+    }
+  }
 }

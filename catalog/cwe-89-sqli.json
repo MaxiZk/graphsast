@@ -198,5 +198,68 @@
     "parseInt",
     "parseFloat",
     "Number"
-  ]
+  ],
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": ".execute",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".executemany",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".executescript",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".raw",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".extra",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "sqlalchemy.text",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".read_sql",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".read_sql_query",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "int",
+        "float",
+        ".escape_string"
+      ],
+      "fix": "Pasá los valores como parámetros del driver: cursor.execute(\"SELECT * FROM users WHERE id = %s\", (user_id,)) (o ? en sqlite3). Nunca armes el texto de la consulta con +, % o f-strings."
+    }
+  }
 }

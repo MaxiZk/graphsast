@@ -180,5 +180,76 @@
     "parseInt",
     "parseFloat",
     "Number"
-  ]
+  ],
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "open",
+          "args": [
+            0
+          ],
+          "bare": true
+        },
+        {
+          "callee": "io.open",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "codecs.open",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "send_file",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "FileResponse",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.remove",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.unlink",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.listdir",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "shutil.rmtree",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "os.path.basename",
+        "basename",
+        "secure_filename",
+        "int"
+      ],
+      "fix": "Quedate solo con el nombre del archivo (os.path.basename o secure_filename de Werkzeug) o servilo con send_from_directory, que no deja salir de la carpeta."
+    }
+  }
 }

@@ -1,6 +1,33 @@
 import type { IRCall } from "../ir/types.js";
+import { FOREIGN_LANGUAGES, type ForeignLanguage, type Language } from "../lang/language.js";
 import type { TaintRule } from "../taint/types.js";
 import type { CatalogBundle, CatalogLabels, CweCatalogEntry, SinkSpec } from "./types.js";
+
+/** Una familia vista desde un lenguaje: sus orígenes, destinos y saneamientos. */
+type RuleEntry = CweCatalogEntry & { language?: ForeignLanguage };
+
+/**
+ * Las familias del catálogo para un lenguaje. JavaScript usa la raíz de cada
+ * entrada; los demás, su sección `languages.<lenguaje>` (una familia sin
+ * sección no tiene reglas en ese lenguaje).
+ */
+export function entriesFor(bundle: CatalogBundle, language: Language = "javascript"): RuleEntry[] {
+  if (language === "javascript") return bundle.entries;
+  return bundle.entries.flatMap((entry) => {
+    const own = entry.languages?.[language];
+    if (!own) return [];
+    const { languages: _all, unlessFirstArg: _js, ...family } = entry;
+    return [{
+      ...family,
+      language,
+      sources: own.sources ?? [],
+      sinks: own.sinks,
+      sanitizers: own.sanitizers,
+      ...(own.unlessFirstArg !== undefined ? { unlessFirstArg: own.unlessFirstArg } : {}),
+      ...(own.fix !== undefined ? { fix: own.fix } : {}),
+    }];
+  });
+}
 
 const SOURCE_PARAM_BLOCKLIST = new Set(["res", "next", "_"]);
 
@@ -25,8 +52,9 @@ export function sinkSpecOf(sink: string | SinkSpec): SinkSpec {
 }
 
 /** Id de regla estable por patrón (los ids salen en SARIF y en la UI). */
-function ruleIdOf(entry: CweCatalogEntry, kind: "sink" | "sanitizer", pattern: string): string {
-  return `cwe-${entry.cwe}-${kind}-${pattern.replace(/[^\w]+/g, "_")}`;
+function ruleIdOf(entry: RuleEntry, kind: "sink" | "sanitizer", pattern: string): string {
+  const language = entry.language ? `${entry.language}-` : "";
+  return `cwe-${entry.cwe}-${language}${kind}-${pattern.replace(/[^\w]+/g, "_")}`;
 }
 
 /** Texto del receptor de un callee miembro: `User` en `User.find`. */
@@ -97,7 +125,7 @@ export function sinkConditionsHold(call: IRCall, conditions: SinkConditions): bo
  * si lo hay, está adentro.
  */
 function sinkRule(
-  entry: CweCatalogEntry,
+  entry: RuleEntry,
   sink: string | SinkSpec,
   catalogSource: TaintRule,
 ): TaintRule {
@@ -120,7 +148,7 @@ function sinkRule(
   };
 }
 
-function sanitizerRule(entry: CweCatalogEntry, pattern: string): TaintRule {
+function sanitizerRule(entry: RuleEntry, pattern: string): TaintRule {
   return {
     id: ruleIdOf(entry, "sanitizer", pattern),
     kind: "sanitizer",
@@ -144,10 +172,13 @@ function sanitizerRule(entry: CweCatalogEntry, pattern: string): TaintRule {
 export type SourceMode = "params" | "catalog";
 
 /** Raíces y decoradores que el catálogo declara como sources. */
-export function catalogSourceMatchers(bundle: CatalogBundle): { roots: Set<string>; decorators: Set<string> } {
+export function catalogSourceMatchers(
+  bundle: CatalogBundle,
+  language: Language = "javascript",
+): { roots: Set<string>; decorators: Set<string> } {
   const roots = new Set<string>();
   const decorators = new Set<string>();
-  for (const entry of bundle.entries) {
+  for (const entry of entriesFor(bundle, language)) {
     for (const source of entry.sources) {
       if (source.startsWith("@")) decorators.add(source.slice(1));
       else roots.add(source.split(".")[0]!);
@@ -166,7 +197,7 @@ const BROWSER_INPUT_RULE: TaintRule = {
   match: (n) => n.kind === "Call" && (n as IRCall).input === true,
 };
 
-function sourceRule(bundle: CatalogBundle, mode: SourceMode): TaintRule {
+function sourceRule(bundle: CatalogBundle, mode: SourceMode, language: Language = "javascript"): TaintRule {
   if (mode === "params") {
     return {
       id: "param-any",
@@ -175,13 +206,16 @@ function sourceRule(bundle: CatalogBundle, mode: SourceMode): TaintRule {
         n.kind === "Parameter" && !SOURCE_PARAM_BLOCKLIST.has(n.name),
     };
   }
-  const { roots, decorators } = catalogSourceMatchers(bundle);
+  const { roots, decorators } = catalogSourceMatchers(bundle, language);
   return {
     id: "param-catalog",
     kind: "source",
+    // Las lecturas de entradas conocidas (`request.args`, `$_GET`, `location`)
+    // también son entradas del catálogo: cuentan para `requireCatalogSource`.
     match: (n) =>
-      n.kind === "Parameter"
-      && (roots.has(n.name) || (n.decorators ?? []).some((d) => decorators.has(d))),
+      (n.kind === "Parameter"
+        && (roots.has(n.name) || (n.decorators ?? []).some((d) => decorators.has(d))))
+      || (n.kind === "Call" && (n as IRCall).input === true),
   };
 }
 
@@ -211,11 +245,12 @@ function familyGuardRule(entry: CweCatalogEntry): TaintRule {
 export function rulesFromCatalog(
   bundle: CatalogBundle,
   sourceMode: SourceMode = "params",
+  language: Language = "javascript",
 ): TaintRule[] {
-  const rules: TaintRule[] = [sourceRule(bundle, sourceMode), BROWSER_INPUT_RULE, GUARD_RULE];
-  const catalogSource = sourceRule(bundle, "catalog");
+  const rules: TaintRule[] = [sourceRule(bundle, sourceMode, language), BROWSER_INPUT_RULE, GUARD_RULE];
+  const catalogSource = sourceRule(bundle, "catalog", language);
 
-  for (const entry of bundle.entries) {
+  for (const entry of entriesFor(bundle, language)) {
     rules.push(familyGuardRule(entry));
     for (const sink of entry.sinks) {
       rules.push(sinkRule(entry, sink, catalogSource));
@@ -233,9 +268,10 @@ export function labelsFromCatalog(bundle: CatalogBundle): CatalogLabels {
     "param-any": "Parámetros de función (excepto res/next)",
     "param-catalog": "Parámetros declarados como source en el catálogo",
     "guard-validation": "Validación antes del uso (regex anclada, lista permitida, Number.isInteger, validator.isX)",
-    "browser-input": "Entrada del navegador (location, document.cookie, input.value, $(...).val())",
+    "browser-input": "Entrada del usuario leída sin parámetro (location, input.value, request.args, $_GET)",
   };
-  for (const entry of bundle.entries) {
+  const entries = [bundle.entries, ...FOREIGN_LANGUAGES.map((l) => entriesFor(bundle, l))].flat();
+  for (const entry of entries) {
     labels[`guard-validation-cwe-${entry.cwe}`] = `Validación que acota el dato para CWE-${entry.cwe} (ruta resuelta con startsWith)`;
     for (const sink of entry.sinks) {
       const { callee } = sinkSpecOf(sink);

@@ -1,3 +1,5 @@
+import type { Language } from "../lang/language.js";
+
 export type IRNodeKind =
   | "Function"
   | "Parameter"
@@ -180,4 +182,9 @@ export interface IRGraph {
   file: string;
   nodes: IRNode[];
   edges: IREdge[];
+  /**
+   * Lenguaje del código (sin valor, JavaScript/TypeScript): decide qué parte
+   * del catálogo se aplica (ver `CweCatalogEntry.languages`).
+   */
+  language?: Language;
 }

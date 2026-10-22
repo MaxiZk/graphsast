@@ -64,7 +64,7 @@ describe("describeSelection", () => {
       ]),
     );
     expect(text).toBe(
-      "1 archivo JavaScript/TypeScript para analizar · 1 en node_modules u otras "
+      "1 archivo de código para analizar · 1 en node_modules u otras "
       + "carpetas excluidas · 1 de otros tipos · 1 demasiado grande (más de 1 MB)",
     );
   });

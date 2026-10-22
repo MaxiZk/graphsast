@@ -21,6 +21,7 @@ import type {
   WorkerRequest,
   WorkerResponse,
 } from "./protocol.js";
+import { ensureLanguagesFor } from "./grammars.js";
 
 function reply(message: WorkerResponse) {
   self.postMessage(message);
@@ -55,6 +56,7 @@ async function analyzeProject(
   sourceMode: SourceMode,
 ): Promise<ProjectAnalysis> {
   const inputs = await readAll(files);
+  await ensureLanguagesFor(inputs.map((i) => i.path));
   // Los tsconfig van entre los archivos: el escaneo los separa y usa sus alias.
   const configInputs = (await readAll(configs)).filter((c) => "content" in c);
   const output = scanFilesWithGraphs(
@@ -64,8 +66,8 @@ async function analyzeProject(
     (done, total, file) => reply({ id, kind: "progress", done, total, file }),
   );
   // Las mismas reglas que el escaneo: el grafo marca como entrada lo que el análisis usó.
-  const rules = taintRulesFor(sourceMode);
-  const roles = output.graphs.map(({ graph }) => getTaintRoles(graph, { rules }));
+  const roles = output.graphs.map(({ graph }) =>
+    getTaintRoles(graph, { rules: taintRulesFor(sourceMode, graph.language) }));
   const sources = roles.reduce((n, r) => n + r.sourceIds.length, 0);
   const sinks = roles.reduce((n, r) => n + r.sinkIds.length, 0);
   const contents: Record<string, string> = {};
@@ -87,6 +89,7 @@ self.addEventListener("message", async (event: MessageEvent<WorkerRequest>) => {
   const request = event.data;
   try {
     if (request.kind === "snippet") {
+      await ensureLanguagesFor([request.file]);
       reply({ id: request.id, kind: "snippet", payload: analyzeSource(request.code, request.file) });
     } else {
       reply({ id: request.id, kind: "project", analysis: await analyzeProject(request.id, request.files, request.configs, request.sources) });

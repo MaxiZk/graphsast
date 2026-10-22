@@ -24,7 +24,7 @@ export interface UploadSelection {
   gitignored: number;
   /** Excluidos por un `.graphsastignore` del proyecto. */
   graphsastIgnored: number;
-  /** Extensión que no es JavaScript/TypeScript. */
+  /** Extensión de un lenguaje que no se analiza. */
   otherLanguage: number;
   tooLarge: number;
 }
@@ -112,7 +112,7 @@ export function selectUploads(
 /** Resumen de lo elegido: cuántos se analizan y por qué quedaron afuera los demás. */
 export function describeSelection(selection: UploadSelection): string {
   const parts = [
-    `${plural(selection.accepted.length, "archivo JavaScript/TypeScript", "archivos JavaScript/TypeScript")} para analizar`,
+    `${plural(selection.accepted.length, "archivo de código", "archivos de código")} para analizar`,
   ];
   if (selection.ignored) {
     parts.push(`${selection.ignored} en node_modules u otras carpetas excluidas`);

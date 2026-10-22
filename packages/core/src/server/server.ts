@@ -7,6 +7,7 @@ import { getCatalogBundle } from "../taint/rules.js";
 import { VERSION } from "../version.js";
 import { analyzeCode } from "./analyze-code.js";
 import { PathRejectedError, resolveInsideRoot } from "./paths.js";
+import { loadNodeLanguages } from "../lang/node.js";
 
 /**
  * Única interfaz en la que escucha la API. No es configurable a propósito:
@@ -258,7 +259,8 @@ export function createApiHandler(options: ApiOptions) {
 }
 
 /** Levanta la API en 127.0.0.1. Con `port: 0` el sistema elige un puerto libre. */
-export function startApiServer(options: ApiOptions & { port?: number }): Promise<Server> {
+export async function startApiServer(options: ApiOptions & { port?: number }): Promise<Server> {
+  await loadNodeLanguages();
   const server = http.createServer(createApiHandler(options));
   return new Promise((resolve, reject) => {
     server.once("error", reject);

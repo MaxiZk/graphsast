@@ -178,5 +178,104 @@
     ".replace",
     ".replaceAll"
   ],
-  "unlessFirstArg": "(?<![\\w$])['\\\"]?where['\\\"]?\\s*:"
+  "unlessFirstArg": "(?<![\\w$])['\\\"]?where['\\\"]?\\s*:",
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": ".find",
+          "args": [
+            0
+          ],
+          "receiver": "(?:^|\\.)db(?:\\.|\\[)|[Cc]ollection|(?:^|\\.)coll?$|\\]$"
+        },
+        {
+          "callee": ".find",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*\\{",
+            "receiverInit": "MongoClient|get_collection\\(|get_database\\(|\\[\\s*['\"][^'\"]+['\"]\\s*\\]\\s*$"
+          }
+        },
+        {
+          "callee": ".find_one",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".find_one_and_update",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".find_one_and_delete",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".update_one",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".update_many",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".replace_one",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".delete_one",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".delete_many",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".count_documents",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".aggregate",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "str",
+        "int",
+        "float",
+        "ObjectId",
+        "bson.ObjectId",
+        "$eq"
+      ],
+      "fix": "Convertí cada valor al tipo esperado antes de la consulta (str(), int()) o compará con {\"$eq\": valor}: un dict del JSON del pedido puede traer operadores como $ne o $where."
+    }
+  }
 }

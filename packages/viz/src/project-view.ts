@@ -73,13 +73,13 @@ export function projectVerdict(
       kind: "not-analyzable",
       conclusive: false,
       title: totals.files === 0
-        ? "No hay archivos JavaScript o TypeScript para analizar"
+        ? "No hay archivos de código para analizar"
         : "No se pudo analizar ningún archivo",
       detail: totals.files === 0
-        ? "GraphSAST analiza archivos .js, .jsx, .mjs, .cjs, .ts y .tsx fuera de "
-          + "node_modules, dist y build."
+        ? "GraphSAST analiza archivos .js, .jsx, .mjs, .cjs, .ts, .tsx, .py, .java, "
+          + ".php y .go fuera de node_modules, dist y build."
         : `Los ${plural(totals.files, "archivo tiene", "archivos tienen")} errores de sintaxis `
-          + "o no son JavaScript/TypeScript.",
+          + "o su extensión no corresponde al lenguaje.",
     };
   }
 

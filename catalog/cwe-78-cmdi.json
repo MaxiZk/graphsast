@@ -246,5 +246,90 @@
     "parseInt",
     "parseFloat",
     "Number"
-  ]
+  ],
+  "languages": {
+    "python": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "os.system",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "os.popen",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "subprocess.getoutput",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "subprocess.getstatusoutput",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "subprocess.run",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "code": "\\bshell\\s*=\\s*True\\b"
+          }
+        },
+        {
+          "callee": "subprocess.call",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "code": "\\bshell\\s*=\\s*True\\b"
+          }
+        },
+        {
+          "callee": "subprocess.check_call",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "code": "\\bshell\\s*=\\s*True\\b"
+          }
+        },
+        {
+          "callee": "subprocess.check_output",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "code": "\\bshell\\s*=\\s*True\\b"
+          }
+        },
+        {
+          "callee": "subprocess.Popen",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "code": "\\bshell\\s*=\\s*True\\b"
+          }
+        }
+      ],
+      "sanitizers": [
+        "shlex.quote",
+        "pipes.quote",
+        "int",
+        "float"
+      ],
+      "fix": "Pasá el programa y sus argumentos como lista, sin shell: subprocess.run([\"ping\", \"-c\", \"1\", host]). Si hace falta un shell, escapá cada valor con shlex.quote."
+    }
+  }
 }

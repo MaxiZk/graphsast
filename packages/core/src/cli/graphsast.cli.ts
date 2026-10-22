@@ -2,6 +2,7 @@
 import { statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { scanPaths } from "../scan/scan.js";
+import { loadNodeLanguages } from "../lang/node.js";
 import { assertReadableTarget, ScanInputError } from "../scan/files.js";
 import { reportToText } from "../scan/reporters/text.js";
 import { reportToSarif, type SarifFamily } from "../scan/reporters/sarif.js";
@@ -404,9 +405,9 @@ if (argv[0] === "serve") {
     if (code !== null) process.exitCode = code;
   }, fail);
 } else {
-  try {
+  // Las gramáticas de Python, Java, PHP y Go se cargan una vez (WebAssembly);
+  // después el análisis es sincrónico.
+  loadNodeLanguages().then(() => {
     process.exitCode = main(argv);
-  } catch (err) {
-    fail(err);
-  }
+  }).catch(fail);
 }

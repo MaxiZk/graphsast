@@ -1146,7 +1146,7 @@ async function scanUploads(uploads: UploadedFile[]) {
   selectionSummary.hidden = false;
   selectionSummary.textContent = describeSelection(selection);
   if (selection.accepted.length === 0) {
-    statusEl.textContent = "No hay archivos JavaScript o TypeScript para analizar.";
+    statusEl.textContent = "No hay archivos de JavaScript, TypeScript, Python, Java, PHP ni Go para analizar.";
     return;
   }
 
