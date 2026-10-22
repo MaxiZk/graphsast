@@ -8,6 +8,7 @@ import { defaultTaintRules } from "../taint/rules.js";
 import { buildForeignModule } from "./builder.js";
 import { LANGUAGE_NAMES, type ForeignLanguage } from "./language.js";
 import { javaSpec } from "./java.js";
+import { phpSpec } from "./php.js";
 import { pythonSpec } from "./python.js";
 import { parseForeign } from "./runtime.js";
 import type { LanguageSpec } from "./spec.js";
@@ -19,6 +20,8 @@ export function specFor(language: ForeignLanguage): LanguageSpec {
       return pythonSpec();
     case "java":
       return javaSpec();
+    case "php":
+      return phpSpec();
     default:
       throw new Error(`${LANGUAGE_NAMES[language]} todavía no está soportado.`);
   }

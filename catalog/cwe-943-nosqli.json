@@ -337,6 +337,82 @@
         "UUID.fromString"
       ],
       "fix": "Armá el filtro con Filters.eq(\"campo\", valor) o con los métodos de Spring Data; no parsees JSON del usuario como consulta ni uses $where con su texto."
+    },
+    "php": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": ".find",
+          "args": [
+            0
+          ],
+          "receiver": "[Cc]ollection|[Cc]oll?$|^db\\."
+        },
+        {
+          "callee": ".find",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*\\["
+          }
+        },
+        {
+          "callee": ".findOne",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".updateOne",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".updateMany",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": ".deleteOne",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".deleteMany",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".countDocuments",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".aggregate",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "intval",
+        "floatval",
+        "(int)",
+        "boolval",
+        "strval",
+        "(string)"
+      ],
+      "fix": "Convertí cada valor a texto antes de la consulta ((string) $_POST['usuario'] o strval): en PHP, ?usuario[$ne]=x llega como un array con un operador de MongoDB."
     }
   }
 }

@@ -333,6 +333,89 @@
         "UUID.fromString"
       ],
       "fix": "Quedate solo con el nombre del archivo (Paths.get(nombre).getFileName() o FilenameUtils.getName) y armá la ruta desde una carpeta fija."
+    },
+    "php": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "include",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "file_get_contents",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "file_put_contents",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "fopen",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "readfile",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "file",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "unlink",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "scandir",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "opendir",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "copy",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": "rename",
+          "args": [
+            0,
+            1
+          ]
+        }
+      ],
+      "sanitizers": [
+        "intval",
+        "floatval",
+        "(int)",
+        "boolval",
+        "basename"
+      ],
+      "fix": "Quedate solo con el nombre (basename($_GET['archivo'])) o elegí el archivo de una lista fija; nunca armes un include con un dato del pedido."
     }
   }
 }

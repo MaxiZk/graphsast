@@ -4,7 +4,8 @@
     "ajuste": "Escritos el 2026-10-22 antes de correr el analizador; sus fallas guiaron las correcciones del catálogo y del motor.",
     "control": "Escritos después de esas correcciones y antes de correrlos, sin usarlos para ajustar nada. Miden si las correcciones generalizan.",
     "python": "Python (Flask, Django, FastAPI), escritos el 2026-10-23 antes de correr el analizador sobre ellos.",
-    "java": "Java (servlets y Spring), escritos el 2026-10-23 antes de correr el analizador sobre ellos."
+    "java": "Java (servlets y Spring), escritos el 2026-10-23 antes de correr el analizador sobre ellos.",
+    "php": "PHP (mysqli, PDO, plantillas, MongoDB), escritos el 2026-10-23 antes de correr el analizador sobre ellos."
   },
   "pares": [
     {
@@ -395,6 +396,66 @@
     {
       "conjunto": "java",
       "nombre": "eval-spel",
+      "cwe": 95
+    },
+    {
+      "conjunto": "php",
+      "nombre": "sql-mysqli",
+      "cwe": 89
+    },
+    {
+      "conjunto": "php",
+      "nombre": "sql-pdo-login",
+      "cwe": 89
+    },
+    {
+      "conjunto": "php",
+      "nombre": "cmd-system-ping",
+      "cwe": 78
+    },
+    {
+      "conjunto": "php",
+      "nombre": "cmd-backticks",
+      "cwe": 78
+    },
+    {
+      "conjunto": "php",
+      "nombre": "xss-echo",
+      "cwe": 79
+    },
+    {
+      "conjunto": "php",
+      "nombre": "xss-plantilla",
+      "cwe": 79
+    },
+    {
+      "conjunto": "php",
+      "nombre": "nosql-mongo-login",
+      "cwe": 943
+    },
+    {
+      "conjunto": "php",
+      "nombre": "nosql-collection-find",
+      "cwe": 943
+    },
+    {
+      "conjunto": "php",
+      "nombre": "path-include",
+      "cwe": 22
+    },
+    {
+      "conjunto": "php",
+      "nombre": "path-file-get-contents",
+      "cwe": 22
+    },
+    {
+      "conjunto": "php",
+      "nombre": "eval-calculadora",
+      "cwe": 95
+    },
+    {
+      "conjunto": "php",
+      "nombre": "eval-call-user-func",
       "cwe": 95
     }
   ]

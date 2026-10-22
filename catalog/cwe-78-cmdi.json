@@ -410,6 +410,74 @@
         "UUID.fromString"
       ],
       "fix": "Ejecutá el programa con ProcessBuilder y cada argumento por separado (new ProcessBuilder(\"ping\", \"-c\", \"1\", host)), sin pasar por sh -c, y validá el dato contra una lista de valores permitidos."
+    },
+    "php": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "system",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "exec",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "shell_exec",
+          "args": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "callee": "passthru",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "popen",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "proc_open",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "pcntl_exec",
+          "args": [
+            0,
+            1
+          ]
+        }
+      ],
+      "sanitizers": [
+        "intval",
+        "floatval",
+        "(int)",
+        "boolval",
+        "escapeshellarg",
+        "escapeshellcmd"
+      ],
+      "fix": "Escapá cada argumento con escapeshellarg($host) (no el comando entero) o evitá el shell; mejor todavía, validá el dato contra una lista de valores permitidos."
     }
   }
 }

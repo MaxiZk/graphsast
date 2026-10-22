@@ -392,6 +392,135 @@
         ".encodeForSQL"
       ],
       "fix": "Usá PreparedStatement con ? y setString/setInt (o los parámetros de JdbcTemplate y de JPA: :nombre con setParameter); nunca concatenes el dato en el texto de la consulta."
+    },
+    "php": {
+      "sources": [
+        "request"
+      ],
+      "sinks": [
+        {
+          "callee": "mysqli_query",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": "mysqli_multi_query",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": "mysqli_real_query",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": "mysql_query",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "pg_query",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": "pg_send_query",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": "sqlsrv_query",
+          "args": [
+            1
+          ]
+        },
+        {
+          "callee": ".query",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".exec",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".prepare",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".multi_query",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".real_query",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "DB.raw",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "DB.select",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "DB.statement",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".whereRaw",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".orderByRaw",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".selectRaw",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "intval",
+        "floatval",
+        "(int)",
+        "boolval",
+        "mysqli_real_escape_string",
+        "mysql_real_escape_string",
+        ".real_escape_string",
+        ".quote",
+        "pg_escape_string",
+        "pg_escape_literal"
+      ],
+      "fix": "Usá consultas preparadas: $stmt = $pdo->prepare(\"SELECT * FROM users WHERE id = ?\"); $stmt->execute([$id]); (o bind_param con mysqli). No interpoles el dato en el texto de la consulta."
     }
   }
 }
