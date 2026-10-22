@@ -54,6 +54,38 @@ export function callMatchesSink(
   return true;
 }
 
+/** Condiciones de un sink sobre el texto de la llamada, ya compiladas. */
+export interface SinkConditions {
+  unlessFirstArg: RegExp[];
+  onlyIf: { receiverInit?: RegExp; firstArg?: RegExp } | null;
+}
+
+export function sinkConditionsOf(entry: Pick<CweCatalogEntry, "unlessFirstArg">, spec: SinkSpec): SinkConditions {
+  const unless = [entry.unlessFirstArg, spec.unlessFirstArg].filter((p): p is string => p !== undefined);
+  const only = spec.onlyIf;
+  return {
+    unlessFirstArg: unless.map((p) => new RegExp(p)),
+    onlyIf: only
+      ? {
+          ...(only.receiverInit !== undefined ? { receiverInit: new RegExp(only.receiverInit) } : {}),
+          ...(only.firstArg !== undefined ? { firstArg: new RegExp(only.firstArg) } : {}),
+        }
+      : null,
+  };
+}
+
+/** ¿La llamada cumple las condiciones del sink sobre sus argumentos y su receptor? */
+export function sinkConditionsHold(call: IRCall, conditions: SinkConditions): boolean {
+  const firstArg = call.argTexts[0];
+  if (firstArg !== undefined && conditions.unlessFirstArg.some((re) => re.test(firstArg))) return false;
+  const only = conditions.onlyIf;
+  if (!only) return true;
+  return (
+    (only.receiverInit !== undefined && call.receiverInit !== undefined && only.receiverInit.test(call.receiverInit))
+    || (only.firstArg !== undefined && firstArg !== undefined && only.firstArg.test(firstArg))
+  );
+}
+
 /**
  * Una llamada resuelta con certeza a una función del código analizado no es el
  * sink de biblioteca que su nombre sugiere: `this.save()` sobre un método
@@ -67,6 +99,7 @@ function sinkRule(
 ): TaintRule {
   const spec = sinkSpecOf(sink);
   const receiverPattern = spec.receiver === undefined ? null : new RegExp(spec.receiver);
+  const conditions = sinkConditionsOf(entry, spec);
   return {
     id: ruleIdOf(entry, "sink", spec.callee),
     kind: "sink",
@@ -78,7 +111,8 @@ function sinkRule(
     match: (n): n is IRCall =>
       n.kind === "Call"
       && n.resolution !== "exact"
-      && callMatchesSink(n, spec, receiverPattern),
+      && callMatchesSink(n, spec, receiverPattern)
+      && sinkConditionsHold(n, conditions),
   };
 }
 

@@ -19,7 +19,7 @@ import type {
   IRAssignment, FlowRef, Loc,
 } from "./types.js";
 import { EMPTY_FLOW } from "./types.js";
-import { flowSourcesOf, thisFieldOf } from "./expressions.js";
+import { EQ_OPERATOR, flowSourcesOf, isEqOperator, thisFieldOf } from "./expressions.js";
 import { collectGuards, type Guard } from "./guards.js";
 
 function locOf(node: Node, file: string): Loc {
@@ -697,8 +697,15 @@ function buildModule(sourceFile: SourceFile, file: string, guards: readonly Guar
     emitFunction(fn, file, nodes);
   }
 
+  // Inicializador de cada variable simple, por función: `finance.save()`
+  // necesita saber si `finance` salió de `new Finance(req.body)`.
+  const initializers = new Map<string, string>();
   for (const decl of sourceFile.getDescendantsOfKind(SyntaxKind.VariableDeclaration)) {
     emitVariables(decl, file, nodes);
+    const init = decl.getInitializer();
+    if (!init || !TsNode.isIdentifier(decl.getNameNode())) continue;
+    const key = `${ownerFnIdOf(decl, file)}\t${decl.getName()}`;
+    if (!initializers.has(key)) initializers.set(key, init.getText());
   }
 
   for (const lit of sourceFile.getDescendantsOfKind(SyntaxKind.StringLiteral)) {
@@ -738,7 +745,33 @@ function buildModule(sourceFile: SourceFile, file: string, guards: readonly Guar
     const qualified = qualifiedCalleeOf(irCall.callee, packages);
     if (qualified) irCall.qualifiedCallee = qualified;
     if (validators.has(call)) irCall.validates = true;
+    const callee = call.getExpression();
+    if (TsNode.isPropertyAccessExpression(callee) && TsNode.isIdentifier(callee.getExpression())) {
+      const init = initializers.get(`${irCall.ownerFnId}\t${callee.getExpression().getText()}`);
+      if (init !== undefined) irCall.receiverInit = init;
+    }
     nodes.push(irCall);
+  }
+
+  // `{ $eq: x }`: MongoDB compara `x` como valor y no interpreta operadores
+  // adentro. Un nodo Call `$eq` en el medio deja que el catálogo lo trate
+  // como sanitizer de NoSQL sin cortar el dato para otras familias.
+  for (const prop of sourceFile.getDescendantsOfKind(SyntaxKind.PropertyAssignment)) {
+    if (!isEqOperator(prop)) continue;
+    const value = prop.getInitializer();
+    nodes.push({
+      id: callIdOf(prop, file),
+      kind: "Call",
+      name: EQ_OPERATOR,
+      code: prop.getText(),
+      loc: locOf(prop, file),
+      scopePath: scopePathOf(prop),
+      callee: EQ_OPERATOR,
+      argTexts: value ? [value.getText()] : [],
+      argFlows: [flowRefOf(value, file)],
+      receiverFlow: { ...EMPTY_FLOW },
+      ownerFnId: ownerFnIdOf(prop, file),
+    });
   }
 
   // `new X(args)`: un nodo Call para ligar los argumentos con el constructor

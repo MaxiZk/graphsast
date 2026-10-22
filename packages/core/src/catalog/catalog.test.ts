@@ -49,7 +49,7 @@ describe("catalog CWE", () => {
       "insertOne",
       "updateOne",
     ]) {
-      expect(nosql.sinks).toContain(pattern);
+      expect(nosql.sinks.map((x) => sinkSpecOf(x).callee)).toContain(pattern);
     }
   });
 
@@ -68,11 +68,11 @@ describe("catalog CWE", () => {
 
   it("clasifica cada sink en su familia: Mongoose → 943, SQL → 89", () => {
     const rules = rulesFromCatalog(bundle);
-    const call = (callee: string) =>
-      ({ kind: "Call", callee }) as unknown as IRCall;
+    const call = (callee: string, extra: Partial<IRCall> = {}) =>
+      ({ kind: "Call", callee, argTexts: ["data"], ...extra }) as unknown as IRCall;
 
     expect(cweForSinkNode(rules, call("Finance.create")).cwe).toBe(943);
-    expect(cweForSinkNode(rules, call("finance.save")).cwe).toBe(943);
+    expect(cweForSinkNode(rules, call("finance.save", { argTexts: [], receiverInit: "new Finance(req.body)" })).cwe).toBe(943);
     expect(cweForSinkNode(rules, call("Finance.findByIdAndUpdate")).cwe).toBe(943);
     expect(cweForSinkNode(rules, call("Finance.findByIdAndDelete")).cwe).toBe(943);
     expect(cweForSinkNode(rules, call("col.insertOne")).cwe).toBe(943);
