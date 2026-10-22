@@ -250,6 +250,89 @@
         "int"
       ],
       "fix": "Quedate solo con el nombre del archivo (os.path.basename o secure_filename de Werkzeug) o servilo con send_from_directory, que no deja salir de la carpeta."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": "File",
+          "args": [
+            0,
+            1
+          ]
+        },
+        {
+          "callee": "FileInputStream",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "FileOutputStream",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "FileReader",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "FileWriter",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Files.readAllBytes",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Files.readString",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Files.newInputStream",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Files.delete",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "FilenameUtils.getName",
+        ".getFileName",
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString"
+      ],
+      "fix": "Quedate solo con el nombre del archivo (Paths.get(nombre).getFileName() o FilenameUtils.getName) y armá la ruta desde una carpeta fija."
     }
   }
 }

@@ -172,6 +172,93 @@
         "float"
       ],
       "fix": "Escapá el dato antes de ponerlo en el HTML (markupsafe.escape o html.escape) o usá render_template, que escapa solo; no lo envuelvas en Markup ni mark_safe."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": "@route.return",
+          "args": [
+            0
+          ],
+          "unlessFirstArg": "^\\s*(?:new\\s+(?!String\\b)|ResponseEntity\\b|Map\\.of|List\\.of|Collections\\.)"
+        },
+        {
+          "callee": ".print",
+          "args": [
+            0
+          ],
+          "receiver": "getWriter\\(\\)$|^out$|^writer$|^pw$"
+        },
+        {
+          "callee": ".println",
+          "args": [
+            0
+          ],
+          "receiver": "getWriter\\(\\)$|^out$|^writer$|^pw$"
+        },
+        {
+          "callee": ".write",
+          "args": [
+            0
+          ],
+          "receiver": "getWriter\\(\\)$|^out$|^writer$|^pw$"
+        },
+        {
+          "callee": ".printf",
+          "args": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "receiver": "getWriter\\(\\)$|^out$|^writer$|^pw$"
+        },
+        {
+          "callee": ".format",
+          "args": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "receiver": "getWriter\\(\\)$|^writer$|^pw$"
+        }
+      ],
+      "sanitizers": [
+        "HtmlUtils.htmlEscape",
+        "StringEscapeUtils.escapeHtml4",
+        "Encode.forHtml",
+        "Encode.forHtmlContent",
+        ".encodeForHTML",
+        "Jsoup.clean",
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString",
+        "Files.readString",
+        "Files.readAllBytes",
+        "Files.readAllLines"
+      ],
+      "fix": "Escapá el dato antes de escribirlo en el HTML (HtmlUtils.htmlEscape de Spring o Encode.forHtml del OWASP Java Encoder), o devolvé una vista con Thymeleaf, que escapa solo."
     }
   }
 }

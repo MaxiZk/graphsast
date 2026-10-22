@@ -137,6 +137,61 @@
         "float"
       ],
       "fix": "No evalúes texto del usuario. Para datos, usá json.loads o ast.literal_eval; para plantillas, render_template con el dato como variable."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": ".eval",
+          "args": [
+            0
+          ],
+          "receiver": "[Ee]ngine"
+        },
+        {
+          "callee": ".eval",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "receiverInit": "getEngineBy"
+          }
+        },
+        {
+          "callee": ".parseExpression",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".evaluate",
+          "args": [
+            0
+          ],
+          "receiver": "[Ss]hell"
+        }
+      ],
+      "sanitizers": [
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString"
+      ],
+      "fix": "No evalúes texto del usuario con ScriptEngine, SpEL ni Groovy; elegí la operación de una lista fija y pasá el dato como valor."
     }
   }
 }

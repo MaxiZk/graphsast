@@ -260,6 +260,138 @@
         ".escape_string"
       ],
       "fix": "Pasá los valores como parámetros del driver: cursor.execute(\"SELECT * FROM users WHERE id = %s\", (user_id,)) (o ? en sqlite3). Nunca armes el texto de la consulta con +, % o f-strings."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": ".executeQuery",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".executeUpdate",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".executeLargeUpdate",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".execute",
+          "args": [
+            0
+          ],
+          "receiver": "[Ss]tatement|[Ss]tmt|[Jj]dbc|[Tt]emplate|^st$"
+        },
+        {
+          "callee": ".addBatch",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".prepareStatement",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".prepareCall",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".createQuery",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".createNativeQuery",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".createSQLQuery",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".query",
+          "args": [
+            0
+          ],
+          "receiver": "[Jj]dbc|[Tt]emplate"
+        },
+        {
+          "callee": ".queryForObject",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".queryForList",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".queryForMap",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".queryForRowSet",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".update",
+          "args": [
+            0
+          ],
+          "receiver": "[Jj]dbc|[Tt]emplate"
+        },
+        {
+          "callee": ".batchUpdate",
+          "args": [
+            0
+          ]
+        }
+      ],
+      "sanitizers": [
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString",
+        ".encodeForSQL"
+      ],
+      "fix": "Usá PreparedStatement con ? y setString/setInt (o los parámetros de JdbcTemplate y de JPA: :nombre con setParameter); nunca concatenes el dato en el texto de la consulta."
     }
   }
 }

@@ -276,6 +276,67 @@
         "$eq"
       ],
       "fix": "Convertí cada valor al tipo esperado antes de la consulta (str(), int()) o compará con {\"$eq\": valor}: un dict del JSON del pedido puede traer operadores como $ne o $where."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": "Filters.where",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "Document.parse",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "BasicDBObject.parse",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "BasicQuery",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": "BasicDBObject",
+          "args": [
+            0,
+            1
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*\"\\$where\""
+          }
+        }
+      ],
+      "sanitizers": [
+        "String.valueOf",
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString"
+      ],
+      "fix": "Armá el filtro con Filters.eq(\"campo\", valor) o con los métodos de Spring Data; no parsees JSON del usuario como consulta ni uses $where con su texto."
     }
   }
 }

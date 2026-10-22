@@ -330,6 +330,86 @@
         "float"
       ],
       "fix": "Pasá el programa y sus argumentos como lista, sin shell: subprocess.run([\"ping\", \"-c\", \"1\", host]). Si hace falta un shell, escapá cada valor con shlex.quote."
+    },
+    "java": {
+      "sources": [
+        "request",
+        "req",
+        "@RequestParam",
+        "@PathVariable",
+        "@RequestBody",
+        "@RequestHeader",
+        "@CookieValue",
+        "@ModelAttribute",
+        "@QueryParam",
+        "@PathParam",
+        "@FormParam"
+      ],
+      "sinks": [
+        {
+          "callee": ".exec",
+          "args": [
+            0
+          ],
+          "receiver": "getRuntime\\(\\)$"
+        },
+        {
+          "callee": ".exec",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "receiverInit": "getRuntime\\(\\)"
+          }
+        },
+        {
+          "callee": "ProcessBuilder",
+          "args": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*\"(?:/(?:usr/)?bin/)?(?:ba|z|da)?sh\"|^\\s*\"cmd(?:\\.exe)?\""
+          }
+        },
+        {
+          "callee": "ProcessBuilder",
+          "args": [
+            0
+          ]
+        },
+        {
+          "callee": ".command",
+          "args": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "onlyIf": {
+            "firstArg": "^\\s*\"(?:/(?:usr/)?bin/)?(?:ba|z|da)?sh\"|^\\s*\"cmd(?:\\.exe)?\""
+          }
+        }
+      ],
+      "sanitizers": [
+        "Integer.parseInt",
+        "Integer.valueOf",
+        "Long.parseLong",
+        "Long.valueOf",
+        "Double.parseDouble",
+        "UUID.fromString"
+      ],
+      "fix": "Ejecutá el programa con ProcessBuilder y cada argumento por separado (new ProcessBuilder(\"ping\", \"-c\", \"1\", host)), sin pasar por sh -c, y validá el dato contra una lista de valores permitidos."
     }
   }
 }

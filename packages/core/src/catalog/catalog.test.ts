@@ -99,3 +99,26 @@ describe("catalog CWE", () => {
     expect(Object.keys(labels).length).toBeGreaterThan(5);
   });
 });
+
+describe("expresiones regulares del catálogo", () => {
+  it("todas compilan en JavaScript, en todos los lenguajes", () => {
+    const patterns: string[] = [];
+    const collect = (spec: unknown) => {
+      if (typeof spec !== "object" || spec === null) return;
+      const s = spec as { receiver?: string; unlessFirstArg?: string; onlyIf?: Record<string, string> };
+      if (s.receiver) patterns.push(s.receiver);
+      if (s.unlessFirstArg) patterns.push(s.unlessFirstArg);
+      for (const p of Object.values(s.onlyIf ?? {})) patterns.push(p);
+    };
+    for (const entry of loadCatalogBundle().entries) {
+      if (entry.unlessFirstArg) patterns.push(entry.unlessFirstArg);
+      entry.sinks.forEach(collect);
+      for (const own of Object.values(entry.languages ?? {})) {
+        if (own.unlessFirstArg) patterns.push(own.unlessFirstArg);
+        own.sinks.forEach(collect);
+      }
+    }
+    expect(patterns.length).toBeGreaterThan(20);
+    for (const p of patterns) expect(() => new RegExp(p), p).not.toThrow();
+  });
+});
