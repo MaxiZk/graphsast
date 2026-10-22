@@ -1,0 +1,3 @@
+# Synthetic vulnerable/safe fixture pairs for evaluation datasets.
+# Excluded from CodeQL code scanning because they intentionally contain insecure patterns.
+docs/validacion/pares/
