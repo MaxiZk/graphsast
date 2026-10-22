@@ -1,5 +1,5 @@
 {
-  "descripcion": "Pares de código vulnerable y corregido, como los de una evaluación docente. Cada vulnerable tiene que dar al menos un hallazgo de su familia y cada seguro, ninguno, con el modelo de origen de la versión web.",
+  "descripcion": "Pares de código vulnerable y corregido, como los de una evaluación docente. Cada vulnerable tiene que dar al menos un hallazgo de su familia y cada seguro, ninguno, con el modelo de origen de la versión web. Los archivos llevan .txt al final para que el análisis de código de GitHub no los tome como código del proyecto; la prueba los analiza con su nombre real.",
   "conjuntos": {
     "ajuste": "Escritos el 2026-10-22 antes de correr el analizador; sus fallas guiaron las correcciones del catálogo y del motor.",
     "control": "Escritos después de esas correcciones y antes de correrlos, sin usarlos para ajustar nada. Miden si las correcciones generalizan.",

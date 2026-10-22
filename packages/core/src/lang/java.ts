@@ -53,8 +53,16 @@ function paramsOf(list: TsNode | null): ParamInfo[] {
   return out;
 }
 
+/** Texto del callee sin espacios ni argumentos de tipo: `List<String>` → `List`. */
 function normalize(text: string): string {
-  return text.replace(/\s+/g, "").replace(/<[^<>()]*>/g, "");
+  let out = "";
+  let depth = 0;
+  for (const ch of text.replace(/\s+/g, "")) {
+    if (ch === "<") depth++;
+    else if (ch === ">" && depth > 0) depth--;
+    else if (depth === 0) out += ch;
+  }
+  return out;
 }
 
 /** Nombres que define un destino de asignación. */
