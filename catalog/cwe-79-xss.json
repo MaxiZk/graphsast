@@ -42,7 +42,8 @@
       "callee": "res.send",
       "args": [
         0
-      ]
+      ],
+      "unlessFirstArg": "^\\s*[\\[{]"
     },
     {
       "callee": ".html",

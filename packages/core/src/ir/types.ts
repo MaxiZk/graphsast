@@ -106,6 +106,12 @@ export interface IRCall extends IRNodeBase {
   /** `new X(...)`: el callee es la clase, y se resuelve a su constructor. */
   isNew?: true;
   /**
+   * Inicializador de la variable receptora, si se declara en la misma
+   * función: `new Finance(req.body)` en `finance.save()`. Distingue el
+   * documento armado con el body entero del que recibe campos sueltos.
+   */
+  receiverInit?: string;
+  /**
    * La llamada valida el dato antes de usarlo (`/^[a-z]+$/.test(x)` en un
    * `if` que corta si falla). Los usos protegidos por la validación pasan por
    * este nodo, que vale como sanitizer para todas las familias.

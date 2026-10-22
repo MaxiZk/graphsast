@@ -33,6 +33,16 @@ export function flowSourcesOf(expr: Node | undefined, guards: readonly Guard[] =
   return { names: [...new Set(names)], calls };
 }
 
+/** Operador `$eq` de MongoDB: compara su valor tal cual, sin interpretar operadores. */
+export const EQ_OPERATOR = "$eq";
+
+/** `{ $eq: x }`: el builder le da un nodo Call propio (ver `buildModule`). */
+export function isEqOperator(prop: Node): boolean {
+  if (!TsNode.isPropertyAssignment(prop)) return false;
+  const name = prop.getNameNode();
+  return (TsNode.isStringLiteral(name) ? name.getLiteralValue() : name.getText()) === EQ_OPERATOR;
+}
+
 /** `this.repo.save` → `this.repo`: el campo de `this` del que sale la expresión. */
 export function thisFieldOf(node: Node): string | undefined {
   if (!TsNode.isPropertyAccessExpression(node)) return undefined;
@@ -109,7 +119,8 @@ function visit(node: Node | undefined, names: string[], calls: Node[], guards: r
 
   if (TsNode.isObjectLiteralExpression(node)) {
     for (const prop of node.getProperties()) {
-      if (TsNode.isPropertyAssignment(prop)) visit(prop.getInitializer(), names, calls, guards);
+      if (isEqOperator(prop)) calls.push(prop);
+      else if (TsNode.isPropertyAssignment(prop)) visit(prop.getInitializer(), names, calls, guards);
       else if (TsNode.isShorthandPropertyAssignment(prop)) names.push(prop.getName());
       else if (TsNode.isSpreadAssignment(prop)) visit(prop.getExpression(), names, calls, guards);
     }

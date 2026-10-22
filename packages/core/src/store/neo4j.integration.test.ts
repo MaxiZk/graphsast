@@ -94,6 +94,19 @@ describe.skipIf(!enabled)("motor Neo4j (base real)", () => {
       // CWE-22 solo desde una entrada del catálogo: req sí, el parámetro suelto no.
       `app.get("/f", (req, res) => { res.send(fs.readFileSync("./files/" + req.query.f)); });
       function leer(nombre) { return fs.readFileSync("./files/" + nombre); }`,
+      // Condiciones de sink y $eq: cada línea alterna un caso que no es
+      // hallazgo con uno que sí.
+      `app.post("/i", async (req, res) => {
+        await User.create({ email: req.body.email });
+        await User.create(req.body);
+        const u = await User.findById(req.user.id); u.email = req.body.email; await u.save();
+        const f = new Finance(req.body); await f.save();
+        await User.findOne({ email: { $eq: req.body.email } });
+        await User.findOne({ name: req.body.name });
+        await UserModel.findOne({ where: { email: req.body.email } });
+        res.send({ name: req.body.name });
+        res.send("<p>" + req.body.name + "</p>");
+      });`,
     ];
     for (const code of cases) {
       const graph = analyzeGraph(code, "nuevo.js");

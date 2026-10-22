@@ -79,6 +79,18 @@ restricciones:
   `users.find(...)` no).
 - Un patrón `paquete.f` coincide aunque el import tenga otro nombre local
   (`const cp = require("child_process"); cp.exec(x)`).
+- `unlessFirstArg`: expresión regular sobre el texto del primer argumento; si
+  coincide, la llamada no es el sink. `res.send({ ok: true })` responde JSON y
+  no HTML, y `User.create({ email, name })` guarda campos elegidos uno por uno.
+- `onlyIf`: el sink vale solo si coincide alguna de sus expresiones regulares,
+  `receiverInit` sobre el inicializador de la variable receptora o `firstArg`
+  sobre el primer argumento. `finance.save()` es hallazgo si `finance` salió de
+  `new Finance(req.body)`, y no si antes se le asignaron campos sueltos.
+
+Una familia también puede fijar `unlessFirstArg` para todos sus sinks: NoSQL lo
+usa para no confundir `findOne({ where: ... })`, que es Sequelize (SQL con
+parámetros), con una consulta de MongoDB. En NoSQL, `{ $eq: x }` funciona como
+sanitizer: MongoDB compara `x` como valor y no interpreta operadores adentro.
 
 Una familia puede fijar `"requireCatalogSource": true`: entonces solo cuentan
 los caminos que empiezan en una entrada del catálogo (`req.query`, `@Body()`...),

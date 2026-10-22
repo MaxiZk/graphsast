@@ -20,6 +20,18 @@ export interface SinkSpec {
   bare?: boolean;
   /** Expresión regular sobre el texto del receptor (`User` en `User.find`). */
   receiver?: string;
+  /**
+   * Expresión regular sobre el texto del primer argumento: si coincide, la
+   * llamada no es el sink. `res.send({ ok: true })` responde JSON, no HTML.
+   */
+  unlessFirstArg?: string;
+  /**
+   * El sink vale solo si coincide alguna de estas expresiones regulares:
+   * `receiverInit` sobre el inicializador de la variable receptora
+   * (`new Finance(req.body)` en `finance.save()`) y `firstArg` sobre el texto
+   * del primer argumento.
+   */
+  onlyIf?: { receiverInit?: string; firstArg?: string };
 }
 
 export interface CweCatalogEntry {
@@ -47,6 +59,12 @@ export interface CweCatalogEntry {
    * ruta de un request, sí.
    */
   requireCatalogSource?: boolean;
+  /**
+   * Como `unlessFirstArg` de un sink, para todos los sinks de la familia:
+   * `findOne({ where: ... })` es Sequelize, una consulta SQL con parámetros,
+   * y no una consulta de MongoDB.
+   */
+  unlessFirstArg?: string;
 }
 
 export interface CatalogManifest {
