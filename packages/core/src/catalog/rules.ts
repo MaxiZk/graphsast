@@ -57,7 +57,7 @@ export function callMatchesSink(
 /** Condiciones de un sink sobre el texto de la llamada, ya compiladas. */
 export interface SinkConditions {
   unlessFirstArg: RegExp[];
-  onlyIf: { receiverInit?: RegExp; firstArg?: RegExp } | null;
+  onlyIf: { receiverInit?: RegExp; firstArg?: RegExp; code?: RegExp } | null;
 }
 
 export function sinkConditionsOf(entry: Pick<CweCatalogEntry, "unlessFirstArg">, spec: SinkSpec): SinkConditions {
@@ -69,6 +69,7 @@ export function sinkConditionsOf(entry: Pick<CweCatalogEntry, "unlessFirstArg">,
       ? {
           ...(only.receiverInit !== undefined ? { receiverInit: new RegExp(only.receiverInit) } : {}),
           ...(only.firstArg !== undefined ? { firstArg: new RegExp(only.firstArg) } : {}),
+          ...(only.code !== undefined ? { code: new RegExp(only.code) } : {}),
         }
       : null,
   };
@@ -77,12 +78,15 @@ export function sinkConditionsOf(entry: Pick<CweCatalogEntry, "unlessFirstArg">,
 /** ¿La llamada cumple las condiciones del sink sobre sus argumentos y su receptor? */
 export function sinkConditionsHold(call: IRCall, conditions: SinkConditions): boolean {
   const firstArg = call.argTexts[0];
-  if (firstArg !== undefined && conditions.unlessFirstArg.some((re) => re.test(firstArg))) return false;
+  // El primer argumento o, si es una variable, su inicializador.
+  const firstValues = [firstArg, call.firstArgInit].filter((t): t is string => t !== undefined);
+  if (conditions.unlessFirstArg.some((re) => firstValues.some((t) => re.test(t)))) return false;
   const only = conditions.onlyIf;
   if (!only) return true;
   return (
     (only.receiverInit !== undefined && call.receiverInit !== undefined && only.receiverInit.test(call.receiverInit))
     || (only.firstArg !== undefined && firstArg !== undefined && only.firstArg.test(firstArg))
+    || (only.code !== undefined && only.code.test(call.code))
   );
 }
 
@@ -152,6 +156,16 @@ export function catalogSourceMatchers(bundle: CatalogBundle): { roots: Set<strin
   return { roots, decorators };
 }
 
+/**
+ * Entradas del navegador (`location.hash`, `input.value`, `$("#q").val()`):
+ * las marca el builder y son origen con los dos modelos.
+ */
+const BROWSER_INPUT_RULE: TaintRule = {
+  id: "browser-input",
+  kind: "source",
+  match: (n) => n.kind === "Call" && (n as IRCall).input === true,
+};
+
 function sourceRule(bundle: CatalogBundle, mode: SourceMode): TaintRule {
   if (mode === "params") {
     return {
@@ -179,18 +193,30 @@ function sourceRule(bundle: CatalogBundle, mode: SourceMode): TaintRule {
 const GUARD_RULE: TaintRule = {
   id: "guard-validation",
   kind: "sanitizer",
-  match: (n) => n.kind === "Call" && (n as IRCall).validates === true,
+  match: (n) => n.kind === "Call" && (n as IRCall).validates === true && (n as IRCall).validatesCwe === undefined,
 };
+
+/** Una validación que acota el dato solo para una familia (`ruta.startsWith(BASE)`). */
+function familyGuardRule(entry: CweCatalogEntry): TaintRule {
+  return {
+    id: `guard-validation-cwe-${entry.cwe}`,
+    kind: "sanitizer",
+    cwe: entry.cwe,
+    cweName: entry.name,
+    match: (n) => n.kind === "Call" && (n as IRCall).validates === true && (n as IRCall).validatesCwe === entry.cwe,
+  };
+}
 
 /** Reglas base + catálogo CWE externo (ADR-4). */
 export function rulesFromCatalog(
   bundle: CatalogBundle,
   sourceMode: SourceMode = "params",
 ): TaintRule[] {
-  const rules: TaintRule[] = [sourceRule(bundle, sourceMode), GUARD_RULE];
+  const rules: TaintRule[] = [sourceRule(bundle, sourceMode), BROWSER_INPUT_RULE, GUARD_RULE];
   const catalogSource = sourceRule(bundle, "catalog");
 
   for (const entry of bundle.entries) {
+    rules.push(familyGuardRule(entry));
     for (const sink of entry.sinks) {
       rules.push(sinkRule(entry, sink, catalogSource));
     }
@@ -207,8 +233,10 @@ export function labelsFromCatalog(bundle: CatalogBundle): CatalogLabels {
     "param-any": "Parámetros de función (excepto res/next)",
     "param-catalog": "Parámetros declarados como source en el catálogo",
     "guard-validation": "Validación antes del uso (regex anclada, lista permitida, Number.isInteger, validator.isX)",
+    "browser-input": "Entrada del navegador (location, document.cookie, input.value, $(...).val())",
   };
   for (const entry of bundle.entries) {
+    labels[`guard-validation-cwe-${entry.cwe}`] = `Validación que acota el dato para CWE-${entry.cwe} (ruta resuelta con startsWith)`;
     for (const sink of entry.sinks) {
       const { callee } = sinkSpecOf(sink);
       labels[ruleIdOf(entry, "sink", callee)] = `CWE-${entry.cwe} sink: ${callee}`;

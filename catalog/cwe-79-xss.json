@@ -46,6 +46,36 @@
       "unlessFirstArg": "^\\s*[\\[{]"
     },
     {
+      "callee": ".send",
+      "args": [
+        0
+      ],
+      "receiver": "^(?:res|response)(?:\\.(?:status|set|header|append|cookie|clearCookie|vary|location|links)\\([^)]*\\))+$",
+      "unlessFirstArg": "^\\s*[\\[{]"
+    },
+    {
+      "callee": ".send",
+      "args": [
+        0
+      ],
+      "receiver": "\\.(?:type|contentType)\\(\\s*['\"`](?:text/)?html",
+      "unlessFirstArg": "^\\s*[\\[{]"
+    },
+    {
+      "callee": "res.write",
+      "args": [
+        0
+      ],
+      "unlessFirstArg": "^\\s*(?:[\\[{]|JSON\\.stringify\\()"
+    },
+    {
+      "callee": "res.end",
+      "args": [
+        0
+      ],
+      "unlessFirstArg": "^\\s*(?:[\\[{]|JSON\\.stringify\\()"
+    },
+    {
       "callee": ".html",
       "args": [
         0

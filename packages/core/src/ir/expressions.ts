@@ -1,4 +1,4 @@
-import { Node as TsNode, SyntaxKind, type Node } from "ts-morph";
+import { Node as TsNode, SyntaxKind, type Node, type SourceFile } from "ts-morph";
 import { guardFor, type Guard } from "./guards.js";
 
 /**
@@ -43,6 +43,104 @@ export function isEqOperator(prop: Node): boolean {
   return (TsNode.isStringLiteral(name) ? name.getLiteralValue() : name.getText()) === EQ_OPERATOR;
 }
 
+/**
+ * Lecturas del navegador que controla quien arma la URL o la página:
+ * `location.hash`, `document.cookie`, `window.name`... El prefijo `window.`
+ * o `self.` es opcional.
+ */
+const BROWSER_INPUT = /^(?:(?:document\.)?location(?:\.(?:hash|search|href|pathname))?|document\.(?:URL|documentURI|baseURI|referrer|cookie)|name)$/;
+
+/** Métodos del DOM que devuelven un elemento cuyo `.value` escribe el usuario. */
+const DOM_QUERY = /\.(?:getElementById|querySelector|getElementsByName|getElementsByClassName|getElementsByTagName)\(/;
+
+/**
+ * Nombres declarados en el archivo (variables, parámetros, funciones,
+ * clases, imports) con el inicializador de cada variable simple. Es una
+ * búsqueda léxica: pedirle el símbolo al compilador obliga a construir el
+ * programa entero, que multiplica el tiempo de análisis.
+ */
+interface FileNames {
+  declared: Set<string>;
+  inits: Map<string, string>;
+}
+
+const namesCache = new WeakMap<SourceFile, FileNames>();
+
+function namesOf(sourceFile: SourceFile): FileNames {
+  const cached = namesCache.get(sourceFile);
+  if (cached) return cached;
+  const declared = new Set<string>();
+  const inits = new Map<string, string>();
+  for (const node of sourceFile.getDescendants()) {
+    if (TsNode.isVariableDeclaration(node)) {
+      for (const id of [node.getNameNode(), ...node.getNameNode().getDescendantsOfKind(SyntaxKind.Identifier)]) {
+        if (TsNode.isIdentifier(id)) declared.add(id.getText());
+      }
+      const init = node.getInitializer();
+      if (init && TsNode.isIdentifier(node.getNameNode()) && !inits.has(node.getName())) {
+        inits.set(node.getName(), init.getText());
+      }
+    } else if (TsNode.isParameterDeclaration(node) || TsNode.isBindingElement(node)) {
+      const name = node.getNameNode();
+      if (TsNode.isIdentifier(name)) declared.add(name.getText());
+    } else if (TsNode.isFunctionDeclaration(node) || TsNode.isClassDeclaration(node)) {
+      const name = node.getNameNode();
+      if (name) declared.add(name.getText());
+    } else if (TsNode.isImportDeclaration(node)) {
+      for (const id of node.getDescendantsOfKind(SyntaxKind.Identifier)) declared.add(id.getText());
+    }
+  }
+  const names = { declared, inits };
+  namesCache.set(sourceFile, names);
+  return names;
+}
+
+function isDomQuery(node: Node): boolean {
+  let current = node;
+  while (TsNode.isElementAccessExpression(current)) current = current.getExpression();
+  if (TsNode.isCallExpression(current)) return DOM_QUERY.test(`${current.getExpression().getText()}(`);
+  if (!TsNode.isIdentifier(current)) return false;
+  const init = namesOf(current.getSourceFile()).inits.get(current.getText());
+  return init !== undefined && DOM_QUERY.test(init);
+}
+
+/** ¿El identificador raíz está declarado en el archivo (y no es el global)? */
+function declaredLocally(id: Node): boolean {
+  return namesOf(id.getSourceFile()).declared.has(id.getText());
+}
+
+/**
+ * Entrada del navegador leída en esta expresión, normalizada
+ * (`window.location.hash` → `location.hash`), o el texto de la lectura de
+ * `.value` sobre un elemento del DOM. El builder le da un nodo Call propio
+ * que el catálogo trata como origen, igual que un parámetro.
+ */
+export function browserInputOf(node: Node): string | undefined {
+  if (!TsNode.isPropertyAccessExpression(node)) return undefined;
+  const parent = node.getParent();
+  if (TsNode.isBinaryExpression(parent) && parent.getLeft() === node
+    && parent.getOperatorToken().getKind() === SyntaxKind.EqualsToken) {
+    return undefined; // `location.href = x` es una escritura
+  }
+  const text = node.getText().replace(/\s+/g, "").replace(/\?\./g, ".");
+  if (node.getName() === "value") return isDomQuery(node.getExpression()) ? text : undefined;
+  const bare = text.replace(/^(?:window|self)\./, "");
+  if (!BROWSER_INPUT.test(bare) || (bare === "name" && bare === text)) return undefined;
+  const root = node.getFirstDescendantByKind(SyntaxKind.Identifier);
+  return root && !declaredLocally(root) ? bare : undefined;
+}
+
+/**
+ * La lectura más externa: en `window.location.hash` es `location.hash` y no
+ * `window.location`. El builder emite un nodo solo para esa, así no quedan
+ * nodos sueltos en el grafo.
+ */
+export function isOutermostBrowserInput(node: Node): boolean {
+  if (browserInputOf(node) === undefined) return false;
+  const parent = node.getParent();
+  return !(TsNode.isPropertyAccessExpression(parent) && parent.getExpression() === node && browserInputOf(parent) !== undefined);
+}
+
 /** `this.repo.save` → `this.repo`: el campo de `this` del que sale la expresión. */
 export function thisFieldOf(node: Node): string | undefined {
   if (!TsNode.isPropertyAccessExpression(node)) return undefined;
@@ -67,6 +165,12 @@ function visit(node: Node | undefined, names: string[], calls: Node[], guards: r
 
   if (TsNode.isIdentifier(node)) {
     names.push(node.getText());
+    return;
+  }
+
+  // `location.hash`, `input.value`: entradas del navegador con nodo propio.
+  if (browserInputOf(node) !== undefined) {
+    calls.push(node);
     return;
   }
 

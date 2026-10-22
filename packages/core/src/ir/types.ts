@@ -112,11 +112,26 @@ export interface IRCall extends IRNodeBase {
    */
   receiverInit?: string;
   /**
+   * Inicializador del primer argumento cuando es una variable de la misma
+   * función: `{}` en `const result = {}; res.send(result)`.
+   */
+  firstArgInit?: string;
+  /**
    * La llamada valida el dato antes de usarlo (`/^[a-z]+$/.test(x)` en un
    * `if` que corta si falla). Los usos protegidos por la validación pasan por
    * este nodo, que vale como sanitizer para todas las familias.
    */
   validates?: true;
+  /**
+   * Si la validación protege solo a una familia (CWE): `ruta.startsWith(BASE)`
+   * acota una ruta de archivo, pero no impide inyectar HTML.
+   */
+  validatesCwe?: number;
+  /**
+   * Entrada del navegador: `location.hash`, `document.cookie`,
+   * `input.value`, `$("#q").val()`. Es origen igual que un parámetro.
+   */
+  input?: true;
 }
 
 export type IRNode =

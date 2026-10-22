@@ -35,27 +35,129 @@
     },
     {
       "callee": ".create",
+      "args": [
+        0
+      ],
       "unlessFirstArg": "^\\s*\\{(?![\\s\\S]*\\.\\.\\.)"
     },
-    "findByIdAndUpdate",
-    "findByIdAndDelete",
-    "insertOne",
-    "updateOne",
-    "findOne",
-    "findOneAndUpdate",
-    "findOneAndDelete",
-    "findOneAndReplace",
-    "updateMany",
-    "deleteOne",
-    "deleteMany",
-    "replaceOne",
-    "insertMany",
-    "countDocuments",
-    "aggregate",
-    ".$where",
+    {
+      "callee": "findByIdAndUpdate",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "findByIdAndDelete",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "insertOne",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "updateOne",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "findOne",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "findOneAndUpdate",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "findOneAndDelete",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "findOneAndReplace",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "updateMany",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "deleteOne",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "deleteMany",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "replaceOne",
+      "args": [
+        0,
+        1
+      ]
+    },
+    {
+      "callee": "insertMany",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "countDocuments",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "aggregate",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": ".$where",
+      "args": [
+        0
+      ]
+    },
     {
       "callee": ".find",
-      "receiver": "^[A-Z][A-Za-z0-9_]*$|\\.collection\\(.*\\)$"
+      "args": [
+        0
+      ],
+      "receiver": "^[A-Z][A-Za-z0-9_]*$|\\.collection\\(.*\\)$|[Cc]ollection$"
+    },
+    {
+      "callee": ".find",
+      "args": [
+        0
+      ],
+      "onlyIf": {
+        "receiverInit": "\\.collection\\(",
+        "firstArg": "^\\s*\\{"
+      }
     }
   ],
   "sanitizers": [
@@ -68,7 +170,13 @@
     "parseInt",
     "parseFloat",
     "Number",
-    "$eq"
+    "$eq",
+    ".toString",
+    ".trim",
+    ".toLowerCase",
+    ".toUpperCase",
+    ".replace",
+    ".replaceAll"
   ],
   "unlessFirstArg": "(?<![\\w$])['\\\"]?where['\\\"]?\\s*:"
 }

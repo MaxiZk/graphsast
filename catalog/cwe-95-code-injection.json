@@ -65,6 +65,26 @@
       "args": [
         0
       ]
+    },
+    {
+      "callee": "setTimeout",
+      "bare": true,
+      "args": [
+        0
+      ],
+      "onlyIf": {
+        "firstArg": "^\\s*['\"`]"
+      }
+    },
+    {
+      "callee": "setInterval",
+      "bare": true,
+      "args": [
+        0
+      ],
+      "onlyIf": {
+        "firstArg": "^\\s*['\"`]"
+      }
     }
   ],
   "sanitizers": [

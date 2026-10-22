@@ -28,6 +28,18 @@
   ],
   "sinks": [
     {
+      "callee": "res.sendFile",
+      "args": [
+        0
+      ]
+    },
+    {
+      "callee": "res.download",
+      "args": [
+        0
+      ]
+    },
+    {
       "callee": "readFileSync",
       "args": [
         0

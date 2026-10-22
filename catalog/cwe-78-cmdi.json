@@ -46,6 +46,17 @@
       "args": [
         0,
         1
+      ],
+      "onlyIf": {
+        "code": "\\bshell\\s*:(?!\\s*false\\b)",
+        "firstArg": "^\\s*['\"`](?:/(?:usr/)?bin/)?(?:ba|z|da)?sh['\"`]|^\\s*['\"`]cmd(?:\\.exe)?['\"`]"
+      }
+    },
+    {
+      "callee": "spawn",
+      "bare": true,
+      "args": [
+        0
       ]
     },
     {
@@ -54,6 +65,17 @@
       "args": [
         0,
         1
+      ],
+      "onlyIf": {
+        "code": "\\bshell\\s*:(?!\\s*false\\b)",
+        "firstArg": "^\\s*['\"`](?:/(?:usr/)?bin/)?(?:ba|z|da)?sh['\"`]|^\\s*['\"`]cmd(?:\\.exe)?['\"`]"
+      }
+    },
+    {
+      "callee": "spawnSync",
+      "bare": true,
+      "args": [
+        0
       ]
     },
     {
@@ -62,6 +84,17 @@
       "args": [
         0,
         1
+      ],
+      "onlyIf": {
+        "code": "\\bshell\\s*:(?!\\s*false\\b)",
+        "firstArg": "^\\s*['\"`](?:/(?:usr/)?bin/)?(?:ba|z|da)?sh['\"`]|^\\s*['\"`]cmd(?:\\.exe)?['\"`]"
+      }
+    },
+    {
+      "callee": "execFile",
+      "bare": true,
+      "args": [
+        0
       ]
     },
     {
@@ -70,6 +103,17 @@
       "args": [
         0,
         1
+      ],
+      "onlyIf": {
+        "code": "\\bshell\\s*:(?!\\s*false\\b)",
+        "firstArg": "^\\s*['\"`](?:/(?:usr/)?bin/)?(?:ba|z|da)?sh['\"`]|^\\s*['\"`]cmd(?:\\.exe)?['\"`]"
+      }
+    },
+    {
+      "callee": "execFileSync",
+      "bare": true,
+      "args": [
+        0
       ]
     },
     {
@@ -89,6 +133,16 @@
       "args": [
         0,
         1
+      ],
+      "onlyIf": {
+        "code": "\\bshell\\s*:(?!\\s*false\\b)",
+        "firstArg": "^\\s*['\"`](?:/(?:usr/)?bin/)?(?:ba|z|da)?sh['\"`]|^\\s*['\"`]cmd(?:\\.exe)?['\"`]"
+      }
+    },
+    {
+      "callee": "child_process.spawn",
+      "args": [
+        0
       ]
     },
     {
@@ -96,6 +150,16 @@
       "args": [
         0,
         1
+      ],
+      "onlyIf": {
+        "code": "\\bshell\\s*:(?!\\s*false\\b)",
+        "firstArg": "^\\s*['\"`](?:/(?:usr/)?bin/)?(?:ba|z|da)?sh['\"`]|^\\s*['\"`]cmd(?:\\.exe)?['\"`]"
+      }
+    },
+    {
+      "callee": "child_process.spawnSync",
+      "args": [
+        0
       ]
     },
     {
@@ -103,6 +167,16 @@
       "args": [
         0,
         1
+      ],
+      "onlyIf": {
+        "code": "\\bshell\\s*:(?!\\s*false\\b)",
+        "firstArg": "^\\s*['\"`](?:/(?:usr/)?bin/)?(?:ba|z|da)?sh['\"`]|^\\s*['\"`]cmd(?:\\.exe)?['\"`]"
+      }
+    },
+    {
+      "callee": "child_process.execFile",
+      "args": [
+        0
       ]
     },
     {
@@ -110,6 +184,16 @@
       "args": [
         0,
         1
+      ],
+      "onlyIf": {
+        "code": "\\bshell\\s*:(?!\\s*false\\b)",
+        "firstArg": "^\\s*['\"`](?:/(?:usr/)?bin/)?(?:ba|z|da)?sh['\"`]|^\\s*['\"`]cmd(?:\\.exe)?['\"`]"
+      }
+    },
+    {
+      "callee": "child_process.execFileSync",
+      "args": [
+        0
       ]
     },
     {
@@ -121,8 +205,30 @@
     {
       "callee": "Bun.spawn",
       "args": [
+        0,
+        1
+      ],
+      "onlyIf": {
+        "code": "\\bshell\\s*:(?!\\s*false\\b)",
+        "firstArg": "^\\s*['\"`](?:/(?:usr/)?bin/)?(?:ba|z|da)?sh['\"`]|^\\s*['\"`]cmd(?:\\.exe)?['\"`]"
+      }
+    },
+    {
+      "callee": "Bun.spawn",
+      "args": [
         0
       ]
+    },
+    {
+      "callee": "Bun.spawnSync",
+      "args": [
+        0,
+        1
+      ],
+      "onlyIf": {
+        "code": "\\bshell\\s*:(?!\\s*false\\b)",
+        "firstArg": "^\\s*['\"`](?:/(?:usr/)?bin/)?(?:ba|z|da)?sh['\"`]|^\\s*['\"`]cmd(?:\\.exe)?['\"`]"
+      }
     },
     {
       "callee": "Bun.spawnSync",

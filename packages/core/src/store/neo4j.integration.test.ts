@@ -107,6 +107,21 @@ describe.skipIf(!enabled)("motor Neo4j (base real)", () => {
         res.send({ name: req.body.name });
         res.send("<p>" + req.body.name + "</p>");
       });`,
+      // Entradas del navegador, startsWith sobre la ruta resuelta, spawn con
+      // y sin shell, res.status().send con texto y con un objeto.
+      `document.getElementById("t").innerHTML = location.hash;
+      document.getElementById("u").textContent = location.hash;
+      app.get("/j", (req, res) => {
+        const ruta = path.resolve(BASE, req.query.f);
+        if (!ruta.startsWith(BASE)) return res.end();
+        fs.readFileSync(ruta);
+        res.send("<p>" + ruta + "</p>");
+        spawn("ls", [req.query.d]);
+        spawn("sh", ["-c", req.query.d]);
+        const result = { q: req.query.q };
+        res.status(200).send(result);
+        res.status(400).send("No existe " + req.query.q);
+      });`,
     ];
     for (const code of cases) {
       const graph = analyzeGraph(code, "nuevo.js");

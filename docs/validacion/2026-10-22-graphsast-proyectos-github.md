@@ -26,7 +26,7 @@
 4. Los demás hallazgos se agrupan por destino (archivo y línea), que es lo que la web muestra como una vulnerabilidad. Se revisaron a mano: los reales figuran en `reviewedReal` del manifiesto y el resto son falsas alarmas.
 5. Se mide GraphSAST con los dos modelos de origen (`params`, el de la web, y `catalog`) y la línea de base por expresiones regulares con el mismo catálogo.
 
-## Resultados (`4cf721b`, modo `params`)
+## Resultados de las dos primeras versiones (modo `params`)
 
 | Unidad | GraphSAST | Línea de base | Reales extra | Falsas alarmas antes | Falsas alarmas después | Falsas alarmas línea de base |
 |---|---|---|---|---|---|---|
@@ -50,7 +50,31 @@
 - La revisión manual se hizo sobre los hallazgos de GraphSAST. Los destinos que solo marca la línea de base no se revisaron uno por uno, así que su precisión es una cota inferior.
 - En modo `catalog`, las falsas alarmas eran 135 antes de las condiciones de destino.
 
-## Omisiones de GraphSAST (13 en modo `params`)
+## Versión final (con las correcciones de los pares de código)
+
+Correcciones que surgieron de `docs/validacion/pares/` y tres ajustes hechos al revisar esta medición (métodos de texto como saneamiento de NoSQL, inicializador de la variable en respuestas JSON y consultas de MongoDB solo por su filtro). Por eso esta medición ya no es independiente de los ajustes.
+
+| Unidad | GraphSAST `params` | Falsas alarmas | GraphSAST `catalog` | Falsas alarmas | Línea de base | Falsas alarmas |
+|---|---|---|---|---|---|---|
+| dvna | 3/3 | 1 | 3/3 | 0 | 3/3 | 17 |
+| vn-seeds | 5/5 | 0 | 3/5 | 0 | 5/5 | 5 |
+| vn-shop | 7/7 | 1 | 7/7 | 1 | 7/7 | 25 |
+| dvws | 8/9 | 26 | 8/9 | 17 | 9/9 | 73 |
+| juice | 5/10 | 14 | 5/10 | 6 | 6/10 | 184 |
+| realworld | - | 1 | - | 1 | - | 3 |
+| boilerplate | - | 12 | - | 4 | - | 25 |
+| hackathon | - | 5 | - | 3 | - | 89 |
+| **Total** | **28/34** | **60** | **26/34** | **32** | **30/34** | **421** |
+
+| Detector | FP | FN | Precisión | Exhaustividad | F1 |
+|---|---|---|---|---|---|
+| Línea de base | 421 | 4 | 0,09 | 0,88 | 0,17 |
+| GraphSAST `params` | 60 | 6 | 0,41 | 0,82 | 0,55 |
+| GraphSAST `catalog` | 32 | 8 | 0,55 | 0,76 | 0,64 |
+
+Omisiones que quedan: DW-07 (GraphQL, origen fuera del catálogo), JS-04 (`.update` de MongoDB, en desuso), JS-06 (opciones de `res.render`), JS-07 (contexto de `vm`), JS-09 y JS-10 (Angular).
+
+## Omisiones de GraphSAST en la primera medición (13 en modo `params`)
 
 | Causa | Casos |
 |---|---|

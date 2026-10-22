@@ -68,7 +68,8 @@ restricciones:
 { "callee": "db.query", "args": [0] }
 { "callee": "exec", "bare": true, "args": [0] }
 { "callee": "child_process.exec", "args": [0] }
-{ "callee": ".find", "receiver": "^[A-Z][A-Za-z0-9_]*$" }
+{ "callee": ".find", "args": [0], "receiver": "^[A-Z][A-Za-z0-9_]*$" }
+{ "callee": "spawn", "bare": true, "args": [0, 1], "onlyIf": { "code": "\\bshell\\s*:(?!\\s*false\\b)" } }
 ```
 
 - `args`: posiciones de los argumentos peligrosos. `db.query(sql, [id])` solo
@@ -76,21 +77,37 @@ restricciones:
   segura de escribir la consulta.
 - `bare`: solo la llamada suelta, `exec(...)` y no `regex.exec(...)`.
 - `receiver`: expresión regular sobre el receptor (`User.find(...)` sí,
-  `users.find(...)` no).
+  `items.find(...)` no; un segundo patrón de `.find` acepta además una
+  colección de MongoDB o un filtro escrito como objeto).
 - Un patrón `paquete.f` coincide aunque el import tenga otro nombre local
   (`const cp = require("child_process"); cp.exec(x)`).
-- `unlessFirstArg`: expresión regular sobre el texto del primer argumento; si
-  coincide, la llamada no es el sink. `res.send({ ok: true })` responde JSON y
-  no HTML, y `User.create({ email, name })` guarda campos elegidos uno por uno.
-- `onlyIf`: el sink vale solo si coincide alguna de sus expresiones regulares,
-  `receiverInit` sobre el inicializador de la variable receptora o `firstArg`
-  sobre el primer argumento. `finance.save()` es hallazgo si `finance` salió de
-  `new Finance(req.body)`, y no si antes se le asignaron campos sueltos.
+- `unlessFirstArg`: expresión regular sobre el texto del primer argumento, o
+  sobre el inicializador de la variable que se pasa; si coincide, la llamada no
+  es el sink. `res.send({ ok: true })` y `const r = {}; res.send(r)` responden
+  JSON y no HTML, y `User.create({ email, name })` guarda campos elegidos uno
+  por uno.
+- `onlyIf`: el sink vale solo si coincide alguna de sus expresiones regulares:
+  `receiverInit` sobre el inicializador de la variable receptora, `firstArg`
+  sobre el primer argumento o `code` sobre la llamada entera. `finance.save()`
+  es hallazgo si `finance` salió de `new Finance(req.body)`, y no si antes se
+  le asignaron campos sueltos; `spawn("ls", [dir])` solo es peligroso por el
+  programa, salvo que pida un shell (`{ shell: true }` o `spawn("sh", ...)`).
+- Un mismo callee puede aparecer más de una vez: vale el primero cuyas
+  restricciones se cumplen.
 
 Una familia también puede fijar `unlessFirstArg` para todos sus sinks: NoSQL lo
 usa para no confundir `findOne({ where: ... })`, que es Sequelize (SQL con
 parámetros), con una consulta de MongoDB. En NoSQL, `{ $eq: x }` funciona como
 sanitizer: MongoDB compara `x` como valor y no interpreta operadores adentro.
+También los métodos que devuelven texto (`x.trim()`, `x.toLowerCase()`): un
+texto no puede llevar operadores.
+
+Además de los parámetros, son origen en los dos modelos las entradas del
+navegador: `location` y sus partes (`hash`, `search`, `href`, `pathname`),
+`document.URL`, `document.referrer`, `document.cookie`, `window.name`, el
+`.value` de un elemento obtenido con `getElementById` o `querySelector`, y
+`$(...).val()`. Una variable local con el mismo nombre (`const location = ...`)
+no cuenta.
 
 Una familia puede fijar `"requireCatalogSource": true`: entonces solo cuentan
 los caminos que empiezan en una entrada del catálogo (`req.query`, `@Body()`...),
@@ -423,8 +440,12 @@ npm run benchmark
 Corre el corpus etiquetado (`packages/core/src/eval/benchmark/corpus.ts`) y
 reporta precisión, recall, F1 y ms/línea; sale con `1` si algún caso se
 clasifica mal. `npm run cve:run` corre el corpus de vulnerabilidades reales
-(`eval-cve-corpus.json`, baja los paquetes de npm). Ver
-[`docs/validacion/`](docs/validacion/) para la metodología.
+(`eval-cve-corpus.json`, baja los paquetes de npm), `npm run nodegoat` la
+validación sobre OWASP NodeGoat y `npm run github-eval` la de siete proyectos
+de GitHub (`eval-github.json`). Los 54 pares vulnerable/corregido de
+[`docs/validacion/pares/`](docs/validacion/pares/) corren con `npm test`: cada
+vulnerable tiene que dar un hallazgo de su familia y cada corregido, ninguno.
+Ver [`docs/validacion/`](docs/validacion/) para la metodología.
 
 El workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) corre build,
 tests (incluidos los del CLI de punta a punta), benchmark y build de la web en
@@ -517,7 +538,7 @@ escribe en ella, y aparece en los caminos de todas las que la leen.
 
 **Sinks por nombre.** Un sink se reconoce por el callee, no por el tipo del
 objeto. Las restricciones del catálogo (`bare`, `receiver`, paquete de origen)
-evitan los casos conocidos (`regex.exec`, `users.find`), pero un nombre de
+evitan los casos conocidos (`regex.exec`, `items.find(x => ...)`), pero un nombre de
 receptor convencional (`db.query`, `conn.query`) puede no ser lo que parece.
 `new Modelo(x)` es transparente: `new ObjectId(id)` no sanea.
 
@@ -530,6 +551,10 @@ regex ancladas en los dos extremos (sin un `|` suelto ni el flag `m`),
 sin caracteres especiales (`isInt`, `isAlphanumeric`, `isUUID`...) y la
 pertenencia a una lista (`LISTA.includes(x)`, `SET.has(x)`). Una regex sin
 anclar (`/[a-z]/` acepta `a; rm -rf /`) o un `if` que no sale no cortan.
+`ruta.startsWith(BASE)` corta solo para Path Traversal, y solo si `ruta` salió
+de `path.resolve`, `path.join`, `path.normalize` o `realpath`: sin resolverla,
+`BASE/../secreto` pasa la verificación, y acotar una ruta no impide inyectar
+HTML con el mismo dato.
 
 **Validación de forma no es sanitización.** `zod`, `joi` o `class-validator`
 validan la forma del dato, no su contenido: un `z.string()` acepta `' OR 1=1 --`.

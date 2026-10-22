@@ -21,17 +21,19 @@ export interface SinkSpec {
   /** Expresión regular sobre el texto del receptor (`User` en `User.find`). */
   receiver?: string;
   /**
-   * Expresión regular sobre el texto del primer argumento: si coincide, la
-   * llamada no es el sink. `res.send({ ok: true })` responde JSON, no HTML.
+   * Expresión regular sobre el texto del primer argumento, o sobre el
+   * inicializador de la variable que se pasa: si coincide, la llamada no es
+   * el sink. `res.send({ ok: true })` responde JSON, no HTML.
    */
   unlessFirstArg?: string;
   /**
    * El sink vale solo si coincide alguna de estas expresiones regulares:
    * `receiverInit` sobre el inicializador de la variable receptora
-   * (`new Finance(req.body)` en `finance.save()`) y `firstArg` sobre el texto
-   * del primer argumento.
+   * (`new Finance(req.body)` en `finance.save()`), `firstArg` sobre el texto
+   * del primer argumento y `code` sobre el texto de la llamada entera
+   * (`shell: true` en las opciones de `spawn`).
    */
-  onlyIf?: { receiverInit?: string; firstArg?: string };
+  onlyIf?: { receiverInit?: string; firstArg?: string; code?: string };
 }
 
 export interface CweCatalogEntry {

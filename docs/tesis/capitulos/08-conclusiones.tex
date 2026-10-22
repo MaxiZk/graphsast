@@ -52,24 +52,28 @@ coincidencia de patrones. La respuesta es afirmativa, con un matiz
 importante. Sobre el banco sintético, GraphSAST obtuvo una precisión de
 1,00 frente a 0,85 de la línea de base, con la misma exhaustividad de
 1,00 y un $F_1$ de 1,00 frente a 0,92 (tabla~\ref{tab:metricas}). Sobre
-los proyectos de GitHub, la precisión fue de 0,38 frente a 0,10 y el
-$F_1$, de 0,47 frente a 0,18 (tabla~\ref{tab:github-metricas}). Sobre
+los proyectos de GitHub, con la versión final, la precisión fue de 0,41
+frente a 0,09 y el $F_1$, de 0,55 frente a 0,17
+(tabla~\ref{tab:github-metricas}). Sobre
 NodeGoat, en cambio, los dos detectores obtuvieron exactamente los mismos
 resultados: precisión de 0,75 y exhaustividad de 0,50, porque los
 destinos alcanzados reciben el dato de forma directa y en ese escenario
 seguir el flujo no agrega precisión a la coincidencia de nombres. El
 matiz es que la mayor precisión se obtuvo con menor exhaustividad: en los
-proyectos de GitHub la línea de base detectó 28 de 34 vulnerabilidades y
-GraphSAST 21, por restricciones de las reglas del catálogo que evitan
-marcar llamadas inocuas y no por el recorrido del grafo.
+proyectos de GitHub la línea de base detectó 30 de 34 vulnerabilidades y
+GraphSAST 28 (21 en la primera medición), por restricciones de las
+reglas del catálogo que evitan marcar llamadas inocuas y no por el
+recorrido del grafo. En los pares de código vulnerable y corregido, el
+sistema distinguió la forma vulnerable de la corregida en los 54 pares
+de la versión final (sección~\ref{sec:pares}).
 
 \paragraph{H2.} El análisis de contaminación sobre el grafo reduce los
 falsos positivos respecto de la detección por expresiones regulares. La
 respuesta es afirmativa. En el banco, la línea de base produjo cinco
 falsos positivos, tres en caminos saneados y dos entre variables
 homónimas sin un camino real entre sí, y GraphSAST ninguno. Sobre los
-proyectos de GitHub, GraphSAST emitió 58 falsas alarmas frente a 370, y
-en los tres proyectos sin vulnerabilidades documentadas, 17 frente a 103.
+proyectos de GitHub, GraphSAST emitió 60 falsas alarmas frente a 421, y
+en los tres proyectos sin vulnerabilidades documentadas, 18 frente a 117.
 En NodeGoat ambos detectores produjeron el mismo falso positivo, en una
 tarea de automatización cuyo argumento no proviene de un usuario remoto.
 La reducción sobre código real, sin embargo, no proviene solo del grafo:

@@ -7,5 +7,8 @@
 # dar exactamente un hallazgo (docs/validacion/h3/protocolo.md).
 docs/validacion/h3/
 
+# Pares vulnerable/corregido para medir la precisión (pares.test.ts).
+docs/validacion/pares/
+
 # Tests: arman procesos y datos de prueba, no reciben entradas de usuarios.
 *.test.ts

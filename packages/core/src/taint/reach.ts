@@ -30,6 +30,27 @@ function buildAdjacency(
   return adj;
 }
 
+/**
+ * La lista de adyacencia de cada grafo se arma una vez y se reutiliza en
+ * cada par (source, sink): armarla por par era la mayor parte del tiempo de
+ * análisis en proyectos grandes. Si el grafo gana aristas, se rearma.
+ */
+const adjacencyCache = new WeakMap<IRGraph, Map<string, { edges: number; adj: Map<string, IREdge[]> }>>();
+
+function adjacencyOf(graph: IRGraph, propagateEdges: readonly IREdgeKind[]): Map<string, IREdge[]> {
+  const key = [...propagateEdges].sort().join(",");
+  let byKey = adjacencyCache.get(graph);
+  if (!byKey) {
+    byKey = new Map();
+    adjacencyCache.set(graph, byKey);
+  }
+  const cached = byKey.get(key);
+  if (cached && cached.edges === graph.edges.length) return cached.adj;
+  const adj = buildAdjacency(graph, new Set(propagateEdges));
+  byKey.set(key, { edges: graph.edges.length, adj });
+  return adj;
+}
+
 /** Largo máximo de un camino (en aristas) si nada lo fija. */
 export const DEFAULT_MAX_DEPTH = 15;
 
@@ -53,10 +74,7 @@ export function findPath(
   enters: (edge: IREdge) => boolean = () => true,
 ): string[] | null {
   const maxDepth = config.maxDepth ?? DEFAULT_MAX_DEPTH;
-  const propagate = new Set(
-    config.propagateEdges ?? DEFAULT_TAINT_PROPAGATE_EDGES,
-  );
-  const adj = buildAdjacency(graph, propagate);
+  const adj = adjacencyOf(graph, config.propagateEdges ?? DEFAULT_TAINT_PROPAGATE_EDGES);
 
   const parent = new Map<string, string>();
   let frontier = [fromId];
