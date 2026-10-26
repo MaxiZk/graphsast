@@ -912,6 +912,54 @@ aplicaciones construidas para enseñar o para medir analizadores, con
 fallas más directas que las de un proyecto habitual, y la clasificación
 de los hallazgos sin etiqueta es de una sola persona.
 
+\subsection{Prueba de punta a punta de la versión web}\label{sec:prueba-web}
+
+Las mediciones anteriores usan el motor desde la línea de comandos. Para
+comprobar que la versión web entrega el mismo resultado, se la abrió con
+un navegador automatizado (Playwright con Chromium) sobre la compilación
+de producción servida en forma local, se cargó cada proyecto con el botón
+«Analizar carpeta» y se leyó el resultado de la página. La
+tabla~\ref{tab:prueba-web} compara esa lectura con la línea de comandos
+sobre las mismas carpetas.
+
+\begin{table}[H]
+    \centering
+    \caption{Versión web frente a línea de comandos sobre las mismas carpetas}
+    \label{tab:prueba-web}
+    \small
+    \begin{tabular}{l l r r r r}
+        \toprule
+        & & & \multicolumn{2}{c}{\tb{Hallazgos}} & \\
+        \cmidrule(lr){4-5}
+        \tb{Proyecto} & \tb{Lenguaje} & \tb{Archivos} & \tb{Web} & \tb{CLI} & \tb{Tiempo web} \\
+        \midrule
+        Demo, código malo & Cinco lenguajes & 5 & 10 & 10 & 0,6\,s \\
+        Demo, código bueno & Cinco lenguajes & 5 & 0 & 0 & 0,5\,s \\
+        vulpy, versión insegura & Python & 20 & 8 & 8 & 0,6\,s \\
+        vulpy, versión segura & Python & 19 & 3 & 3 & 0,6\,s \\
+        govwa & Go & 21 & 8 & 8 & 1,7\,s \\
+        DVWA, módulos & PHP & 162 & 56 & 56 & 1,2\,s \\
+        DVNA & JavaScript & 12 & 4 & 4 & 0,7\,s \\
+        dvws-node & JavaScript & 50 & 52 & 52 & 1,5\,s \\
+        realworld & JavaScript & 39 & 1 & 1 & 0,7\,s \\
+        boilerplate & JavaScript & 50 & 28 & 28 & 1,2\,s \\
+        NodeGoat & JavaScript & 27 & 11 & 11 & 0,7\,s \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+En los once casos la página informó los mismos hallazgos que la línea de
+comandos y la consola del navegador no registró errores. El tiempo web
+va desde que se elige la carpeta hasta que el resultado queda en
+pantalla, e incluye la lectura de los archivos y la carga de las
+gramáticas de tree-sitter. La importación por dirección de GitHub no se
+pudo ejercitar en el entorno de la prueba, cuya red no alcanza la API de
+GitHub; su lógica está cubierta por pruebas automatizadas con respuestas
+simuladas. Esta prueba verifica el funcionamiento de la interfaz y no
+reemplaza la validación con usuarios de la
+sección~\ref{sec:validacion-usuarios}: no mide si una persona entiende
+lo que la página le muestra.
+
 \subsection{Rendimiento}
 
 Sobre el banco sintético el análisis demandó 0,27\,ms por línea en la
@@ -922,8 +970,11 @@ comandos demandó 161\,ms (mediana de cinco ejecuciones), unos 0,08\,s
 por cada 1.000 líneas, frente a 8\,ms de la línea de base. Con la
 versión final, los 300 archivos analizados de Juice Shop demandan unos
 5\,s en la línea de comandos con el modelo de origen por defecto
-(sección~\ref{sec:pares}).
-\completar{Tiempo de análisis de NodeGoat en la versión web.}
+(sección~\ref{sec:pares}). En la versión web, NodeGoat se analizó en
+259\,ms (mediana de cinco ejecuciones en Chromium sin interfaz, en un
+contenedor Linux) y el resultado quedó en pantalla 696\,ms después de
+elegir la carpeta, con los mismos 11 hallazgos que la línea de comandos
+(sección~\ref{sec:prueba-web}).
 
 % -------------------------------------------------------------
 \section{Validación con usuarios y con un experto}\label{sec:validacion-usuarios}
