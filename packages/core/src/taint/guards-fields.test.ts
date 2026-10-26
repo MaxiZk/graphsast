@@ -21,6 +21,18 @@ function findingsOf(code: string, sources: "params" | "catalog" = "params") {
 const handler = (body: string) => `app.get("/b", (req, res) => {\n${body}\n});`;
 
 describe("validaciones antes del uso", () => {
+  it("un ternario con una lista permitida protege la rama en la que se cumple", () => {
+    expect(findingsOf(handler(`
+  const orden = COLUMNAS.includes(req.query.orden) ? req.query.orden : "nombre";
+  db.query("SELECT * FROM t ORDER BY " + orden);`)).findings).toEqual([]);
+    expect(findingsOf(handler(`
+  const orden = !COLUMNAS.includes(req.query.orden) ? "nombre" : req.query.orden;
+  db.query("SELECT * FROM t ORDER BY " + orden);`)).findings).toEqual([]);
+    expect(findingsOf(handler(`
+  const orden = COLUMNAS.includes(req.query.orden) ? "nombre" : req.query.orden;
+  db.query("SELECT * FROM t ORDER BY " + orden);`)).findings).toHaveLength(1);
+  });
+
   it("el caso del tester: regex anclada que corta antes del exec", () => {
     const { findings, graph } = findingsOf(handler(`
   if (!/^[a-z]+$/.test(req.query.q)) return res.end();

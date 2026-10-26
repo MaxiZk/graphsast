@@ -479,9 +479,13 @@ validación sobre OWASP NodeGoat, `npm run github-eval` la de siete proyectos
 de GitHub (`eval-github.json`) y `npm run owasp-benchmark` la del
 [OWASP Benchmark](https://github.com/OWASP-Benchmark/BenchmarkJava) para Java
 (1.478 casos etiquetados de comandos, SQL, XSS y rutas; clona el repositorio
-en un commit fijo). Los 54 pares vulnerable/corregido de
+en un commit fijo). Los 107 pares vulnerable/corregido de
 [`docs/validacion/pares/`](docs/validacion/pares/) corren con `npm test`: cada
 vulnerable tiene que dar un hallazgo de su familia y cada corregido, ninguno.
+`npm run demo -- <carpeta>` copia los cinco del conjunto `demo` (uno por
+lenguaje) con su nombre real a `<carpeta>/malo` y `<carpeta>/bueno`, para
+mostrar el análisis en la web o con la CLI: el malo da 10 hallazgos y el bueno,
+ninguno.
 Ver [`docs/validacion/`](docs/validacion/) para la metodología.
 
 El workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) corre build,
@@ -582,7 +586,8 @@ receptor convencional (`db.query`, `conn.query`) puede no ser lo que parece.
 **Validaciones que cortan.** Un `if` que valida el dato y corta si no pasa
 (`if (!/^[a-z]+$/.test(x)) return ...`), o que encierra el uso
 (`if (LISTA.includes(x)) { ... }`), protege los usos de esa misma expresión
-dentro de la zona validada, para todas las familias. Se reconocen las
+dentro de la zona validada, para todas las familias. Un ternario valida igual:
+en `LISTA.includes(x) ? x : "fijo"`, la `x` de la primera rama está protegida. Se reconocen las
 regex ancladas en los dos extremos (sin un `|` suelto ni el flag `m`),
 `Number.isInteger`/`isSafeInteger`/`isFinite`, los `validator.isX` de formatos
 sin caracteres especiales (`isInt`, `isAlphanumeric`, `isUUID`...) y la
@@ -621,7 +626,8 @@ parser no entiende es un error, no un archivo limpio.
   pertenencia a una lista (`x in PERMITIDOS`, `in_array`, `PERMITIDOS.contains(x)`,
   `slices.Contains`) y la comparación con literales (`"asc".equals(x)`,
   `$x === 'desc'`), combinadas con `&&`, `||` y `!`. También
-  `if x not in PERMITIDOS: x = "nombre"`.
+  `if x not in PERMITIDOS: x = "nombre"` y el ternario
+  (`x if x in PERMITIDOS else "nombre"`, `in_array($x, $l) ? $x : 'n'`).
 - **Asignaciones que pisan.** `x = dato; x = "fijo"; usar(x)` no es
   vulnerable: una asignación que corre siempre antes del uso (en la misma
   lista de sentencias) descarta las anteriores. Las de un `if` o un bucle no

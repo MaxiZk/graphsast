@@ -120,6 +120,24 @@ function ifShape(node: TsNode): { condition: TsNode; then: TsNode; otherwise: Ts
   return { condition, then, otherwise: node.childrenForFieldName("alternative")[0] ?? null };
 }
 
+/**
+ * El ternario: `c ? a : b` (Java, PHP) o `a if c else b` (Python). Valida
+ * igual que un `if`, cada rama con lo que vale en ella.
+ */
+export function ternaryShape(node: TsNode): { condition: TsNode; then: TsNode; otherwise: TsNode } | null {
+  if (node.type === "ternary_expression" || (node.type === "conditional_expression" && node.childForFieldName("condition"))) {
+    const condition = node.childForFieldName("condition");
+    const then = node.childForFieldName("consequence") ?? node.childForFieldName("body");
+    const otherwise = node.childForFieldName("alternative");
+    return condition && then && otherwise ? { condition, then, otherwise } : null;
+  }
+  if (node.type === "conditional_expression" && node.namedChildCount === 3) {
+    const [then, condition, otherwise] = node.namedChildren;
+    return then && condition && otherwise ? { condition, then, otherwise } : null;
+  }
+  return null;
+}
+
 function operatorOf(node: TsNode): string | undefined {
   return node.childForFieldName("operator")?.type ?? node.childForFieldName("operators")?.type;
 }
@@ -146,7 +164,7 @@ export function collectForeignGuards(
   const stack: TsNode[] = [root];
   while (stack.length > 0) {
     const node = stack.pop()!;
-    if (ifShape(node)) ifs.push(node);
+    if (ifShape(node) || ternaryShape(node)) ifs.push(node);
     for (const b of spec.bindingsOf(node)) {
       const list = values.get(b.name);
       if (list) list.push(b.value ?? null);
@@ -271,6 +289,12 @@ export function collectForeignGuards(
   };
 
   for (const node of ifs) {
+    const ternary = ternaryShape(node);
+    if (ternary) {
+      add(holdsWhen(ternary.condition, true), ternary.then.startIndex, ternary.then.endIndex);
+      add(holdsWhen(ternary.condition, false), ternary.otherwise.startIndex, ternary.otherwise.endIndex);
+      continue;
+    }
     const shape = ifShape(node)!;
     const whenTrue = holdsWhen(shape.condition, true);
     const whenFalse = holdsWhen(shape.condition, false);

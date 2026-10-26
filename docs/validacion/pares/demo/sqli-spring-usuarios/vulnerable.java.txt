@@ -1,0 +1,19 @@
+import org.springframework.web.bind.annotation.*;
+import java.sql.*;
+import java.util.*;
+
+@RestController
+public class UsuarioController {
+    private final Connection conn;
+
+    public UsuarioController(Connection conn) { this.conn = conn; }
+
+    @GetMapping("/usuarios")
+    public List<String> buscar(@RequestParam String apellido) throws SQLException {
+        Statement st = conn.createStatement();
+        ResultSet rs = st.executeQuery("SELECT nombre FROM usuarios WHERE apellido = '" + apellido + "'");
+        List<String> nombres = new ArrayList<>();
+        while (rs.next()) nombres.add(rs.getString(1));
+        return nombres;
+    }
+}

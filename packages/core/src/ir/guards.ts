@@ -211,6 +211,27 @@ export function collectGuards(sourceFile: SourceFile): Guard[] {
       guards.push({ key, from: then.getStart(), to: then.getEnd(), call: condition, ...scope });
     }
   }
+  // `LISTA.includes(x) ? x : "fijo"`: protege la rama en la que la
+  // validación se cumple (la del `:` si está negada).
+  for (const expr of sourceFile.getDescendantsOfKind(SyntaxKind.ConditionalExpression)) {
+    let condition = unwrapParens(expr.getCondition());
+    const negated = TsNode.isPrefixUnaryExpression(condition)
+      && condition.getOperatorToken() === SyntaxKind.ExclamationToken;
+    if (TsNode.isPrefixUnaryExpression(condition) && negated) {
+      condition = unwrapParens(condition.getOperand());
+    }
+    const prefixed = prefixCheckedPath(condition, inits);
+    const validated = prefixed ?? validatedExpr(condition, consts);
+    if (!validated) continue;
+    const branch = negated ? expr.getWhenFalse() : expr.getWhenTrue();
+    guards.push({
+      key: normalizeExpr(validated.getText()),
+      from: branch.getStart(),
+      to: branch.getEnd(),
+      call: condition,
+      ...(prefixed ? { cwe: PATH_TRAVERSAL_CWE } : {}),
+    });
+  }
   return guards;
 }
 

@@ -219,6 +219,28 @@ stmt.executeQuery("SELECT * FROM t WHERE u = '" + user + "' ORDER BY name " + so
 if ("asc".equals(sort) || sort.length() > 0) { stmt.executeQuery("SELECT * FROM t ORDER BY name " + sort); }`)).toEqual([89]);
   });
 
+  it("el ternario valida igual que un if (Python, Java, PHP)", () => {
+    const py = (expr: string) => cwesOf(`from flask import request
+import sqlite3
+def h():
+    col = request.args.get("sort")
+    orden = ${expr}
+    sqlite3.connect("x").execute("SELECT * FROM t ORDER BY " + orden)`, "a.py");
+    expect(py(`col if col in ("name", "date") else "name"`)).toEqual([]);
+    expect(py(`"name" if col in ("name", "date") else col`)).toEqual([89]);
+    expect(java(`String sort = request.getParameter("sort");
+String orden = COLUMNAS.contains(sort) ? sort : "name";
+stmt.executeQuery("SELECT * FROM t ORDER BY " + orden);`)).toEqual([]);
+    expect(cwesOf(`<?php
+$col = $_GET['sort'];
+$orden = in_array($col, ["name", "date"], true) ? $col : "name";
+mysqli_query($c, "SELECT * FROM t ORDER BY $orden");`, "a.php")).toEqual([]);
+    expect(cwesOf(`<?php
+$col = $_GET['sort'];
+$orden = in_array($col, ["name", "date"], true) ? "name" : $col;
+mysqli_query($c, "SELECT * FROM t ORDER BY $orden");`, "a.php")).toEqual([89]);
+  });
+
   it("Go: MatchString con una regex anclada y return", () => {
     expect(cwesOf(`package main
 import ("net/http"; "os/exec"; "regexp")

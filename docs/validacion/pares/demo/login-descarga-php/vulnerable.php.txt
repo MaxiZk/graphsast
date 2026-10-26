@@ -1,0 +1,12 @@
+<?php
+$conn = new mysqli("localhost", "app", "secreto", "usuarios");
+
+$usuario = $_POST['usuario'];
+$clave = $_POST['clave'];
+$res = $conn->query("SELECT id FROM usuarios WHERE usuario = '$usuario' AND clave = '$clave'");
+if ($res->num_rows > 0) {
+    echo "Bienvenido " . $usuario;
+}
+
+$archivo = $_GET['archivo'];
+readfile("/var/www/descargas/" . $archivo);
