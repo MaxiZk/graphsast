@@ -53,7 +53,7 @@ importante. Sobre el banco sintético, GraphSAST obtuvo una precisión de
 1,00 frente a 0,85 de la línea de base, con la misma exhaustividad de
 1,00 y un $F_1$ de 1,00 frente a 0,92 (tabla~\ref{tab:metricas}). Sobre
 los proyectos de GitHub, con la versión final, la precisión fue de 0,41
-frente a 0,09 y el $F_1$, de 0,55 frente a 0,17
+frente a 0,10 y el $F_1$, de 0,54 frente a 0,17
 (tabla~\ref{tab:github-metricas}). Sobre
 NodeGoat, en cambio, los dos detectores obtuvieron exactamente los mismos
 resultados: precisión de 0,75 y exhaustividad de 0,50, porque los
@@ -65,14 +65,19 @@ GraphSAST 28 (21 en la primera medición), por restricciones de las
 reglas del catálogo que evitan marcar llamadas inocuas y no por el
 recorrido del grafo. En los pares de código vulnerable y corregido, el
 sistema distinguió la forma vulnerable de la corregida en los 54 pares
-de la versión final (sección~\ref{sec:pares}).
+de la versión final (sección~\ref{sec:pares}). Sobre el OWASP Benchmark
+de Java, cuyos casos seguros están armados para engañar a un análisis que
+no sigue el valor, detectó los 777 casos vulnerables de las cuatro
+familias evaluadas con una tasa de falsos positivos de 0,26; en la
+primera medición había detectado el 77\,\% con una tasa de 0,60
+(sección~\ref{sec:otros-lenguajes}).
 
 \paragraph{H2.} El análisis de contaminación sobre el grafo reduce los
 falsos positivos respecto de la detección por expresiones regulares. La
 respuesta es afirmativa. En el banco, la línea de base produjo cinco
 falsos positivos, tres en caminos saneados y dos entre variables
 homónimas sin un camino real entre sí, y GraphSAST ninguno. Sobre los
-proyectos de GitHub, GraphSAST emitió 60 falsas alarmas frente a 421, y
+proyectos de GitHub, GraphSAST emitió 63 falsas alarmas frente a 420, y
 en los tres proyectos sin vulnerabilidades documentadas, 18 frente a 117.
 En NodeGoat ambos detectores produjeron el mismo falso positivo, en una
 tarea de automatización cuyo argumento no proviene de un usuario remoto.
@@ -173,10 +178,10 @@ métodos sobre objetos de tipo desconocido se resuelven por una heurística
 de nombre único. Los destinos sensibles se reconocen por nombre,
 calificado por el módulo importado o el objeto receptor, y las
 validaciones solo cortan el camino en las formas reconocidas. Python,
-Java, PHP y Go se analizan con menos precisión que JavaScript: sin
-llamadas entre archivos ni validaciones que corten el camino, y sin
-medición sobre proyectos reales; su evidencia se limita a 12 pares por
-lenguaje escritos por el autor.
+Java, PHP y Go se analizan sin llamadas entre archivos; su evidencia son
+12 pares por lenguaje escritos por el autor, tres aplicaciones
+vulnerables a propósito y el OWASP Benchmark de Java, que guiaron parte
+de las correcciones.
 
 \paragraph{De datos.} El banco sintético fue construido por el autor y
 concentra 26 de sus 43 casos en inyección SQL. El corpus de advisories
@@ -230,8 +235,10 @@ análisis sobre el grafo puede mostrar su ventaja.
 % -------------------------------------------------------------
 
 Quedan fuera del alcance entregado: para Python, Java, PHP y Go, el
-seguimiento de llamadas entre archivos, las validaciones que cortan el
-camino y una medición sobre proyectos reales, como la de JavaScript; una
+seguimiento de llamadas entre archivos, que explica la mayor parte de los
+falsos positivos que quedan en el OWASP Benchmark, y una medición sobre
+proyectos que no sean vulnerables a propósito; el seguimiento de una
+lista por índice; una
 extensión para Visual Studio Code
 que marque los hallazgos en el editor; el análisis de motores de
 plantillas; nuevas familias del catálogo, como la falsificación de

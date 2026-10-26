@@ -52,7 +52,7 @@ function adjacencyOf(graph: IRGraph, propagateEdges: readonly IREdgeKind[]): Map
 }
 
 /** Largo máximo de un camino (en aristas) si nada lo fija. */
-export const DEFAULT_MAX_DEPTH = 15;
+export const DEFAULT_MAX_DEPTH = 30;
 
 /**
  * BFS dirigido acotado. Devuelve un camino `from → to` o `null` si no hay

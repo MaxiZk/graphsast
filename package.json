@@ -23,6 +23,7 @@
     "cve:run": "npm run build -w @graphsast/core && node packages/core/dist/eval/cve/run-cve.cli.js",
     "baseline": "npm run baseline -w @graphsast/core",
     "nodegoat": "npm run nodegoat -w @graphsast/core",
-    "github-eval": "npm run github-eval -w @graphsast/core"
+    "github-eval": "npm run github-eval -w @graphsast/core",
+    "owasp-benchmark": "npm run owasp-benchmark -w @graphsast/core"
   }
 }

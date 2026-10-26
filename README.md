@@ -201,7 +201,8 @@ npx graphsast scan src lib                      # varias rutas
 
 En una carpeta se analizan `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.py`, `.java`, `.php` y `.go`.
 Siempre se excluyen `node_modules/`, `dist/`, `build/`, `coverage/` y `.git/`,
-y se respetan los `.gitignore` del proyecto analizado, incluidos los de las
+y las bibliotecas minificadas (`*.min.js`, `*-min.js`; nombradas directamente,
+sí se analizan), y se respetan los `.gitignore` del proyecto analizado, incluidos los de las
 carpetas superiores hasta la raíz del repositorio. Para excluir algo más:
 
 ```bash
@@ -292,7 +293,7 @@ mostrando todas. Una familia que no está activa en el catálogo es un error
 | `--fail-on <cwe-89,…>` | Solo estas familias provocan el código `1` |
 | `--no-cross-file` | Analizar cada archivo por separado |
 | `--sources <params\|catalog>` | Qué parámetros son entrada no confiable: todos los que nadie llama (default) o solo los del catálogo |
-| `--max-depth <n>` | Profundidad máxima del camino (default 15) |
+| `--max-depth <n>` | Profundidad máxima del camino (default 30) |
 | `--max-file-bytes <n>` | Omitir archivos más grandes (default 1 MB) |
 | `--verbose`, `--no-path` | Nivel de detalle del reporte de texto |
 | `--exit-zero` | Salir con `0` aunque haya hallazgos |
@@ -368,7 +369,8 @@ El análisis corre en el navegador, en un Web Worker, con el mismo motor que el
 CLI (`@graphsast/core/browser`, sin Neo4j; las gramáticas de tree-sitter se bajan
 solo si hay archivos de esos lenguajes): se analizan los mismos archivos
 (`.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.py`, `.java`, `.php` y `.go` de hasta 1 MB, fuera de
-`node_modules`, `dist`, `build` y demás carpetas excluidas, respetando los
+`node_modules`, `dist`, `build` y demás carpetas excluidas, sin las bibliotecas
+minificadas, respetando los
 `.gitignore` y `.graphsastignore` subidos) y se siguen las llamadas entre archivos igual que en
 `scan`, con los alias de los `tsconfig.json`/`jsconfig.json` subidos.
 
@@ -473,8 +475,11 @@ Corre el corpus etiquetado (`packages/core/src/eval/benchmark/corpus.ts`) y
 reporta precisión, recall, F1 y ms/línea; sale con `1` si algún caso se
 clasifica mal. `npm run cve:run` corre el corpus de vulnerabilidades reales
 (`eval-cve-corpus.json`, baja los paquetes de npm), `npm run nodegoat` la
-validación sobre OWASP NodeGoat y `npm run github-eval` la de siete proyectos
-de GitHub (`eval-github.json`). Los 54 pares vulnerable/corregido de
+validación sobre OWASP NodeGoat, `npm run github-eval` la de siete proyectos
+de GitHub (`eval-github.json`) y `npm run owasp-benchmark` la del
+[OWASP Benchmark](https://github.com/OWASP-Benchmark/BenchmarkJava) para Java
+(1.478 casos etiquetados de comandos, SQL, XSS y rutas; clona el repositorio
+en un commit fijo). Los 54 pares vulnerable/corregido de
 [`docs/validacion/pares/`](docs/validacion/pares/) corren con `npm test`: cada
 vulnerable tiene que dar un hallazgo de su familia y cada corregido, ninguno.
 Ver [`docs/validacion/`](docs/validacion/) para la metodología.
@@ -600,16 +605,40 @@ modificador de TypeScript, `constructor(private repo)`). Los campos de objetos
 literales y los de `static` no se siguen.
 
 **Precisión general.** El análisis no es sensible al contexto de llamada ni
-al camino de ejecución, y la profundidad máxima de un camino es 15 pasos. Se
+al camino de ejecución, y la profundidad máxima de un camino es 30 pasos. Se
 analizan JavaScript, TypeScript, Python, Java, PHP y Go; un archivo que el
 parser no entiende es un error, no un archivo limpio.
 
-**Python, Java, PHP y Go.** Tienen menos precisión que JavaScript: no se
-siguen llamadas entre archivos, los ámbitos son las funciones y las clases (no
-los bloques), y las validaciones con `if` (regex, lista permitida,
-`startsWith`) no cortan el camino; solo lo cortan los saneamientos del
-catálogo. Las plantillas (Jinja, Thymeleaf, Blade, `html/template`) no se
-analizan. Las métricas del benchmark clasifican por
+**Python, Java, PHP y Go.** No se siguen llamadas entre archivos y los
+ámbitos son las funciones y las clases (no los bloques). Sí se tiene en cuenta:
+
+- **Validaciones que cortan.** El `if` que valida el dato protege la rama en
+  la que se cumple y, si la otra corta siempre (`return`, `throw`, `die`,
+  `exit`, `abort()`, `panic()`), lo que sigue. Validan: una regex que acepta
+  la cadena entera (`re.fullmatch`, `x.matches(...)`, `preg_match('/^...$/')`,
+  `MatchString` con `^...$`), `isdigit`/`isalnum`, `is_numeric`/`ctype_digit`,
+  `filter_var` con `FILTER_VALIDATE_INT`, `StringUtils.isNumeric`, la
+  pertenencia a una lista (`x in PERMITIDOS`, `in_array`, `PERMITIDOS.contains(x)`,
+  `slices.Contains`) y la comparación con literales (`"asc".equals(x)`,
+  `$x === 'desc'`), combinadas con `&&`, `||` y `!`. También
+  `if x not in PERMITIDOS: x = "nombre"`.
+- **Asignaciones que pisan.** `x = dato; x = "fijo"; usar(x)` no es
+  vulnerable: una asignación que corre siempre antes del uso (en la misma
+  lista de sentencias) descarta las anteriores. Las de un `if` o un bucle no
+  descartan nada, y `x += y` o `$s .= $t` agregan al valor anterior.
+- **Colecciones.** `lista.add(x)`, `sb.append(x)`, `partes.append(x)` y
+  `array_push($l, $x)` contaminan la colección. Un mapa que solo se usa con
+  claves literales se sigue por clave: `m.put("b", dato); m.get("a")` no trae
+  el dato.
+- **Ramas constantes (Java).** Un `if`, un ternario o un `switch` cuya
+  condición se calcula con literales y variables locales asignadas una sola vez
+  (`if ((7 * 42) - num > 200)`) descarta la rama que no corre.
+- **Escapes sin comillas (PHP).** `mysqli_real_escape_string` y `addslashes`
+  no sanean si el resultado va sin comillas en la consulta
+  (`WHERE id = $id`).
+
+Las plantillas (Jinja, Thymeleaf, Blade, `html/template`) no se analizan, y
+una lista no se sigue por índice (`remove(0)` y después `get(1)`). Las métricas del benchmark clasifican por
 snippet, lo que puede inflar la precisión.
 
 **API local.** Pensada para una sola persona en su máquina: no tiene

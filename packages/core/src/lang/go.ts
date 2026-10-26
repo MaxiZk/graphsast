@@ -1,4 +1,5 @@
 import type { Node as TsNode } from "web-tree-sitter";
+import { goValidated } from "./validators.js";
 import type { BindingInfo, CallInfo, FunctionInfo, LanguageSpec, ParamInfo } from "./spec.js";
 
 /**
@@ -65,6 +66,12 @@ function pairUp(left: TsNode | null, right: TsNode | null): BindingInfo[] {
 
 export function goSpec(): LanguageSpec {
   const aliases = new Map<string, string>();
+  const qualify = (callee: string): string | undefined => {
+    const dot = callee.indexOf(".");
+    if (dot === -1) return undefined;
+    const pkg = aliases.get(callee.slice(0, dot));
+    return pkg ? pkg + callee.slice(dot) : undefined;
+  };
 
   return {
     language: "go",
@@ -165,6 +172,10 @@ export function goSpec(): LanguageSpec {
       }
     },
 
+    validatedBy(_node, call, ctx) {
+      return goValidated(call, ctx, qualify);
+    },
+
     returnValueOf(node) {
       if (node.type !== "return_statement") return undefined;
       return node.namedChildren[0] ?? null;
@@ -173,11 +184,6 @@ export function goSpec(): LanguageSpec {
     nonExpressionFields: new Set(["name", "type", "field", "key", "result", "receiver", "package"]),
     opaqueTypes: new Set(["comment", "raw_string_literal"]),
 
-    qualify(callee) {
-      const dot = callee.indexOf(".");
-      if (dot === -1) return undefined;
-      const pkg = aliases.get(callee.slice(0, dot));
-      return pkg ? pkg + callee.slice(dot) : undefined;
-    },
+    qualify,
   };
 }

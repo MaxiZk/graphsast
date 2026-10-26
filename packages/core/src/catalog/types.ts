@@ -28,6 +28,12 @@ export interface SinkSpec {
    */
   unlessFirstArg?: string;
   /**
+   * Expresión regular sobre el inicializador de la variable receptora: si
+   * coincide, la llamada no es el sink. En Go, `stmt.QueryRow(id)` sobre
+   * `stmt, _ := db.Prepare(sql)` liga `id` como parámetro de la consulta.
+   */
+  unlessReceiverInit?: string;
+  /**
    * El sink vale solo si coincide alguna de estas expresiones regulares:
    * `receiverInit` sobre el inicializador de la variable receptora
    * (`new Finance(req.body)` en `finance.save()`), `firstArg` sobre el texto
@@ -64,7 +70,7 @@ export interface CweCatalogEntry {
   sanitizers: string[];
   /**
    * Largo máximo (en aristas) de un camino hasta un sink de esta familia.
-   * Sin esto, 15. `--max-depth` lo reemplaza para todas las familias.
+   * Sin esto, 30. `--max-depth` lo reemplaza para todas las familias.
    */
   maxDepth?: number;
   /**

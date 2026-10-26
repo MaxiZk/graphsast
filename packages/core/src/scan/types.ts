@@ -111,3 +111,12 @@ export const DEFAULT_IGNORE = [
 ];
 
 export const DEFAULT_MAX_FILE_BYTES = 1_000_000;
+
+/**
+ * Bibliotecas minificadas (`jquery.min.js`, `jquery-3.2.1-min.js`): código de
+ * terceros copiado al proyecto, sin nombres legibles. Al recorrer una carpeta
+ * no se analizan; nombrado directamente, sí.
+ */
+export function isMinifiedName(name: string): boolean {
+  return /[.-]min\.[cm]?js$/i.test(name);
+}

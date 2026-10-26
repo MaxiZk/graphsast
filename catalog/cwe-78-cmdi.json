@@ -349,14 +349,16 @@
         {
           "callee": ".exec",
           "args": [
-            0
+            0,
+            1
           ],
           "receiver": "getRuntime\\(\\)$"
         },
         {
           "callee": ".exec",
           "args": [
-            0
+            0,
+            1
           ],
           "onlyIf": {
             "receiverInit": "getRuntime\\(\\)"
@@ -398,6 +400,15 @@
           ],
           "onlyIf": {
             "firstArg": "^\\s*\"(?:/(?:usr/)?bin/)?(?:ba|z|da)?sh\"|^\\s*\"cmd(?:\\.exe)?\""
+          }
+        },
+        {
+          "callee": ".command",
+          "args": [
+            0
+          ],
+          "onlyIf": {
+            "receiverInit": "ProcessBuilder\\("
           }
         }
       ],

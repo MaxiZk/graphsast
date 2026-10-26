@@ -1,4 +1,5 @@
 import type { Node as TsNode } from "web-tree-sitter";
+import { phpValidated } from "./validators.js";
 import type { BindingInfo, CallInfo, FunctionInfo, LanguageSpec, ParamInfo, SyntheticCall } from "./spec.js";
 
 /**
@@ -108,10 +109,82 @@ function isShortEcho(node: TsNode): boolean {
   return tag?.type === "php_tag" && tag.text.startsWith("<?=");
 }
 
+/** Escapes que agregan barras antes de las comillas pero no las comillas. */
+const QUOTE_ESCAPES = /^(?:mysqli_real_escape_string|mysql_real_escape_string|pg_escape_string|addslashes|sqlite_escape_string|.+\.(?:real_escape_string|escapeString))$/;
+const SQL_TEXT = /\b(?:SELECT|INSERT|UPDATE|DELETE|WHERE|VALUES|ORDER\s+BY|LIMIT)\b/i;
+
+/** Último carácter de texto literal antes de `node` en la cadena o concatenación que lo contiene. */
+function charBefore(node: TsNode): string | null {
+  const parent = node.parent;
+  if (!parent) return null;
+  if (parent.type === "encapsed_string") {
+    const before = parent.text.slice(0, node.startIndex - parent.startIndex).replace(/\{$/, "");
+    return before.length > 1 ? before.at(-1)! : null;
+  }
+  if (parent.type === "binary_expression" && parent.childForFieldName("operator")?.type === "."
+    && parent.childForFieldName("right")?.id === node.id) {
+    let left = parent.childForFieldName("left");
+    while (left?.type === "binary_expression") left = left.childForFieldName("right");
+    if (left?.type === "encapsed_string" || left?.type === "string") return left.text.slice(0, -1).at(-1) ?? null;
+  }
+  return null;
+}
+
+/** Texto de la cadena (o la concatenación entera) en la que está `node`. */
+function enclosingText(node: TsNode): string {
+  let top = node.parent;
+  while (top?.parent?.type === "binary_expression" && top.parent.childForFieldName("operator")?.type === ".") top = top.parent;
+  return top?.text ?? "";
+}
+
+/**
+ * Llamadas a escapes de comillas cuyo resultado se usa en una consulta sin
+ * comillas alrededor: `$id = mysqli_real_escape_string($c, $id)` y después
+ * `"... WHERE id = $id"`. El escape no cambia nada ahí (`1 OR 1=1` no tiene
+ * comillas).
+ */
+function unquotedEscapes(root: TsNode): Set<number> {
+  const escapesByName = new Map<string, TsNode[]>();
+  const uses: TsNode[] = [];
+  const stack: TsNode[] = [root];
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    if (node.type === "assignment_expression") {
+      const left = node.childForFieldName("left");
+      const right = node.childForFieldName("right");
+      const fn = right?.type === "function_call_expression" ? right.childForFieldName("function")?.text
+        : right?.type === "member_call_expression" ? `x.${right.childForFieldName("name")?.text ?? ""}` : undefined;
+      if (left?.type === "variable_name" && right && fn && QUOTE_ESCAPES.test(fn.replace(/^\\/, ""))) {
+        const list = escapesByName.get(left.text) ?? [];
+        list.push(right);
+        escapesByName.set(left.text, list);
+      }
+    }
+    if (node.type === "variable_name") uses.push(node);
+    for (const child of node.namedChildren) if (child) stack.push(child);
+  }
+  const out = new Set<number>();
+  if (escapesByName.size === 0) return out;
+  for (const use of uses) {
+    const escapes = escapesByName.get(use.text);
+    if (!escapes) continue;
+    const before = charBefore(use);
+    if (before === null || before === "'" || before === '"' || before === "`") continue;
+    if (!SQL_TEXT.test(enclosingText(use))) continue;
+    for (const e of escapes) out.add(e.id);
+  }
+  return out;
+}
+
 export function phpSpec(): LanguageSpec {
+  let unquoted = new Set<number>();
   return {
     language: "php",
     newKeyword: true,
+
+    prepare(root) {
+      unquoted = unquotedEscapes(root);
+    },
 
     functionOf(node): FunctionInfo | null {
       switch (node.type) {
@@ -165,7 +238,12 @@ export function phpSpec(): LanguageSpec {
       if (!args) return null;
       switch (node.type) {
         case "function_call_expression":
-          return { callee: normalize(node.childForFieldName("function")?.text ?? ""), args: argumentsOf(args), idAt: args };
+          return {
+            callee: normalize(node.childForFieldName("function")?.text ?? ""),
+            args: argumentsOf(args),
+            idAt: args,
+            ...(unquoted.has(node.id) ? { unquotedUse: true } : {}),
+          };
         case "member_call_expression":
         case "nullsafe_member_call_expression": {
           const object = node.childForFieldName("object");
@@ -174,6 +252,7 @@ export function phpSpec(): LanguageSpec {
             args: argumentsOf(args),
             ...(object ? { receiver: object } : {}),
             idAt: args,
+            ...(unquoted.has(node.id) ? { unquotedUse: true } : {}),
           };
         }
         case "scoped_call_expression": {
@@ -244,6 +323,10 @@ export function phpSpec(): LanguageSpec {
         return { callee: "echo", args: sequenceParts(node.namedChildren[0] ?? null) };
       }
       return null;
+    },
+
+    validatedBy(_node, call, ctx) {
+      return phpValidated(call, ctx);
     },
 
     returnValueOf(node) {

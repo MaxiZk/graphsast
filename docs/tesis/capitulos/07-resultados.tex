@@ -145,6 +145,7 @@ historial de cambios.
         Proyectos de GitHub & Etiquetado y análisis de siete repositorios públicos, y condiciones de destino para inserciones, Sequelize, \texttt{\$eq} y respuestas JSON & 22/10/2026 \\
         Pares de código & Entradas del navegador, \texttt{execFile} y \texttt{spawn} sin intérprete, validación de rutas con \texttt{startsWith} y destinos nuevos, a partir de 54 pares vulnerable/corregido & 22/10/2026 \\
         Otros lenguajes & Python, Java, PHP y Go con tree-sitter sobre la misma representación intermedia, con 48 pares vulnerable/corregido & 22/10/2026 \\
+        Verificación en otros lenguajes & DVWA, vulpy, govwa y OWASP Benchmark; validaciones, asignaciones que pisan, colecciones, mapas por clave y ramas constantes & 26/10/2026 \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -225,7 +226,8 @@ los dos motores sobre una instancia real de Neo4j 5 Community y exige
 los mismos hallazgos. Desde entonces corre en el flujo de integración
 continua sobre cada cambio y obtiene resultados idénticos, lo que da por
 cumplido el criterio de RF-10. Al cierre del desarrollo la suite
-comprende 444 pruebas (sección~\ref{sec:n4.7.1}).
+comprende 638 pruebas, 540 del motor y 98 de la interfaz web
+(sección~\ref{sec:n4.7.1}).
 
 \begin{table}[H]
     \centering
@@ -388,7 +390,9 @@ en GraphSAST, casi todos sobre consultas \texttt{findOne}. En la versión
 final, que restringe las consultas de MongoDB a su filtro
 (sección~\ref{sec:proyectos-github}), GraphSAST mantiene las tres
 detecciones y baja a 7 hallazgos sin etiqueta, mientras que la línea de
-base pasa a 11. Esos hallazgos no se etiquetaron ni se revisaron a mano,
+base pasa a 11. Con los cambios de la sección~\ref{sec:otros-lenguajes},
+GraphSAST suma un hallazgo sin etiqueta, una inserción de MongoDB en un
+script de carga de datos que recibe un arreglo armado con \texttt{push}. Esos hallazgos no se etiquetaron ni se revisaron a mano,
 por lo que la lectura de esta sección se limita a la versión medida.
 
 \begin{table}[H]
@@ -562,9 +566,9 @@ tabla~\ref{tab:github-metricas} resume las tres.
         \texttt{4cf721b} & GraphSAST, origen por defecto & 58 & 13 & 0,38 & 0,62 & 0,47 \\
         \texttt{4cf721b} & GraphSAST, origen del catálogo & 37 & 15 & 0,46 & 0,56 & 0,51 \\
         \midrule
-        Final & Línea de base & 421 & 4 & 0,09 & 0,88 & 0,17 \\
-        Final & GraphSAST, origen por defecto & 60 & 6 & 0,41 & 0,82 & 0,55 \\
-        Final & GraphSAST, origen del catálogo & 32 & 8 & 0,55 & 0,76 & 0,64 \\
+        Final & Línea de base & 420 & 4 & 0,10 & 0,88 & 0,17 \\
+        Final & GraphSAST, origen por defecto & 63 & 6 & 0,41 & 0,82 & 0,54 \\
+        Final & GraphSAST, origen del catálogo & 34 & 8 & 0,54 & 0,76 & 0,63 \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -623,12 +627,21 @@ actualización, no por el objeto sobre el que se invocan. Esta medición,
 por lo tanto, ya no es independiente de los ajustes, como sí lo era la
 primera. La detección subió de 21 a 28 de las 34 vulnerabilidades, con
 60 falsas alarmas en lugar de 58: la precisión
-pasó de 0,38 a 0,41 y el $F_1$, de 0,47 a 0,55
-(tabla~\ref{tab:github-metricas}). Con el modelo del catálogo, la
-precisión llegó a 0,55. Se recuperaron las cinco consultas \texttt{find},
+pasó de 0,38 a 0,41 y el $F_1$, de 0,47 a 0,55.
+Con el modelo del catálogo, la
+precisión llegó a 0,55. Los cambios del motor de la
+sección~\ref{sec:otros-lenguajes}, sobre todo seguir el dato que se
+agrega a una colección, sumaron tres falsas alarmas con cada modelo y un
+problema real más: en vulnerable-node, la actualización del perfil arma
+las columnas del \texttt{UPDATE} con las claves del cuerpo del pedido.
+Con esa versión, que es la de la tabla~\ref{tab:github-metricas}, el
+modelo por defecto da 63 falsas alarmas, precisión de 0,41 y $F_1$ de
+0,54, y el del catálogo, 34, 0,54 y 0,63. La línea de base también
+marca ese destino, por lo que pasa a 420 falsas alarmas. Se recuperaron las cinco consultas \texttt{find},
 la descarga con \texttt{res.download} y la escritura con
 \texttt{res.write}. La línea de base también ganó detecciones, porque usa
-el mismo catálogo, y con él sus falsas alarmas subieron a 421. Quedan seis
+el mismo catálogo, y con él sus falsas alarmas subieron a 421 (420 con la
+reclasificación de la sección~\ref{sec:otros-lenguajes}). Quedan seis
 omisiones: la actualización de MongoDB con el método \texttt{update}, en
 desuso; las opciones de \texttt{res.render}; los dos casos de Angular; la
 escritura de archivo desde GraphQL y el contexto de \texttt{vm}. Las tres
@@ -756,7 +769,148 @@ por lo que el 12 de 12 final no es una medición independiente.
 cortos: miden si el sistema distingue la forma vulnerable de la corregida
 en los casos típicos, no su desempeño sobre un proyecto completo, que es
 lo que mide la sección~\ref{sec:proyectos-github}. Para Python, Java, PHP
-y Go no hubo una medición sobre proyectos reales.
+y Go, la medición sobre proyectos de otros autores está en la
+sección~\ref{sec:otros-lenguajes}.
+
+\subsection{Proyectos vulnerables en otros lenguajes}\label{sec:otros-lenguajes}
+
+\paragraph{Diseño.} Los pares de la sección~\ref{sec:pares} los escribió
+el autor. Para comprobar sobre código de otros autores que el análisis de
+Python, Java, PHP y Go marca la versión vulnerable y no la corregida, se
+eligieron aplicaciones vulnerables a propósito que traen las dos
+versiones del mismo código: DVWA en PHP (commit \texttt{a1978a2}), cuyos
+módulos tienen tres niveles vulnerables y uno corregido; vulpy en Python
+(\texttt{5249cc8}), con la misma aplicación de Flask en una versión
+insegura y otra segura; y govwa en Go (\texttt{4058f79}), con funciones
+vulnerables y seguras lado a lado. Se sumó el OWASP Benchmark de Java
+(\texttt{c3379bd}), cuyos servlets de prueba están etiquetados como
+vulnerables o no; se usaron los 1.478 casos de las cuatro categorías que
+corresponden a familias del catálogo. Cada archivo se analizó por
+separado, como en la versión web, con el modelo de origen por defecto.
+\texttt{npm run owasp-benchmark} reproduce las cifras del Benchmark, y el
+detalle de las cuatro mediciones está en
+\texttt{docs/validacion/2026-10-26-verificacion-otros-lenguajes.md}.
+
+\paragraph{Primera medición.} Con la versión que cerró la
+sección~\ref{sec:pares}, el nivel corregido del módulo de comandos de
+DVWA se marcaba aunque valida cada octeto de la dirección con
+\texttt{is\_numeric}, porque para estos lenguajes las validaciones no
+cortaban el camino. Las tres versiones del módulo de XSS almacenado se
+marcaban como inyección SQL, aunque guardan el dato escapado y entre
+comillas. En govwa, las consultas preparadas
+(\texttt{stmt.QueryRow(id)} sobre \texttt{db.Prepare}) se marcaban como
+inyección, igual que una respuesta armada con \texttt{json.Marshal}. En el
+Benchmark, la tasa de verdaderos positivos fue de 0,77 y la de falsos
+positivos, de 0,60 (tabla~\ref{tab:owasp-benchmark}): la mitad de los
+casos de comandos no se detectaba, porque el dato pasa por una lista o
+por las variables de entorno del proceso, y los casos seguros se marcaban
+en su mayoría, porque están armados para engañar a un análisis que no
+sigue el valor: una rama que no se ejecuta, una variable que se reasigna
+con una constante o la clave equivocada de un mapa.
+
+\paragraph{Correcciones.} Se incorporaron cinco cambios al traductor y al
+flujo de datos. Primero, las validaciones con \texttt{if} de cada
+lenguaje cortan el camino: una expresión regular que acepta la cadena
+entera, los chequeos de tipo como \texttt{isdigit} o \texttt{is\_numeric},
+la pertenencia a una lista y la comparación con literales, combinadas
+con conjunciones y negaciones; protegen la rama en la que se cumplen y,
+si la otra corta siempre, lo que sigue. Segundo, una asignación que se
+ejecuta siempre antes de un uso descarta las anteriores, de modo que
+\texttt{x = dato; x = "fijo"} ya no se marca; las asignaciones dentro de
+un \texttt{if} o un bucle no descartan nada. Tercero, los métodos que
+guardan sus argumentos en el objeto, como \texttt{add}, \texttt{put} o
+\texttt{append}, contaminan la colección o el \texttt{StringBuilder}, y un
+mapa que solo se usa con claves literales se sigue por clave. Cuarto, en
+Java se descartan las ramas de un \texttt{if}, un ternario o un
+\texttt{switch} cuya condición se calcula con literales, y una llamada
+sobre \texttt{new Clase()} se resuelve al método de esa clase. Quinto, la
+profundidad máxima de un camino pasó de 15 a 30 aristas, porque con el
+segundo cambio el dato recorre cada reasignación. En el catálogo, las
+consultas sobre una sentencia preparada de Go dejaron de ser destinos y
+\texttt{json.Marshal} pasó a sanear; en Java se agregaron las variables de
+entorno de \texttt{Runtime.exec} y la lista de \texttt{ProcessBuilder};
+y en PHP un escape de comillas, como \texttt{mysqli\_real\_escape\_string},
+dejó de sanear cuando su resultado va sin comillas en la consulta. Esta
+última regla surgió del nivel medio del módulo de inyección SQL de DVWA,
+que escapa el dato y lo usa sin comillas: antes se detectaba solo porque
+el análisis no veía la reasignación, y el segundo cambio lo había vuelto
+un falso negativo.
+
+\begin{table}[H]
+    \centering
+    \caption{DVWA: hallazgos de la familia del módulo por nivel}
+    \label{tab:dvwa}
+    \small
+    \begin{tabular}{l l c c c c}
+        \toprule
+        \tb{Módulo} & \tb{Familia} & \tb{Bajo} & \tb{Medio} & \tb{Alto} & \tb{Imposible} \\
+        \midrule
+        Inyección SQL & CWE-89 & sí & sí & no$^{a}$ & no \\
+        Inyección SQL ciega & CWE-89 & sí & sí & sí & no \\
+        Comandos & CWE-78 & sí & sí & sí & sí $\rightarrow$ no \\
+        XSS almacenado & CWE-89 & sí $\rightarrow$ no & sí $\rightarrow$ no & sí $\rightarrow$ no & no \\
+        Subida de archivos & CWE-22 & no$^{b}$ & no$^{b}$ & no$^{b}$ & sí \\
+        \bottomrule
+        \multicolumn{6}{l}{\footnotesize Esperado: «sí» en los tres primeros niveles y «no» en el imposible, salvo en XSS almacenado.} \\
+        \multicolumn{6}{l}{\footnotesize $^{a}$ El dato llega de la sesión, que llena otra página. $^{b}$ La falla no es de una familia del catálogo.} \\
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{OWASP Benchmark de Java por categoría, primera medición y versión final}
+    \label{tab:owasp-benchmark}
+    \small
+    \begin{tabular}{l r r r r r r}
+        \toprule
+        & & \multicolumn{2}{c}{\tb{Primera medición}} & \multicolumn{3}{c}{\tb{Versión final}} \\
+        \cmidrule(lr){3-4} \cmidrule(lr){5-7}
+        \tb{Categoría} & \tb{Casos} & \tb{TPR} & \tb{FPR} & \tb{TPR} & \tb{FPR} & \tb{TPR $-$ FPR} \\
+        \midrule
+        Comandos & 251 & 0,37 & 0,40 & 1,00 & 0,29 & 0,71 \\
+        Inyección SQL & 504 & 0,87 & 0,68 & 1,00 & 0,30 & 0,70 \\
+        XSS & 455 & 0,81 & 0,59 & 1,00 & 0,21 & 0,79 \\
+        Path traversal & 268 & 0,86 & 0,68 & 1,00 & 0,26 & 0,74 \\
+        \midrule
+        Total & 1.478 & 0,77 & 0,60 & 1,00 & 0,26 & 0,74 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Resultados.} En DVWA, con la versión final, ningún nivel
+corregido de los módulos de comandos e inyección SQL se marca y todos los
+niveles vulnerables se detectan, salvo el nivel alto de inyección SQL,
+cuyo dato llega por la sesión desde otra página
+(tabla~\ref{tab:dvwa}). El falso positivo que queda es el nivel corregido
+de la subida de archivos: el nombre del archivo lleva una extensión que
+se compara con una lista, pero la comparación es posterior a armar el
+nombre y el análisis no relaciona una cosa con la otra. En vulpy, la
+versión segura dejó de marcar el inicio de sesión y el cambio de clave,
+que pasaron a usar parámetros, y sigue marcando el alta de usuario, que
+en esa versión conserva el formateo con \texttt{\%}: es una
+vulnerabilidad real de la versión segura. En las dos versiones se marca
+una vista que devuelve el objeto armado por una función de otro módulo,
+un falso positivo por no seguir llamadas entre archivos. En govwa se
+detectan la consulta armada con \texttt{fmt.Sprintf} y los cinco
+\texttt{template.HTML} del módulo de XSS, sin marcar las consultas
+preparadas. En el Benchmark, la versión final detecta los 777 casos
+vulnerables y marca 184 de los 701 seguros (tabla~\ref{tab:owasp-benchmark}).
+De esos 184, 87 pasan el dato por un método de una clase auxiliar en otro
+archivo que devuelve una constante, y 97 lo sacan de una lista por
+índice después de borrar un elemento, una forma que el análisis no
+sigue: trata la lista entera.
+
+Sobre JavaScript, el tercer cambio también aplica, y por eso se volvieron
+a medir los proyectos de GitHub (sección~\ref{sec:proyectos-github}) y
+NodeGoat (sección~\ref{sec:nodegoat}). La suite automatizada, el banco
+sintético y los 102 pares no cambiaron de resultado.
+
+\paragraph{Alcance del resultado.} DVWA y el Benchmark guiaron parte de
+las correcciones, por lo que sus cifras finales no son una medición
+independiente; vulpy y govwa solo se midieron. Las cuatro son
+aplicaciones construidas para enseñar o para medir analizadores, con
+fallas más directas que las de un proyecto habitual, y la clasificación
+de los hallazgos sin etiqueta es de una sola persona.
 
 \subsection{Rendimiento}
 
@@ -951,8 +1105,8 @@ capítulo~\ref{cap:conclusiones}.
         \toprule
         \tb{Hipótesis} & \tb{Evidencia obtenida} & \tb{Sección} \\
         \midrule
-        H1 & Banco sintético: 29 de 29 casos vulnerables detectados, incluidos recorridos entre funciones y entre archivos; la línea de base también detecta los 29. NodeGoat: 3 de 6 vulnerabilidades detectadas por ambos detectores; las 3 omisiones llegan a operaciones fuera del catálogo. Proyectos de GitHub, versión final: precisión de 0,41 frente a 0,09 de la línea de base, con exhaustividad de 0,82 frente a 0,88. Pares vulnerable/corregido: 54 de 54 en la versión final; 19 de 21 en la primera ejecución del conjunto de control. & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:pares} \\
-        H2 & Banco sintético: 0 falsos positivos en 14 casos seguros, tres de ellos saneados y tres con nombres engañosos; dos casos vulnerables con saneamientos que no protegen el destino se detectan. La línea de base produce 5 falsos positivos en el banco. En NodeGoat, 1 falso positivo en ambos detectores. En los proyectos de GitHub, versión final, 60 falsas alarmas frente a 421 de la línea de base, y 18 frente a 117 en los tres proyectos sin vulnerabilidades documentadas. Un falso positivo por coincidencia de nombres fuera del banco. & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:resultados-negativos} \\
+        H1 & Banco sintético: 29 de 29 casos vulnerables detectados, incluidos recorridos entre funciones y entre archivos; la línea de base también detecta los 29. NodeGoat: 3 de 6 vulnerabilidades detectadas por ambos detectores; las 3 omisiones llegan a operaciones fuera del catálogo. Proyectos de GitHub, versión final: precisión de 0,41 frente a 0,10 de la línea de base, con exhaustividad de 0,82 frente a 0,88. Pares vulnerable/corregido: 54 de 54 en la versión final; 19 de 21 en la primera ejecución del conjunto de control. OWASP Benchmark de Java: 777 de 777 casos vulnerables (77\,\% en la primera medición). & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:pares}, \ref{sec:otros-lenguajes} \\
+        H2 & Banco sintético: 0 falsos positivos en 14 casos seguros, tres de ellos saneados y tres con nombres engañosos; dos casos vulnerables con saneamientos que no protegen el destino se detectan. La línea de base produce 5 falsos positivos en el banco. En NodeGoat, 1 falso positivo en ambos detectores. En los proyectos de GitHub, versión final, 63 falsas alarmas frente a 420 de la línea de base, y 18 frente a 117 en los tres proyectos sin vulnerabilidades documentadas. OWASP Benchmark de Java: tasa de falsos positivos de 0,26 (0,60 en la primera medición); DVWA, vulpy y govwa: las versiones corregidas no se marcan salvo dos casos explicados. Un falso positivo por coincidencia de nombres fuera del banco. & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:otros-lenguajes}, \ref{sec:resultados-negativos} \\
         H3 & \completar{Resultados de las sesiones y de la entrevista.} & \ref{sec:validacion-usuarios} \\
         \bottomrule
     \end{tabularx}

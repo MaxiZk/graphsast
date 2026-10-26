@@ -60,6 +60,7 @@
     "baseline": "npm run build && node dist/eval/baseline/run-baseline.cli.js",
     "nodegoat": "npm run build && node dist/eval/nodegoat/run-nodegoat.cli.js",
     "github-eval": "npm run build && node dist/eval/github/run-github.cli.js",
+    "owasp-benchmark": "npm run build && node dist/eval/owasp/run-owasp.cli.js",
     "prepack": "npm run build && node -e \"const fs = require('node:fs'); fs.cpSync('../../catalog', 'catalog', { recursive: true }); fs.copyFileSync('../../LICENSE', 'LICENSE')\"",
     "postpack": "node -e \"const fs = require('node:fs'); fs.rmSync('catalog', { recursive: true, force: true }); fs.rmSync('LICENSE', { force: true })\""
   },

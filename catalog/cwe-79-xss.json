@@ -238,12 +238,14 @@
             4,
             5
           ],
-          "receiver": "getWriter\\(\\)$|^writer$|^pw$"
+          "receiver": "getWriter\\(\\)$|^out$|^writer$|^pw$"
         }
       ],
       "sanitizers": [
         "HtmlUtils.htmlEscape",
         "StringEscapeUtils.escapeHtml4",
+        "StringEscapeUtils.escapeHtml",
+        "StringEscapeUtils.escapeHtml3",
         "Encode.forHtml",
         "Encode.forHtmlContent",
         ".encodeForHTML",
@@ -437,6 +439,7 @@
         "template.HTMLEscapeString",
         "template.JSEscapeString",
         "url.QueryEscape",
+        "json.Marshal",
         "os.ReadFile",
         "ioutil.ReadFile",
         ".Output",

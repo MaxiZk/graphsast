@@ -1,4 +1,5 @@
 import type { Node as TsNode } from "web-tree-sitter";
+import type { GuardContext } from "./guards.js";
 import type { ForeignLanguage } from "./language.js";
 
 /**
@@ -39,6 +40,8 @@ export interface CallInfo {
   isNew?: boolean;
   /** Nodo cuya posición identifica la llamada: el paréntesis de los argumentos. */
   idAt: TsNode;
+  /** Escape de comillas cuyo resultado se usa fuera de comillas (ver `IRCall.unquotedUse`). */
+  unquotedUse?: boolean;
 }
 
 export interface BindingInfo {
@@ -78,6 +81,17 @@ export interface LanguageSpec {
   syntheticOf?(node: TsNode): SyntheticCall | null;
   /** Expresión retornada si el nodo es un `return`. */
   returnValueOf(node: TsNode): TsNode | null | undefined;
+  /**
+   * Si la llamada valida un dato (`x.isdigit()`, `is_numeric($x)`,
+   * `x.matches("[a-z]+")`), la expresión validada. Ver `guards.ts`.
+   */
+  validatedBy?(node: TsNode, call: CallInfo, ctx: GuardContext): TsNode | null;
+  /**
+   * Hijos del nodo que no se ejecutan nunca: la rama de un `if` o de un
+   * ternario cuya condición es constante, los `case` que un `switch` sobre un
+   * valor constante no alcanza. No aportan definiciones ni flujos.
+   */
+  deadChildren?(node: TsNode): readonly TsNode[];
   /** Campos de un nodo que no son expresiones (nombre de un argumento con nombre). */
   nonExpressionFields?: ReadonlySet<string>;
   /** Tipos de nodo que no llevan datos (literales sin interpolación, tipos). */

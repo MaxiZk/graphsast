@@ -4,6 +4,7 @@ import {
   DEFAULT_IGNORE,
   DEFAULT_MAX_FILE_BYTES,
   GRAPHSAST_IGNORE_FILE,
+  isMinifiedName,
   isProjectConfigName,
 } from "@graphsast/core/browser";
 import type { UploadedFile } from "./protocol.js";
@@ -76,7 +77,7 @@ export function wantedPath(path: string, size: number): boolean {
   const name = parts.at(-1)!;
   if (parts.slice(0, -1).some((d) => IGNORED_DIRS.has(d))) return false;
   if (name === ".gitignore" || name === GRAPHSAST_IGNORE_FILE || isProjectConfigName(name)) return true;
-  return DEFAULT_EXTENSIONS.includes(extensionOf(path)) && size <= DEFAULT_MAX_FILE_BYTES;
+  return DEFAULT_EXTENSIONS.includes(extensionOf(path)) && !isMinifiedName(name) && size <= DEFAULT_MAX_FILE_BYTES;
 }
 
 function encodePath(path: string): string {

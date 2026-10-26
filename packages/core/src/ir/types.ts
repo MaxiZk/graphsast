@@ -25,6 +25,12 @@ export interface FlowRef {
   names: string[];
   /** Ids de nodos Call cuyo valor de retorno alimenta la expresión. */
   callIds: string[];
+  /**
+   * Para un nombre, posición `[línea, columna]` de la asignación que pisa
+   * siempre a las anteriores antes de este uso (`x = a; x = b; f(x)`): solo
+   * las defs desde ahí alcanzan el uso. Sin entrada, todas las del ámbito.
+   */
+  reachingFrom?: Record<string, [number, number]>;
 }
 
 export const EMPTY_FLOW: FlowRef = { names: [], callIds: [] };
@@ -118,6 +124,12 @@ export interface IRCall extends IRNodeBase {
    * función: `{}` en `const result = {}; res.send(result)`.
    */
   firstArgInit?: string;
+  /**
+   * Escape de comillas (`mysqli_real_escape_string`) cuyo resultado se usa
+   * sin comillas alrededor en el texto de una consulta (`WHERE id = $id`):
+   * no vale como sanitizer.
+   */
+  unquotedUse?: true;
   /**
    * La llamada valida el dato antes de usarlo (`/^[a-z]+$/.test(x)` en un
    * `if` que corta si falla). Los usos protegidos por la validación pasan por

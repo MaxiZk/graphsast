@@ -85,6 +85,7 @@ export function callMatchesSink(
 /** Condiciones de un sink sobre el texto de la llamada, ya compiladas. */
 export interface SinkConditions {
   unlessFirstArg: RegExp[];
+  unlessReceiverInit: RegExp | null;
   onlyIf: { receiverInit?: RegExp; firstArg?: RegExp; code?: RegExp } | null;
 }
 
@@ -93,6 +94,7 @@ export function sinkConditionsOf(entry: Pick<CweCatalogEntry, "unlessFirstArg">,
   const only = spec.onlyIf;
   return {
     unlessFirstArg: unless.map((p) => new RegExp(p)),
+    unlessReceiverInit: spec.unlessReceiverInit === undefined ? null : new RegExp(spec.unlessReceiverInit),
     onlyIf: only
       ? {
           ...(only.receiverInit !== undefined ? { receiverInit: new RegExp(only.receiverInit) } : {}),
@@ -109,6 +111,8 @@ export function sinkConditionsHold(call: IRCall, conditions: SinkConditions): bo
   // El primer argumento o, si es una variable, su inicializador.
   const firstValues = [firstArg, call.firstArgInit].filter((t): t is string => t !== undefined);
   if (conditions.unlessFirstArg.some((re) => firstValues.some((t) => re.test(t)))) return false;
+  const unlessReceiver = conditions.unlessReceiverInit;
+  if (unlessReceiver && call.receiverInit !== undefined && unlessReceiver.test(call.receiverInit)) return false;
   const only = conditions.onlyIf;
   if (!only) return true;
   return (
@@ -154,8 +158,10 @@ function sanitizerRule(entry: RuleEntry, pattern: string): TaintRule {
     kind: "sanitizer",
     cwe: entry.cwe,
     cweName: entry.name,
+    // Un escape de comillas cuyo resultado se usa fuera de comillas
+    // (`WHERE id = $id`) no protege: no hacen falta comillas para inyectar.
     match: (n): n is IRCall =>
-      n.kind === "Call" && calleeMatchesPattern(n.callee, pattern),
+      n.kind === "Call" && calleeMatchesPattern(n.callee, pattern) && (n as IRCall).unquotedUse !== true,
   };
 }
 

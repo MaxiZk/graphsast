@@ -37,6 +37,7 @@ describe("wantedPath", () => {
     expect(wantedPath("README.md", 100)).toBe(false);
     expect(wantedPath("node_modules/x/index.js", 100)).toBe(false);
     expect(wantedPath("big.js", 2_000_000)).toBe(false);
+    expect(wantedPath("public/js/jquery.min.js", 100)).toBe(false);
   });
 });
 
