@@ -96,9 +96,15 @@ en que el código real protege un dato.
 
 \paragraph{H3.} La visualización del recorrido facilita la
 interpretación del riesgo frente al listado en texto.
-\completar{Respuesta con los resultados de la
-tabla~\ref{tab:h3-resultados}, declarada preliminar por el tamaño de la
-muestra.} La prueba libre descripta en la
+La evidencia no alcanza para confirmarla. Las sesiones que
+comparaban el reporte de texto con el grafo no se realizaron por falta de
+participantes (riesgo R-06), y el formulario que las reemplazó reunió
+tres respuestas, de las cuales una sola evaluó un hallazgo. Esa persona
+entendió por qué el hallazgo era una vulnerabilidad y dónde corregirlo,
+pero atribuyó la comprensión a la explicación en texto y respondió que
+sin el grafo le costaría menos, una indicación contraria a la hipótesis
+que, con un solo caso, tampoco permite rechazarla
+(tabla~\ref{tab:h3-resultados}). \completar{Aporte de la entrevista.} La prueba libre descripta en la
 sección~\ref{sec:validacion-usuarios} no permite contrastar esta
 hipótesis, porque no comparó la visualización con el reporte de texto;
 su aporte fue identificar errores de detección.
@@ -121,7 +127,7 @@ su aporte fue identificar errores de detección.
         OE-3 & RF-03 a RF-05; tabla~\ref{tab:confusion} & Cumplido y ampliado & Seis familias en lugar de tres: se sumaron CWE-943, CWE-22 y CWE-95 \\
         OE-4 & RF-10 & Cumplido con cambio de rol & Neo4j opera como motor opcional, con paridad verificada en cada cambio; el recorrido en memoria es el modo por defecto \\
         OE-5 & RF-06, RF-07; capítulo~\ref{cap:marco-tecnologico} & Cumplido & La visualización se publicó como aplicación web que analiza en el navegador y explica cada hallazgo \\
-        OE-6 & Secciones~\ref{sec:pruebas} y~\ref{sec:validacion-usuarios} & Parcial & Validación sobre código real con NodeGoat y siete repositorios de GitHub (40 vulnerabilidades etiquetadas), revisada por una sola persona; \completar{estado de la validación con usuarios} \\
+        OE-6 & Secciones~\ref{sec:pruebas} y~\ref{sec:validacion-usuarios} & Parcial & Validación sobre código real con NodeGoat y siete repositorios de GitHub (40 vulnerabilidades etiquetadas), revisada por una sola persona; validación con usuarios preliminar, con tres respuestas a un formulario en lugar de las sesiones previstas \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -161,8 +167,12 @@ del usuario y enviando solo el hallazgo consultado.
 \paragraph{Económicas.} El capítulo~\ref{cap:economica} identificó la
 captación de usuarios como la condición crítica de la viabilidad, y el
 riesgo R-07 señala la competencia de herramientas gratuitas en
-determinadas condiciones de uso. \completar{Respuestas de los
-participantes sobre la disposición a pagar USD 8 mensuales.} El asistente
+determinadas condiciones de uso. De los tres participantes, uno pagaría USD 8
+mensuales, otro no y el tercero solo con otras funciones, comparando el
+precio con el de un asistente de inteligencia artificial de propósito
+general. Con esa muestra no se cumple la condición de revisión del
+escenario, que la mayoría rechace el precio, pero tampoco hay evidencia
+de que lo acepte. El asistente
 agrega un costo por uso que el modelo económico no contemplaba y que
 conviene acotar por suscriptor.
 
@@ -196,12 +206,13 @@ hallazgos sin etiqueta que no se revisaron
 aplicaciones construidas para enseñar, y las etiquetas y la revisión son
 de una sola persona.
 
-\paragraph{De validación.} \completar{Tamaño y origen de la muestra de
-participantes.} El autor cumplió el doble rol de desarrollador y
-facilitador, lo que se mitigó con un guion y reglas fijas, y los casos de
-la validación tienen dos archivos, por lo que no representan la lectura
-de un proyecto real. La prueba libre corresponde a una sola persona del
-entorno del autor.
+\paragraph{De validación.} La validación con usuarios reunió tres
+respuestas a un formulario autoadministrado, de las cuales una sola
+evaluó hallazgos, en lugar de las sesiones previstas con cinco a ocho
+participantes. Sin una condición de control, la comparación entre el
+reporte de texto y el grafo queda limitada a lo que esa persona declaró.
+\completar{Canal de la convocatoria.} La prueba libre corresponde a una
+sola persona del entorno del autor.
 
 \paragraph{De mercado.} Existen herramientas consolidadas, como Semgrep
 y CodeQL, que se ofrecen sin costo en determinadas condiciones de uso

@@ -53,8 +53,13 @@ cuatro órdenes (tabla~\ref{tab:ordenes}), asignados en forma rotativa.
 \paragraph{Población y canal.} Personas que programan en JavaScript o
 TypeScript con regularidad y que no participaron del desarrollo del
 sistema. La convocatoria se realizó por mensaje directo, con sesiones
-remotas de veinte minutos. \completar{Período de aplicación, cantidad de
-personas convocadas y cantidad de sesiones realizadas.}
+remotas de veinte minutos. A la fecha de control no se habían confirmado
+cinco participantes y no se realizaron sesiones: se aplicó la
+contingencia del riesgo R-06 y la convocatoria pasó al formulario de la
+sección~\ref{sec:formulario-aplicado}, que recibió tres respuestas entre
+el 21 y el 23 de octubre de 2026. \completar{Canal de la convocatoria y
+cantidad de personas invitadas.} El protocolo de sesiones se conserva en
+este apéndice como diseño previsto.
 
 \paragraph{Registro.} Por cada tarea se registran el acierto en las
 preguntas P1 a P4 (de 0 a 4, según una clave de corrección fijada antes
@@ -104,6 +109,58 @@ desacuerdo, a 5, totalmente de acuerdo):
           tu código a un servidor, ¿la pagarías a USD 8 por mes? Sí / No /
           Solo con otras funciones, ¿cuáles? (opción única y abierta)
     \item[F3.] ¿Algo que te haya costado o que agregarías? (abierta)
+\end{enumerate}
+
+\section{Formulario aplicado}\label{sec:formulario-aplicado}
+
+Ante la falta de participantes para las sesiones, se distribuyó un
+formulario de Google autoadministrado. Cada persona analizaba en la
+versión web un proyecto propio y respondía las preguntas siguientes; las
+de comprensión solo correspondían si el análisis informaba algún
+hallazgo. Las respuestas se analizan en la
+sección~\ref{sec:validacion-usuarios}.
+
+\paragraph{Perfil:}
+\begin{enumerate}
+    \item ¿Cuántos años hace que programás en JavaScript o TypeScript?
+    \item ¿Trabajás actualmente en desarrollo de software?
+    \item ¿Usaste alguna vez una herramienta de análisis estático de seguridad?
+\end{enumerate}
+
+\paragraph{El análisis:}
+\begin{enumerate}[resume]
+    \item ¿Qué tipo de proyecto analizaste? ¿En qué está escrito?
+    \item ¿Cuántos archivos analizó? ¿El análisis terminó bien?
+    \item ¿Informó alguna vulnerabilidad? ¿Cuántas? ¿De qué tipos?
+    \item De esas, ¿cuántas te parecen vulnerabilidades reales y cuántas
+          falsas alarmas? Si alguna te pareció una falsa alarma, ¿por qué?
+    \item ¿Vas a corregir algo de lo que encontró?
+\end{enumerate}
+
+\paragraph{Comprensión de un hallazgo} (escala de 1 a 5):
+\begin{enumerate}[resume]
+    \item Entendí por dónde viaja el dato desde la entrada hasta la
+          operación peligrosa.
+    \item Entendí por qué es una vulnerabilidad.
+    \item Tengo claro dónde aplicar la corrección.
+    \item ¿Cuánto tardaste en entender ese hallazgo? ¿Qué te ayudó más a
+          entenderlo?
+    \item Si tuvieras solo una lista de texto con los hallazgos, sin el
+          grafo, ¿te costaría más entenderlos?
+    \item ¿Usaste el asistente (el chat debajo de la explicación, en el
+          panel derecho)?
+\end{enumerate}
+
+\paragraph{Sin hallazgos y cierre:}
+\begin{enumerate}[resume]
+    \item ¿Esperabas que encontrara alguna? Si esperabas alguna, ¿cuál?
+    \item ¿Probaste alguno de los ejemplos de la pestaña «Ejemplos»?
+    \item Una herramienta así, que corre en el navegador sin enviar tu
+          código a un servidor, ¿la pagarías a USD 8 por mes? Si
+          respondiste «Solo con otras funciones», ¿cuáles?
+    \item ¿Qué tan probable es que se la recomiendes a otra persona que
+          programa? (0 a 10)
+    \item ¿Algo que te haya costado o que agregarías?
 \end{enumerate}
 
 \section{Casos utilizados}
