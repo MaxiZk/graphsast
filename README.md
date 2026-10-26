@@ -582,7 +582,8 @@ receptor convencional (`db.query`, `conn.query`) puede no ser lo que parece.
 **Validaciones que cortan.** Un `if` que valida el dato y corta si no pasa
 (`if (!/^[a-z]+$/.test(x)) return ...`), o que encierra el uso
 (`if (LISTA.includes(x)) { ... }`), protege los usos de esa misma expresión
-dentro de la zona validada, para todas las familias. Se reconocen las
+dentro de la zona validada, para todas las familias. Un ternario valida igual:
+en `LISTA.includes(x) ? x : "fijo"`, la `x` de la primera rama está protegida. Se reconocen las
 regex ancladas en los dos extremos (sin un `|` suelto ni el flag `m`),
 `Number.isInteger`/`isSafeInteger`/`isFinite`, los `validator.isX` de formatos
 sin caracteres especiales (`isInt`, `isAlphanumeric`, `isUUID`...) y la
@@ -621,7 +622,8 @@ parser no entiende es un error, no un archivo limpio.
   pertenencia a una lista (`x in PERMITIDOS`, `in_array`, `PERMITIDOS.contains(x)`,
   `slices.Contains`) y la comparación con literales (`"asc".equals(x)`,
   `$x === 'desc'`), combinadas con `&&`, `||` y `!`. También
-  `if x not in PERMITIDOS: x = "nombre"`.
+  `if x not in PERMITIDOS: x = "nombre"` y el ternario
+  (`x if x in PERMITIDOS else "nombre"`, `in_array($x, $l) ? $x : 'n'`).
 - **Asignaciones que pisan.** `x = dato; x = "fijo"; usar(x)` no es
   vulnerable: una asignación que corre siempre antes del uso (en la misma
   lista de sentencias) descarta las anteriores. Las de un `if` o un bucle no

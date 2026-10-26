@@ -3,7 +3,7 @@ import type {
   FlowRef, IRAssignment, IRCall, IRFunction, IRModule, IRNode, IRParameter, IRVariable, Loc,
 } from "../ir/types.js";
 import { EMPTY_FLOW } from "../ir/types.js";
-import { collectForeignGuards, guardAt } from "./guards.js";
+import { collectForeignGuards, guardAt, ternaryShape } from "./guards.js";
 import type { CallInfo, FunctionInfo, LanguageSpec, SyntheticCall } from "./spec.js";
 
 /**
@@ -186,6 +186,13 @@ export function buildForeignModule(root: TsNode, file: string, spec: LanguageSpe
         return;
       }
       if (opaque.has(node.type) || spec.functionOf(node)) return;
+      // El valor de un ternario sale de sus ramas, no de la condición (como en JS).
+      const ternary = ternaryShape(node);
+      if (ternary) {
+        const dead = deadOf(node);
+        for (const branch of [ternary.then, ternary.otherwise]) if (!dead.has(branch.id)) visit(branch);
+        return;
+      }
       const dead = deadOf(node);
       for (let i = 0; i < node.childCount; i++) {
         const child = node.child(i);
