@@ -32,7 +32,14 @@ flowchart LR
    especificación por lenguaje (`python.ts`, `java.ts`, `php.ts`, `go.ts`)
    que produce la misma IR. Las gramáticas se cargan una vez
    (`loadNodeLanguages` en Node, `loadLanguages` en la web); no hay enlace
-   entre archivos para estos lenguajes.
+   entre archivos para estos lenguajes. Antes de recorrer el árbol, el builder
+   junta las validaciones del archivo (`lang/guards.ts`, con los validadores
+   de cada lenguaje en `lang/validators.ts`): un uso protegido pasa por el
+   nodo que valida, que es un sanitizer para todas las familias. Cada uso
+   lleva además en su `FlowRef` (`reachingFrom`) la posición de la última
+   asignación que corre siempre antes de él, y las defs anteriores no lo
+   alcanzan. La spec de Java descarta las ramas con condición constante
+   (`lang/java-constants.ts`).
 2. **IR** (`ir/`). El AST se reduce a cinco tipos de nodo: `Function`,
    `Parameter`, `Variable`, `Literal`, `Call`. Cada nodo lleva su ubicación y
    su cadena de ámbitos léxicos (`scopePath`). Las escrituras peligrosas
@@ -48,7 +55,10 @@ flowchart LR
 4. **Data-flow** (`dfg/`). Aristas `FLOWS_TO` def → uso dentro del ámbito
    léxico (con closures y sombreado); `BINDS_TO` argumento → parámetro;
    `RETURNS` valor retornado → llamada. En una llamada resuelta con certeza,
-   el valor de la llamada sale solo de lo que la función retorna.
+   el valor de la llamada sale solo de lo que la función retorna. Un método
+   que guarda sus argumentos en el objeto (`add`, `put`, `push`, `append`,
+   `extend`) alimenta las defs del receptor; un mapa que solo se usa con claves
+   literales se sigue por clave (`put("a", x)` → `get("a")`).
 5. **Enlace entre archivos** (`project/`). Imports de ES y CommonJS, alias de
    `tsconfig`/`jsconfig` e `import()` dinámico. Los archivos unidos por
    llamadas forman un componente y se analizan como un solo grafo.

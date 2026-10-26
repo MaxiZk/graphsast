@@ -535,19 +535,22 @@
           "callee": ".Query",
           "args": [
             0
-          ]
+          ],
+          "unlessReceiverInit": "\\.Preparex?(?:Context)?\\("
         },
         {
           "callee": ".QueryRow",
           "args": [
             0
-          ]
+          ],
+          "unlessReceiverInit": "\\.Preparex?(?:Context)?\\("
         },
         {
           "callee": ".Exec",
           "args": [
             0
-          ]
+          ],
+          "unlessReceiverInit": "\\.Preparex?(?:Context)?\\("
         },
         {
           "callee": ".Prepare",
@@ -559,19 +562,22 @@
           "callee": ".QueryContext",
           "args": [
             1
-          ]
+          ],
+          "unlessReceiverInit": "\\.Preparex?(?:Context)?\\("
         },
         {
           "callee": ".QueryRowContext",
           "args": [
             1
-          ]
+          ],
+          "unlessReceiverInit": "\\.Preparex?(?:Context)?\\("
         },
         {
           "callee": ".ExecContext",
           "args": [
             1
-          ]
+          ],
+          "unlessReceiverInit": "\\.Preparex?(?:Context)?\\("
         },
         {
           "callee": ".PrepareContext",

@@ -15,6 +15,7 @@ import {
   DEFAULT_IGNORE,
   DEFAULT_MAX_FILE_BYTES,
   GRAPHSAST_IGNORE_FILE,
+  isMinifiedName,
   type ScanOptions,
 } from "./types.js";
 
@@ -153,6 +154,7 @@ function walk(
       walk(full, root, active, ctx, out);
       continue;
     }
+    if (isMinifiedName(entry.name)) continue;
     if (!ctx.extensions.includes(path.extname(entry.name))) {
       if (ctx.configs && isProjectConfigName(entry.name)) ctx.configs.push(full);
       continue;

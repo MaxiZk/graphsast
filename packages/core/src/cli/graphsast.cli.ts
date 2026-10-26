@@ -58,7 +58,7 @@ OPCIONES
                               catalog = solo los del catálogo (req, ctx,
                               @Body() de NestJS...): menos falsos positivos
   --max-depth <n>             Profundidad máxima del camino, para todas las familias
-                              (default: la de cada familia en el catálogo, o 15)
+                              (default: la de cada familia en el catálogo, o 30)
   --max-file-bytes <n>        Omitir archivos más grandes (default: 1000000)
   --fail-on <cwe-89,cwe-78>   Solo estas familias CWE provocan el código 1
                               (el reporte las muestra todas igual)

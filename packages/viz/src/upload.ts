@@ -5,6 +5,7 @@ import {
   DEFAULT_IGNORE,
   DEFAULT_MAX_FILE_BYTES,
   GRAPHSAST_IGNORE_FILE,
+  isMinifiedName,
   isProjectConfigName,
 } from "@graphsast/core/browser";
 import { plural } from "./labels.js";
@@ -26,6 +27,8 @@ export interface UploadSelection {
   graphsastIgnored: number;
   /** Extensión de un lenguaje que no se analiza. */
   otherLanguage: number;
+  /** Bibliotecas minificadas (`jquery.min.js`). */
+  minified: number;
   tooLarge: number;
 }
 
@@ -87,6 +90,7 @@ export function selectUploads(
     gitignored: 0,
     graphsastIgnored: 0,
     otherLanguage: 0,
+    minified: 0,
     tooLarge: 0,
   };
   const seen = new Set<string>();
@@ -99,6 +103,7 @@ export function selectUploads(
     else if (graphsastIgnored(path)) selection.graphsastIgnored++;
     else if (isProjectConfigName(name)) selection.configs.push({ path, file: upload.file });
     else if (!DEFAULT_EXTENSIONS.includes(extensionOf(path))) selection.otherLanguage++;
+    else if (isMinifiedName(name)) selection.minified++;
     else if (upload.file.size > DEFAULT_MAX_FILE_BYTES) selection.tooLarge++;
     else if (!seen.has(path)) {
       seen.add(path);
@@ -125,6 +130,9 @@ export function describeSelection(selection: UploadSelection): string {
   }
   if (selection.otherLanguage) {
     parts.push(`${selection.otherLanguage} de otros tipos`);
+  }
+  if (selection.minified) {
+    parts.push(`${plural(selection.minified, "minificado", "minificados")} (bibliotecas de terceros)`);
   }
   if (selection.tooLarge) {
     parts.push(`${plural(selection.tooLarge, "demasiado grande", "demasiado grandes")} (más de 1 MB)`);

@@ -1,4 +1,6 @@
 import type { Node as TsNode } from "web-tree-sitter";
+import { javaValidated } from "./validators.js";
+import { JavaConstants } from "./java-constants.js";
 import type { BindingInfo, CallInfo, FunctionInfo, LanguageSpec, ParamInfo } from "./spec.js";
 
 /**
@@ -12,6 +14,8 @@ import type { BindingInfo, CallInfo, FunctionInfo, LanguageSpec, ParamInfo } fro
  * - Un método se llama sin receptor dentro de su clase: `m(x)` es `this.m(x)`.
  * - `this.x` es un campo de la clase; el constructor se llama `constructor`
  *   como en JS, así `new Servicio(dato)` liga el argumento con su parámetro.
+ * - Las ramas de un `if`, un ternario o un `switch` con condición constante
+ *   que no se ejecutan nunca no cuentan (ver `java-constants.ts`).
  */
 
 const MAPPINGS = new Set(["GetMapping", "PostMapping", "PutMapping", "DeleteMapping", "PatchMapping", "RequestMapping"]);
@@ -79,9 +83,18 @@ function targetsOf(node: TsNode | null): { name: string; at: TsNode }[] {
 }
 
 export function javaSpec(): LanguageSpec {
+  let constants: JavaConstants | null = null;
   return {
     language: "java",
     newKeyword: true,
+
+    prepare(root) {
+      constants = new JavaConstants(root);
+    },
+
+    deadChildren(node) {
+      return constants?.deadChildren(node) ?? [];
+    },
 
     functionOf(node): FunctionInfo | null {
       if (node.type === "lambda_expression") {
@@ -136,8 +149,11 @@ export function javaSpec(): LanguageSpec {
         const object = node.childForFieldName("object");
         const args = node.childForFieldName("arguments");
         if (!args) return null;
+        // `new Test().m(x)`: el método `m` de la clase `Test`, como `Test.m`,
+        // para resolverlo con certeza si la clase está en el archivo.
+        const created = object?.type === "object_creation_expression" ? object.childForFieldName("type") : null;
         return {
-          callee: object ? `${normalize(object.text)}.${name}` : `this.${name}`,
+          callee: created ? `${normalize(created.text)}.${name}` : object ? `${normalize(object.text)}.${name}` : `this.${name}`,
           args: args.namedChildren.filter((a): a is TsNode => a !== null && a.type !== "comment"),
           ...(object ? { receiver: object } : {}),
           idAt: args,
@@ -169,6 +185,10 @@ export function javaSpec(): LanguageSpec {
       if (node.type === "field_access") return node.childForFieldName("object");
       if (node.type === "array_access") return node.childForFieldName("array");
       return null;
+    },
+
+    validatedBy(_node, call, ctx) {
+      return javaValidated(call, ctx);
     },
 
     returnValueOf(node) {

@@ -225,7 +225,13 @@
           "description": "Inyección de comandos en ping"
         }
       ],
-      "reviewedReal": []
+      "reviewedReal": [
+        {
+          "file": "model/db.js",
+          "line": 114,
+          "note": "updateProfile arma la lista de columnas del UPDATE con las claves de req.body (routes/account.js:30): una clave como \"role = 1, username\" se inyecta en el SQL. Etiquetado en el repositorio como asignación masiva (A06); la inyección por nombre de columna es real."
+        }
+      ]
     },
     {
       "id": "dvws",

@@ -289,3 +289,18 @@ describe("commonRoot", () => {
     expect(commonRoot([a, b])).toBe(path.join(root, "src"));
   });
 });
+
+describe("bibliotecas minificadas", () => {
+  it("al recorrer una carpeta se saltean; nombradas directamente, se analizan", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "graphsast-min-"));
+    try {
+      writeFileSync(path.join(dir, "app.js"), "function h(req){ db.query(req.body); }\n");
+      writeFileSync(path.join(dir, "jquery-3.2.1-min.js"), "function h(req){ db.query(req.body); }\n");
+      writeFileSync(path.join(dir, "vendor.min.js"), "function h(req){ db.query(req.body); }\n");
+      expect(discoverFiles(dir).map((f) => path.basename(f))).toEqual(["app.js"]);
+      expect(discoverFiles(path.join(dir, "vendor.min.js"))).toHaveLength(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

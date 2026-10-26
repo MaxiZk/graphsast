@@ -1,6 +1,76 @@
-import type { IRModule, IRNode, IREdge, FlowRef } from "../ir/types.js";
+import type { FlowRef, IRCall, IREdge, IRFunction, IRModule, IRNode, IRVariable } from "../ir/types.js";
 import { resolveCalls } from "../cfg/callgraph.js";
 import { defsInScope, nodeOwnerFnId, nodeScopePath } from "./scope.js";
+
+/**
+ * Métodos que guardan sus argumentos en el objeto sobre el que se llaman:
+ * colecciones (`add`, `put`, `push`, `extend`) y armado de texto (`append`).
+ * Se dejan afuera los nombres que también usan las bibliotecas de base de
+ * datos o HTTP con otro sentido (`update`, `insert`, `set`).
+ */
+const MUTATORS = new Set([
+  "add", "addAll", "addElement", "addFirst", "addLast", "offer", "offerFirst", "offerLast",
+  "put", "putAll", "putIfAbsent", "push", "unshift", "append", "extend", "appendleft",
+]);
+
+function isMutator(call: IRCall): boolean {
+  const dot = call.callee.lastIndexOf(".");
+  return dot > 0 && MUTATORS.has(call.callee.slice(dot + 1));
+}
+
+const STRING_KEY = /^(["'])[^"'\\]*\1$/;
+const KEYED_PUTS = new Set(["put", "putIfAbsent"]);
+const KEYED_READS = new Set(["get", "getOrDefault", "containsKey", "remove"]);
+
+/** Nombre de la variable sobre la que se llama el método, si es una sola. */
+function simpleReceiver(call: IRCall): string | undefined {
+  const { names, callIds } = call.receiverFlow;
+  return names.length === 1 && callIds.length === 0 ? names[0] : undefined;
+}
+
+function methodOf(call: IRCall): string {
+  return call.callee.slice(call.callee.lastIndexOf(".") + 1);
+}
+
+/**
+ * Mapas que solo se usan con claves literales: `m.put("a", x)` y
+ * `m.get("a")`. Ahí el valor sale por la lectura de la misma clave, no por
+ * el mapa entero: `m.put("b", dato); m.get("a")` no trae el dato. Si el mapa
+ * aparece de cualquier otra forma (se pasa a una función, se recorre, se lee
+ * con una clave variable), se lo trata entero, como cualquier colección.
+ */
+function keyedMaps(mod: IRModule, callsById: ReadonlyMap<string, IRCall>): Map<string, { puts: IRCall[]; gets: IRCall[] }> {
+  const maps = new Map<string, { puts: IRCall[]; gets: IRCall[] }>();
+  const keyedUses = new Set<IRCall>();
+  for (const call of callsById.values()) {
+    const name = simpleReceiver(call);
+    const method = methodOf(call);
+    if (!name || !STRING_KEY.test(call.argTexts[0] ?? "")) continue;
+    if (!KEYED_PUTS.has(method) && !KEYED_READS.has(method)) continue;
+    const entry = maps.get(name) ?? { puts: [], gets: [] };
+    (KEYED_PUTS.has(method) ? entry.puts : entry.gets).push(call);
+    maps.set(name, entry);
+    keyedUses.add(call);
+  }
+  // Cualquier otra aparición del nombre lo descarta.
+  const discard = (flow: FlowRef | undefined, except?: IRCall) => {
+    for (const name of flow?.names ?? []) if (maps.has(name) && !(except && keyedUses.has(except))) maps.delete(name);
+  };
+  for (const node of mod.nodes) {
+    if (node.kind === "Call") {
+      const call = node as IRCall;
+      call.argFlows.forEach((f) => discard(f));
+      discard(call.receiverFlow, call);
+    } else if (node.kind === "Variable") {
+      discard((node as IRVariable).initFlow);
+    } else if (node.kind === "Function") {
+      (node as IRFunction).returnFlows?.forEach((f) => discard(f));
+    }
+  }
+  for (const assign of mod.assignments) discard(assign.flow);
+  for (const [name, entry] of maps) if (entry.puts.length === 0) maps.delete(name);
+  return maps;
+}
 
 /** Índice de definiciones (variables y parámetros) por nombre. */
 export function buildDefIndex(mod: IRModule): Map<string, IRNode[]> {
@@ -26,7 +96,9 @@ export function flowInputIds(
 ): string[] {
   const out: string[] = [];
   for (const name of flow.names) {
+    const from = flow.reachingFrom?.[name];
     for (const def of defsInScope(defsByName.get(name) ?? [], scope, scopePath)) {
+      if (from && (def.loc.line < from[0] || (def.loc.line === from[0] && def.loc.col < from[1]))) continue;
       out.push(def.id);
     }
   }
@@ -81,6 +153,35 @@ export function buildDataFlow(
     const path = nodeScopePath(node);
     node.argFlows.forEach((flow, i) => linkFlow(flow, node.id, scope, path, i));
     linkFlow(node.receiverFlow, node.id, scope, path, -1);
+  }
+
+  // `lista.add(x)`, `sb.append(x)`: el método guarda el dato en el objeto, y
+  // lo que se lea después de la variable lo trae. La llamada (que ya recibe
+  // los argumentos) alimenta las defs del receptor, también a través de una
+  // cadena `sb.append(a).append(b)`.
+  const callsById = new Map<string, IRCall>();
+  for (const node of mod.nodes) if (node.kind === "Call") callsById.set(node.id, node as IRCall);
+  const keyed = keyedMaps(mod, callsById);
+  for (const { puts, gets } of keyed.values()) {
+    for (const put of puts) {
+      for (const get of gets) if (get.argTexts[0] === put.argTexts[0]) link(put.id, get.id);
+    }
+  }
+  for (const call of callsById.values()) {
+    if (exactCallIds.has(call.id) || !(isMutator(call) || call.callee === "array_push")) continue;
+    if (keyed.has(simpleReceiver(call) ?? "")) continue;
+    // `array_push($lista, $x)` de PHP: la lista es el primer argumento.
+    let receiver: FlowRef = call.callee === "array_push" ? call.argFlows[0] ?? call.receiverFlow : call.receiverFlow;
+    for (let hops = 0; receiver.names.length === 0 && receiver.callIds.length === 1 && hops < 32; hops++) {
+      const inner = callsById.get(receiver.callIds[0]!);
+      if (!inner || exactCallIds.has(inner.id) || !isMutator(inner)) break;
+      receiver = inner.receiverFlow;
+    }
+    if (receiver.names.length !== 1 || receiver.callIds.length > 0) continue;
+    const target = receiver.names[0]!;
+    for (const def of defsInScope(defsByName.get(target) ?? [], call.ownerFnId, nodeScopePath(call))) {
+      link(call.id, def.id);
+    }
   }
 
   // El inicializador fluye a la variable declarada.

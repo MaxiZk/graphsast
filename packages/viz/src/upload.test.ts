@@ -27,6 +27,17 @@ describe("selectUploads", () => {
     expect(selection.tooLarge).toBe(0);
   });
 
+  it("deja afuera las bibliotecas minificadas, con su propio conteo", () => {
+    const selection = selectUploads([
+      upload("public/js/jquery-3.2.1-min.js"),
+      upload("public/js/bootstrap.min.js"),
+      upload("public/js/app.js"),
+    ]);
+    expect(selection.accepted.map((u) => u.path)).toEqual(["public/js/app.js"]);
+    expect(selection.minified).toBe(2);
+    expect(describeSelection(selection)).toContain("2 minificados (bibliotecas de terceros)");
+  });
+
   it("descarta archivos de más de 1 MB, como el CLI", () => {
     const selection = selectUploads([upload("a.ts", 1_000_000), upload("b.ts", 1_000_001)]);
     expect(selection.accepted.map((u) => u.path)).toEqual(["a.ts"]);

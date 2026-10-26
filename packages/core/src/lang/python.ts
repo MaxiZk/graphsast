@@ -1,4 +1,5 @@
 import type { Node as TsNode } from "web-tree-sitter";
+import { pythonValidated } from "./validators.js";
 import type { BindingInfo, CallInfo, FunctionInfo, LanguageSpec, ParamInfo } from "./spec.js";
 
 /**
@@ -231,6 +232,10 @@ export function pythonSpec(): LanguageSpec {
         return REQUEST_INPUT_CALL.test(fn) ? fn : null;
       }
       return null;
+    },
+
+    validatedBy(_node, call, ctx) {
+      return pythonValidated(call, ctx, (callee) => spec.qualify?.(callee));
     },
 
     returnValueOf(node) {

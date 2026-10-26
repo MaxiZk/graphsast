@@ -85,6 +85,7 @@ export {
   DEFAULT_EXTENSIONS,
   DEFAULT_IGNORE,
   DEFAULT_MAX_FILE_BYTES,
+  isMinifiedName,
   GRAPHSAST_IGNORE_FILE,
 } from "./scan/types.js";
 export type {
