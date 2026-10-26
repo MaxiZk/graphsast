@@ -1,0 +1,15 @@
+<?php
+$conn = new mysqli("localhost", "app", "secreto", "usuarios");
+
+$usuario = $_POST['usuario'];
+$clave = $_POST['clave'];
+$stmt = $conn->prepare("SELECT id, hash FROM usuarios WHERE usuario = ?");
+$stmt->bind_param("s", $usuario);
+$stmt->execute();
+$fila = $stmt->get_result()->fetch_assoc();
+if ($fila && password_verify($clave, $fila['hash'])) {
+    echo "Bienvenido " . htmlspecialchars($usuario, ENT_QUOTES, 'UTF-8');
+}
+
+$archivo = basename($_GET['archivo']);
+readfile("/var/www/descargas/" . $archivo);

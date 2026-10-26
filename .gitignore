@@ -4,6 +4,8 @@ coverage/
 *.log
 ~$*
 *.txt
+# Los pares vulnerable/corregido llevan .txt para que CodeQL no los tome como código.
+!docs/validacion/pares/**/*.txt
 .DS_Store
 *.stackdump
 *.tsbuildinfo

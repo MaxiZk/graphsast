@@ -1,0 +1,18 @@
+package main
+
+import (
+	"fmt"
+	"html"
+	"net/http"
+)
+
+func comentario(w http.ResponseWriter, r *http.Request) {
+	texto := r.FormValue("texto")
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, "<p>Tu comentario: %s</p>", html.EscapeString(texto))
+}
+
+func main() {
+	http.HandleFunc("/comentario", comentario)
+	http.ListenAndServe(":8080", nil)
+}
