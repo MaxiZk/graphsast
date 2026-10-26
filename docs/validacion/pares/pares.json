@@ -6,7 +6,8 @@
     "python": "Python (Flask, Django, FastAPI), escritos el 2026-10-22 antes de correr el analizador sobre ellos.",
     "java": "Java (servlets y Spring), escritos el 2026-10-22 antes de correr el analizador sobre ellos.",
     "php": "PHP (mysqli, PDO, plantillas, MongoDB), escritos el 2026-10-22 antes de correr el analizador sobre ellos.",
-    "go": "Go (net/http, gin, database/sql, gorm, MongoDB), escritos el 2026-10-22 antes de correr el analizador sobre ellos."
+    "go": "Go (net/http, gin, database/sql, gorm, MongoDB), escritos el 2026-10-22 antes de correr el analizador sobre ellos.",
+    "demo": "Uno por lenguaje, escritos el 2026-10-26 para probar un código bueno y uno malo, sin usarlos antes para ajustar nada. El seguro de JavaScript dio un falso positivo (lista permitida en un ternario) que se corrigió. `npm run demo -- <carpeta>` los copia con su nombre real a <carpeta>/malo y <carpeta>/bueno."
   },
   "pares": [
     {
@@ -518,6 +519,36 @@
       "conjunto": "go",
       "nombre": "eval-otto",
       "cwe": 95
+    },
+    {
+      "conjunto": "demo",
+      "nombre": "sqli-express-productos",
+      "cwe": 89,
+      "archivo": "productos.js"
+    },
+    {
+      "conjunto": "demo",
+      "nombre": "xss-cmd-flask",
+      "cwe": 78,
+      "archivo": "app.py"
+    },
+    {
+      "conjunto": "demo",
+      "nombre": "login-descarga-php",
+      "cwe": 89,
+      "archivo": "login.php"
+    },
+    {
+      "conjunto": "demo",
+      "nombre": "sqli-spring-usuarios",
+      "cwe": 89,
+      "archivo": "UsuarioController.java"
+    },
+    {
+      "conjunto": "demo",
+      "nombre": "xss-go-comentario",
+      "cwe": 79,
+      "archivo": "main.go"
     }
   ]
 }

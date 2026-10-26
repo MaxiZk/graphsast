@@ -14,3 +14,4 @@ Untitled.*
 # Copias del catálogo y la licencia que mete `npm pack` en el paquete del core.
 /packages/core/catalog/
 /packages/core/LICENSE
+demo-graphsast/

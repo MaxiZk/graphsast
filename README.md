@@ -479,9 +479,13 @@ validación sobre OWASP NodeGoat, `npm run github-eval` la de siete proyectos
 de GitHub (`eval-github.json`) y `npm run owasp-benchmark` la del
 [OWASP Benchmark](https://github.com/OWASP-Benchmark/BenchmarkJava) para Java
 (1.478 casos etiquetados de comandos, SQL, XSS y rutas; clona el repositorio
-en un commit fijo). Los 54 pares vulnerable/corregido de
+en un commit fijo). Los 107 pares vulnerable/corregido de
 [`docs/validacion/pares/`](docs/validacion/pares/) corren con `npm test`: cada
 vulnerable tiene que dar un hallazgo de su familia y cada corregido, ninguno.
+`npm run demo -- <carpeta>` copia los cinco del conjunto `demo` (uno por
+lenguaje) con su nombre real a `<carpeta>/malo` y `<carpeta>/bueno`, para
+mostrar el análisis en la web o con la CLI: el malo da 10 hallazgos y el bueno,
+ninguno.
 Ver [`docs/validacion/`](docs/validacion/) para la metodología.
 
 El workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) corre build,
