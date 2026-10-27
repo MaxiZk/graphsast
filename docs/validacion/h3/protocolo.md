@@ -2,6 +2,10 @@
 
 **Fecha:** 2026-09-24
 **Estado:** borrador para revisar antes de la convocatoria.
+**Actualización (27/10/2026):** las sesiones y la entrevista no se realizaron. Se aplicó un
+formulario de Google Forms, distribuido por enlace, con tres respuestas; de acuerdo con la
+cátedra, la verificación de falsos positivos y negativos se hizo con la prueba de campo de
+50 proyectos de GitHub (`docs/validacion/2026-10-27-prueba-de-campo-50-proyectos.md`).
 **Vínculo con la tesis:** hipótesis H3 (capítulo 1), riesgos R-06 y R-07 (capítulo 6),
 resultados en el capítulo 7.
 
