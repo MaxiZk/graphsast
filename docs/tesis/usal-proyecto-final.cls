@@ -382,12 +382,6 @@
     \vfill\null
 }
 
-% -- agradecimientos --
-\newcommand{\agradecimientos}{%
-    \usal@starchapter{\USAL@acknowledgments}%
-    \input{preliminares/agradecimientos}%
-}
-
 % -- declaración de uso de inteligencia artificial --
 \newcommand{\declaracionIA}{%
     \usal@starchapter{\USAL@aideclaration}%
@@ -422,7 +416,7 @@
 }
 
 % -- preliminares completos --
-% Orden: portada, 2.ª página, dedicatoria, agradecimientos, resumen,
+% Orden: portada, 2.ª página, dedicatoria, resumen,
 % abstract, declaración de IA, índice general, índice de figuras e
 % índice de tablas. El glosario, las siglas y los símbolos van al final
 % del documento (\glosarios en main.tex).
@@ -440,7 +434,6 @@
     \fancyfoot[RO, LE] {\thepage}
 
     \dedicationpage
-    \agradecimientos
     \input{preliminares/resumen}
     \input{preliminares/abstract}
     \declaracionIA

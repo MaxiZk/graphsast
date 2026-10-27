@@ -21,8 +21,8 @@
           versiones en el apéndice~\ref{apx:tecnicos}.
     \item \textbf{Validación con usuarios y expertos}: idealmente
           triangulada (métricas técnicas, encuesta, entrevista) y
-          traducida a decisiones de diseño concretas. Instrumentos en los
-          apéndices \ref{apx:encuesta} y \ref{apx:entrevista}.
+          traducida a decisiones de diseño concretas. Instrumentos en
+          los apéndices.
 \end{enumerate}
 El sistema tiene que existir y andar: la entrega final incluye el
 proyecto funcional.
@@ -227,7 +227,7 @@ los dos motores sobre una instancia real de Neo4j 5 Community y exige
 los mismos hallazgos. Desde entonces corre en el flujo de integración
 continua sobre cada cambio y obtiene resultados idénticos, lo que da por
 cumplido el criterio de RF-10. Al cierre del desarrollo la suite
-comprende 645 pruebas, 547 del motor y 98 de la interfaz web
+comprende 650 pruebas, 552 del motor y 98 de la interfaz web
 (sección~\ref{sec:n4.7.1}).
 
 \begin{table}[H]
@@ -1056,7 +1056,7 @@ elegir la carpeta, con los mismos 11 hallazgos que la línea de comandos
 (sección~\ref{sec:prueba-web}).
 
 % -------------------------------------------------------------
-\section{Validación con usuarios y con un experto}\label{sec:validacion-usuarios}
+\section{Validación con usuarios}\label{sec:validacion-usuarios}
 % -------------------------------------------------------------
 
 \paragraph{Diseño.} La hipótesis H3 se evalúa con un estudio
@@ -1068,9 +1068,7 @@ vulnerable que los cruza y un endpoint saneado, y difieren en la
 debilidad: inyección SQL en el caso A e inyección de comandos en el caso
 B. Por cada tarea se registran el acierto en cuatro preguntas, el tiempo
 y dos valoraciones en escala de 1 a 5. El protocolo completo y el
-cuestionario se presentan en el apéndice~\ref{apx:encuesta}. De forma
-complementaria se entrevistó a un desarrollador con experiencia en
-seguridad de aplicaciones (apéndice~\ref{apx:entrevista}).
+cuestionario se presentan en el apéndice~\ref{apx:encuesta}.
 
 \paragraph{Aplicación.} El protocolo de sesiones no llegó a
 aplicarse: a la fecha de control no se habían confirmado cinco
@@ -1083,14 +1081,27 @@ el precio del capítulo~\ref{cap:economica}. El formulario completo está
 en el apéndice~\ref{apx:encuesta}. A diferencia de las sesiones, no hay
 una condición de control con el reporte de texto: la comparación entre
 texto y grafo queda limitada a lo que cada participante declara.
+Ante el número bajo de respuestas, y de acuerdo con la cátedra, la
+comprobación de que la página no informe falsos positivos ni falsos
+negativos sobre código de terceros no descansa en el formulario sino en
+los proyectos vulnerables de otros lenguajes
+(sección~\ref{sec:otros-lenguajes}) y en la prueba de campo con 50
+proyectos de GitHub (sección~\ref{sec:prueba-campo}). El formulario se
+conserva para lo que solo una persona puede responder: si entiende el
+hallazgo y qué la ayuda a entenderlo.
 
 \paragraph{Participantes.} Respondieron tres personas entre el 21 y el
 23 de octubre de 2026. Una programa en JavaScript o TypeScript hace dos
 años o menos, otra entre tres y cinco, y la tercera hace cinco años o
 más. Dos trabajan en desarrollo de software y una estudia; solo una
 había usado antes una herramienta de análisis estático de seguridad,
-CodeQL. Los tres proyectos están escritos en TypeScript.
-\completar{Canal de la convocatoria y cantidad de personas invitadas.}
+CodeQL. Los tres proyectos están escritos en TypeScript. El formulario
+se distribuyó mediante un enlace de Google Forms enviado a los
+participantes. Después, los participantes 1 y 3 respondieron por mensaje
+siete preguntas de seguimiento sobre el uso de la versión web con su
+proyecto (apéndice~\ref{sec:formulario-aplicado}), y otra persona envió
+por mensaje comentarios sueltos, sin responder las preguntas, que no se
+cuentan en la tabla.
 
 \begin{table}[H]
     \centering
@@ -1113,6 +1124,11 @@ CodeQL. Los tres proyectos están escritos en TypeScript.
         Pestaña de ejemplos & La probó y la entendió & La probó y la entendió & -- \\
         Pagaría USD 8 por mes & Solo con otras funciones & Sí & No \\
         Recomendación (0 a 10) & 5 & 7 & 3 \\
+        \midrule
+        Seguimiento: ¿entendió por dónde viaja el dato? & Sí, gracias al grafo & -- & Sí, desde el grafo \\
+        Seguimiento: forma preferida & Aplicación o consola, por ser más dinámica & -- & Indistinto, la que le resulte más cómoda a su agente de programación \\
+        Seguimiento: pagaría USD 8 por mes & Sí & -- & No, solo si se adapta a su entorno de desarrollo \\
+        Seguimiento: qué agregaría & Usarla desde la terminal & -- & Un servidor MCP para agentes, con una interfaz para ver el grafo; útil también en revisiones de código \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -1146,7 +1162,24 @@ con el de un asistente de inteligencia artificial de propósito general.
 Las recomendaciones fueron 5, 7 y 3 sobre 10. Con tres respuestas,
 estas cifras describen a esas personas y no permiten generalizar.
 
-\paragraph{Entrevista.} \completar{Síntesis de la entrevista por tema.}
+\paragraph{Seguimiento.} En las respuestas por mensaje, los
+participantes 1 y 3 dijeron que entendieron por dónde viaja el dato
+gracias al grafo. La del participante 3 no contradice necesariamente la
+del formulario: allí señaló la explicación en texto como lo que más lo
+ayudó a entender el hallazgo, y respondió que sin el grafo le costaría
+menos; la pregunta de seguimiento se refiere solo al recorrido del dato.
+El participante 1 no había obtenido hallazgos en su proyecto y había
+probado los ejemplos; su respuesta no indica sobre qué hallazgo se basó.
+Sobre el precio, el participante 1 pasó de «solo con otras funciones» a
+«sí», y el 3 condicionó el pago a que la herramienta se adapte a su
+entorno de desarrollo. Los dos pidieron usarla fuera de la página: desde
+la terminal, y desde un agente de programación mediante un servidor del
+Model Context Protocol (MCP), con una interfaz en la que quien supervisa
+al agente vea el grafo sin preguntarle ni leer el código. Los comentarios
+de la otra persona dicen que la herramienta le mostró errores que no
+tenía en cuenta, que la ve sólida y que pagaría según los resultados de
+los bancos de prueba. Son respuestas declaradas de dos personas, sin
+condición de control, por lo que no alcanzan para contrastar H3.
 
 \paragraph{Prueba libre.} Fuera del protocolo de las sesiones, un
 desarrollador usó la versión web con código de un proyecto propio, con
@@ -1176,7 +1209,8 @@ caso.
         \midrule
         Formulario (n=3) & En un proyecto local sin exposición a la red, 54 de 57 hallazgos fueron falsas alarmas: los parámetros de sus funciones no son entradas remotas. & Sugerir en la interfaz el modelo «Solo entradas web conocidas» cuando la mayoría de los hallazgos parten de parámetros de funciones internas. & Pendiente \\
         Formulario (n=3) & El análisis de 1.500 archivos tardó mucho. & Medir el tiempo de la versión web sobre proyectos grandes. & Pendiente \\
-        Entrevista & \completar{...} & \completar{...} & \completar{...} \\
+        Seguimiento (n=2) & Usar la herramienta desde la terminal. & La línea de comandos ya existe y ejecuta el mismo motor (sección~\ref{sec:n4.4.1}); indicarla desde la interfaz web. & Pendiente \\
+        Seguimiento (n=2) & Usarla desde un agente de programación, con una interfaz para ver el grafo, también en revisiones de código. & Exponer el análisis como servidor MCP que devuelva los hallazgos y el grafo de cada uno. & Trabajo futuro \\
         \midrule
         Prueba libre & Una validación con expresión regular anclada seguida
             de \texttt{return} no cortaba el camino hacia \texttt{exec}
@@ -1288,7 +1322,7 @@ capítulo~\ref{cap:conclusiones}.
         \midrule
         H1 & Banco sintético: 29 de 29 casos vulnerables detectados, incluidos recorridos entre funciones y entre archivos; la línea de base también detecta los 29. NodeGoat: 3 de 6 vulnerabilidades detectadas por ambos detectores; las 3 omisiones llegan a operaciones fuera del catálogo. Proyectos de GitHub, versión final: precisión de 0,41 frente a 0,10 de la línea de base, con exhaustividad de 0,82 frente a 0,88. Pares vulnerable/corregido: 54 de 54 en la versión final; 19 de 21 en la primera ejecución del conjunto de control. OWASP Benchmark de Java: 777 de 777 casos vulnerables (77\,\% en la primera medición). & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:pares}, \ref{sec:otros-lenguajes} \\
         H2 & Banco sintético: 0 falsos positivos en 14 casos seguros, tres de ellos saneados y tres con nombres engañosos; dos casos vulnerables con saneamientos que no protegen el destino se detectan. La línea de base produce 5 falsos positivos en el banco. En NodeGoat, 1 falso positivo en ambos detectores. En los proyectos de GitHub, versión final, 63 falsas alarmas frente a 420 de la línea de base, y 18 frente a 117 en los tres proyectos sin vulnerabilidades documentadas. OWASP Benchmark de Java: tasa de falsos positivos de 0,26 (0,60 en la primera medición); DVWA, vulpy y govwa: las versiones corregidas no se marcan salvo dos casos explicados. Un falso positivo por coincidencia de nombres fuera del banco. & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:otros-lenguajes}, \ref{sec:resultados-negativos} \\
-        H3 & Sin sesiones: R-06 se materializó y se aplicó la contingencia. Formulario con tres participantes sobre proyectos propios; solo uno obtuvo hallazgos, entendió por qué eran vulnerabilidades y dónde corregirlas (5 de 5), señaló la explicación en texto como lo que más lo ayudó y respondió que sin el grafo le costaría menos. 54 de sus 57 hallazgos fueron falsas alarmas. \completar{Entrevista.} & \ref{sec:validacion-usuarios} \\
+        H3 & Sin sesiones: R-06 se materializó y se aplicó la contingencia. Formulario con tres participantes sobre proyectos propios; solo uno obtuvo hallazgos, entendió por qué eran vulnerabilidades y dónde corregirlas (5 de 5), señaló la explicación en texto como lo que más lo ayudó y respondió que sin el grafo le costaría menos. 54 de sus 57 hallazgos fueron falsas alarmas. En un seguimiento por mensaje, los participantes 1 y 3 dijeron que entendieron el recorrido del dato gracias al grafo. & \ref{sec:validacion-usuarios} \\
         \bottomrule
     \end{tabularx}
 \end{table}
