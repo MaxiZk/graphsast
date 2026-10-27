@@ -146,6 +146,7 @@ historial de cambios.
         Pares de código & Entradas del navegador, \texttt{execFile} y \texttt{spawn} sin intérprete, validación de rutas con \texttt{startsWith} y destinos nuevos, a partir de 54 pares vulnerable/corregido & 22/10/2026 \\
         Otros lenguajes & Python, Java, PHP y Go con tree-sitter sobre la misma representación intermedia, con 48 pares vulnerable/corregido & 22/10/2026 \\
         Verificación en otros lenguajes & DVWA, vulpy, govwa y OWASP Benchmark; validaciones, asignaciones que pisan, colecciones, mapas por clave y ramas constantes & 26/10/2026 \\
+        Prueba de campo & 50 proyectos de GitHub en la versión web y en la línea de comandos; enlace entre archivos solo para JavaScript y TypeScript & 27/10/2026 \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -959,6 +960,84 @@ simuladas. Esta prueba verifica el funcionamiento de la interfaz y no
 reemplaza la validación con usuarios de la
 sección~\ref{sec:validacion-usuarios}: no mide si una persona entiende
 lo que la página le muestra.
+
+\subsection{Prueba de campo con 50 proyectos de GitHub}\label{sec:prueba-campo}
+
+\paragraph{Diseño.} Para comprobar el funcionamiento sobre código de
+terceros de distintos tamaños, se eligieron 52 repositorios públicos de
+GitHub antes de correr el analizador; dos ya no existían y quedaron 50,
+en los seis lenguajes. De ellos, 18 son aplicaciones vulnerables a
+propósito, como DVWA, WebGoat o NodeGoat, y 32 son aplicaciones,
+plantillas o bibliotecas comunes, como Laravel, Spring PetClinic,
+Express, Gitea o Bagisto. Cada uno se analizó con la línea de comandos y
+con la versión web, con el mismo procedimiento de la
+sección~\ref{sec:prueba-web}. Se cuentan los destinos marcados, es decir,
+los lugares distintos del código, y no los caminos. Esta prueba mide que
+el análisis termine, cuánto tarda y que la página coincida con la línea
+de comandos; no mide la precisión, porque los destinos de los proyectos
+comunes no se revisaron uno por uno, ni reemplaza la validación con
+usuarios de la sección~\ref{sec:validacion-usuarios}. El resultado por
+proyecto, con el commit analizado, está en
+\texttt{docs/validacion/2026-10-27-prueba-de-campo-50-proyectos.md}.
+
+\begin{table}[H]
+    \centering
+    \caption{Prueba de campo con 50 proyectos de GitHub, por lenguaje}
+    \label{tab:prueba-campo}
+    \footnotesize
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{l r r r r r r r}
+        \toprule
+        & & & & \multicolumn{2}{c}{\tb{Archivos}} & \multicolumn{2}{c}{\tb{Tiempo máximo}} \\
+        \cmidrule(lr){5-6} \cmidrule(lr){7-8}
+        \tb{Lenguaje} & \tb{Proyectos} & \tb{\makecell{Destinos\\marcados}} & \tb{\makecell{Sin\\hallazgos}} & \tb{Analizados} & \tb{\makecell{No\\analizados}} & \tb{CLI} & \tb{Web} \\
+        \midrule
+        JavaScript/TypeScript & 20 & 341 & 2 & 1.668 & 0 & 7,5\,s & 8,2\,s \\
+        Python & 8 & 49 & 1 & 392 & 0 & 5,2\,s & 6,4\,s \\
+        Java & 7 & 159 & 2 & 1.097 & 0 & 115,0\,s & 137,4\,s \\
+        PHP & 7 & 217 & 1 & 15.110 & 0 & 37,8\,s & 48,7\,s \\
+        Go & 8 & 401 & 1 & 3.743 & 44 & 33,4\,s & 34,9\,s \\
+        \midrule
+        Total & 50 & 1.167 & 7 & 22.010 & 44 & & \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\paragraph{Resultados.} En los 50 proyectos la página informó los mismos
+archivos y hallazgos que la línea de comandos, sin errores en la consola
+del navegador (tabla~\ref{tab:prueba-campo}). La mediana del tiempo fue
+de 0,8\,s en la línea de comandos y de 1,5\,s en la web; el más lento fue
+WebGoat, con 581 archivos, que demandó 115\,s y 137\,s. Las 18
+aplicaciones vulnerables a propósito marcaron al menos un destino, y los
+siete proyectos sin hallazgos son proyectos comunes, como Spring
+PetClinic y Laravel. Los 44 archivos no analizados son de Gitea y usan
+\texttt{new(expresión)}, una sintaxis de Go 1.26 que la gramática de
+tree-sitter incorporada no reconoce; se informan como no analizados y no
+como limpios.
+
+\paragraph{Correcciones.} La primera pasada encontró problemas que el
+banco y los pares no habían mostrado. El enlace entre archivos se
+aplicaba también a Python, Java, PHP y Go, contra lo que establece la
+sección~\ref{sec:n4.2.5}: adivinar el destino de una llamada por el
+nombre del método unía miles de archivos en un solo grafo, de modo que
+Bagisto, Snipe-IT y Gitea superaban los diez minutos; ahora demandan
+38\,s, 25\,s y 33\,s. En proyectos con más de un lenguaje, además, los
+archivos de JavaScript se analizaban con las reglas del otro lenguaje.
+Otros cambios redujeron falsos positivos:
+\begin{itemize}
+    \item se excluyen la carpeta \texttt{.yarn} y la versión legible de una
+          biblioteca copiada junto a su \texttt{.min.js};
+    \item las consultas de un repositorio de TypeORM dejan de tratarse como
+          MongoDB;
+    \item una vista de Flask que responde JSON deja de tratarse como HTML;
+    \item el \texttt{Where} de Go con un constructor de condiciones deja de
+          tratarse como texto SQL.
+\end{itemize}
+Por último, se reconocen las entradas de un manejador de
+\texttt{http.server}, que dejaban sin hallazgos a la aplicación
+vulnerable DSVW, un falso negativo. Como en las demás mediciones de este
+capítulo, la prueba guió correcciones, por lo que su versión final no es
+una medición independiente.
 
 \subsection{Rendimiento}
 
