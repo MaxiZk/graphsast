@@ -11,18 +11,32 @@
 
 \begin{resumen}
 
-GraphSAST es un sistema de análisis estático de código fuente (SAST)
-orientado a la detección temprana de vulnerabilidades de arquitectura de
-software. El sistema compila la lógica de aplicaciones escritas en
-TypeScript/JavaScript en una representación formal mediante un grafo de
-flujo de datos. A partir de técnicas de análisis de contaminación (taint
-analysis), la herramienta rastrea el recorrido de datos no confiables
-(sources) hacia operaciones sensibles (sinks) y verifica la presencia o
-ausencia de mecanismos de sanitización en el trayecto. El proyecto abarca
-el diseño e implementación propios del analizador, la construcción del
-grafo, el motor de consultas y una interfaz web interactiva para la
-visualización de los caminos de riesgo, validando su precisión y su
-capacidad de reducción de falsos positivos frente a repositorios con
-vulnerabilidades documentadas.
+Las vulnerabilidades de inyección, como la inyección SQL o la de
+comandos, aparecen cuando un dato que controla el usuario llega sin
+protección a una operación sensible. Las herramientas que las buscan por
+coincidencia de patrones tienden a marcar cada operación sensible aunque
+el dato esté protegido, y esa cantidad de falsas alarmas lleva a los
+equipos de desarrollo a desatender los resultados. GraphSAST es un
+analizador estático de seguridad del código fuente que representa el
+programa como un grafo de flujo de datos y, mediante análisis de
+contaminación, sigue el recorrido de los datos no confiables (orígenes)
+hasta las operaciones sensibles (destinos), descartando los caminos que
+pasan por un saneamiento o una validación. Analiza aplicaciones escritas
+en TypeScript y JavaScript, con seguimiento del dato entre funciones y
+entre archivos, y también en Python, Java, PHP y Go. Se usa desde la
+línea de comandos, integrable a la integración continua, y desde una
+aplicación web que analiza el código en el navegador, sin enviarlo a un
+servidor, y muestra el recorrido de cada hallazgo como un grafo, con su
+explicación y su corrección.
+
+Sobre siete repositorios públicos con 34 vulnerabilidades documentadas,
+la precisión fue de 0,41 frente a 0,10 de una línea de base por
+expresiones regulares, con una exhaustividad de 0,82 frente a 0,88. En
+el OWASP Benchmark de Java detectó los 777 casos vulnerables, con una
+tasa de falsos positivos de 0,26, y en una prueba de campo con 50
+proyectos de GitHub la versión web y la línea de comandos dieron los
+mismos resultados. La hipótesis de que el grafo facilita la comprensión
+del riesgo frente a un reporte en texto queda como preliminar: la
+validación con usuarios reunió tres participantes.
 
 \end{resumen}

@@ -4,17 +4,29 @@
 
 \begin{abstract}
 
-GraphSAST is a static application security testing (SAST) system aimed
-at the early detection of software architecture vulnerabilities. The
-system compiles the logic of applications written in
-TypeScript/JavaScript into a formal representation based on a data flow
-graph. Using taint analysis techniques, the tool traces the path of
-untrusted data (sources) towards sensitive operations (sinks) and checks
-whether sanitization mechanisms are present along the way. The project
-covers the design and implementation of the analyzer, the construction
-of the graph, the query engine and an interactive web interface for
-visualizing risk paths, and validates its precision and its ability to
-reduce false positives against repositories with documented
-vulnerabilities.
+Injection vulnerabilities, such as SQL or command injection, arise when
+user-controlled data reaches a sensitive operation without protection.
+Tools that look for them through pattern matching tend to flag every
+sensitive operation even when the data is protected, and the resulting
+volume of false alarms leads development teams to disregard the results.
+GraphSAST is a static source code security analyzer that represents the
+program as a data flow graph and, through taint analysis, follows the
+path of untrusted data (sources) to sensitive operations (sinks),
+discarding the paths that go through sanitization or validation. It
+analyzes applications written in TypeScript and JavaScript, tracking data
+across functions and files, as well as Python, Java, PHP and Go. It is
+used from the command line, which can be integrated into continuous
+integration, and from a web application that analyzes the code in the
+browser, without sending it to a server, and shows the path of each
+finding as a graph, together with its explanation and its fix.
+
+On seven public repositories with 34 documented vulnerabilities,
+precision was 0.41 against 0.10 for a regular expression baseline, with
+a recall of 0.82 against 0.88. On the OWASP Benchmark for Java it
+detected all 777 vulnerable cases with a false positive rate of 0.26,
+and in a field test with 50 GitHub projects the web version and the
+command line produced the same results. The hypothesis that the graph
+makes the risk easier to understand than a text report remains
+preliminary: the user validation gathered three participants.
 
 \end{abstract}
