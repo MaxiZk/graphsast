@@ -42,4 +42,11 @@ func h(r *http.Request) { ex.Command(r.FormValue("cmd")).Run() }`)).toEqual([78]
   db.Query(fmt.Sprintf("SELECT * FROM t LIMIT %d", n))
 }`)).toEqual([]);
   });
+
+  it("Where con un constructor de condiciones (xorm, squirrel) usa parámetros", () => {
+    expect(cwesOf(`func h(r *http.Request) { db.Where(builder.Eq{"name": r.FormValue("n")}).Find(&u) }`)).toEqual([]);
+    expect(cwesOf(`func h(r *http.Request) { db.Where(FindOptions{Name: r.FormValue("n")}.ToConds()).Find(&u) }`)).toEqual([]);
+    expect(cwesOf(`func h(r *http.Request) { db.Where("name = ?", r.FormValue("n")).Find(&u) }`)).toEqual([]);
+    expect(cwesOf(`func h(r *http.Request) { db.Where("name = '" + r.FormValue("n") + "'").Find(&u) }`)).toEqual([89]);
+  });
 });

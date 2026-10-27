@@ -1051,8 +1051,10 @@ desarrollo local cuya API se comunica con la aplicación por un socket
 de Unix, sin exposición a la red, de modo que los parámetros de sus
 funciones no son entradas de un atacante remoto. Es el caso que el
 modelo de origen por defecto sobre-aproxima (sección~\ref{sec:proyectos-github}):
-todo parámetro no ligado por una llamada cuenta como entrada, y la
-versión web no ofrece el modelo del catálogo. El análisis se hizo con la
+todo parámetro no ligado por una llamada cuenta como entrada. La versión
+web ofrece el modelo del catálogo («Solo entradas web conocidas») en las
+opciones del análisis, pero no es el predeterminado, y el formulario no
+registró cuál se usó. El análisis se hizo con la
 versión publicada el 23 de octubre, anterior a las correcciones de la
 sección~\ref{sec:otros-lenguajes}, y no se volvió a medir sobre ese
 proyecto porque el código no es público. Los otros dos participantes
@@ -1093,7 +1095,7 @@ caso.
         \toprule
         \tb{Fuente} & \tb{Hallazgo} & \tb{Decisión} & \tb{Estado} \\
         \midrule
-        Formulario (n=3) & En un proyecto local sin exposición a la red, 54 de 57 hallazgos fueron falsas alarmas: los parámetros de sus funciones no son entradas remotas. & Documentar el modelo de origen del catálogo (\texttt{--sources catalog}) para ese caso y ofrecerlo en la versión web. & Pendiente \\
+        Formulario (n=3) & En un proyecto local sin exposición a la red, 54 de 57 hallazgos fueron falsas alarmas: los parámetros de sus funciones no son entradas remotas. & Sugerir en la interfaz el modelo «Solo entradas web conocidas» cuando la mayoría de los hallazgos parten de parámetros de funciones internas. & Pendiente \\
         Formulario (n=3) & El análisis de 1.500 archivos tardó mucho. & Medir el tiempo de la versión web sobre proyectos grandes. & Pendiente \\
         Entrevista & \completar{...} & \completar{...} & \completar{...} \\
         \midrule

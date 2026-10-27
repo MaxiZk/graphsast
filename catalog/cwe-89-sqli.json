@@ -595,7 +595,8 @@
           "callee": ".Where",
           "args": [
             0
-          ]
+          ],
+          "unlessFirstArg": "^\\s*(?:&?(?:builder|squirrel|sq|goqu)\\.|&?[\\w.]+\\{|map\\[|[\\w.]+\\.ToConds\\(\\))"
         },
         {
           "callee": ".Select",
