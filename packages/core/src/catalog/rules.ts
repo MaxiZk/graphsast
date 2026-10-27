@@ -86,6 +86,7 @@ export function callMatchesSink(
 export interface SinkConditions {
   unlessFirstArg: RegExp[];
   unlessReceiverInit: RegExp | null;
+  unlessReceiver: RegExp | null;
   onlyIf: { receiverInit?: RegExp; firstArg?: RegExp; code?: RegExp } | null;
 }
 
@@ -95,6 +96,7 @@ export function sinkConditionsOf(entry: Pick<CweCatalogEntry, "unlessFirstArg">,
   return {
     unlessFirstArg: unless.map((p) => new RegExp(p)),
     unlessReceiverInit: spec.unlessReceiverInit === undefined ? null : new RegExp(spec.unlessReceiverInit),
+    unlessReceiver: spec.unlessReceiver === undefined ? null : new RegExp(spec.unlessReceiver),
     onlyIf: only
       ? {
           ...(only.receiverInit !== undefined ? { receiverInit: new RegExp(only.receiverInit) } : {}),
@@ -113,6 +115,8 @@ export function sinkConditionsHold(call: IRCall, conditions: SinkConditions): bo
   if (conditions.unlessFirstArg.some((re) => firstValues.some((t) => re.test(t)))) return false;
   const unlessReceiver = conditions.unlessReceiverInit;
   if (unlessReceiver && call.receiverInit !== undefined && unlessReceiver.test(call.receiverInit)) return false;
+  const receiver = receiverText(call.callee);
+  if (conditions.unlessReceiver && receiver !== null && conditions.unlessReceiver.test(receiver)) return false;
   const only = conditions.onlyIf;
   if (!only) return true;
   return (

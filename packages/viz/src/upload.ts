@@ -5,6 +5,7 @@ import {
   DEFAULT_IGNORE,
   DEFAULT_MAX_FILE_BYTES,
   GRAPHSAST_IGNORE_FILE,
+  hasMinifiedTwin,
   isMinifiedName,
   isProjectConfigName,
 } from "@graphsast/core/browser";
@@ -94,6 +95,7 @@ export function selectUploads(
     tooLarge: 0,
   };
   const seen = new Set<string>();
+  const allPaths = new Set(files.map((u) => normalizeUploadPath(u.path)));
   for (const upload of files) {
     const path = normalizeUploadPath(upload.path);
     const dirs = path.split("/").slice(0, -1);
@@ -103,7 +105,7 @@ export function selectUploads(
     else if (graphsastIgnored(path)) selection.graphsastIgnored++;
     else if (isProjectConfigName(name)) selection.configs.push({ path, file: upload.file });
     else if (!DEFAULT_EXTENSIONS.includes(extensionOf(path))) selection.otherLanguage++;
-    else if (isMinifiedName(name)) selection.minified++;
+    else if (isMinifiedName(name) || hasMinifiedTwin(path, allPaths)) selection.minified++;
     else if (upload.file.size > DEFAULT_MAX_FILE_BYTES) selection.tooLarge++;
     else if (!seen.has(path)) {
       seen.add(path);

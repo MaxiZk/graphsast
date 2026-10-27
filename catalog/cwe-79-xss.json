@@ -122,7 +122,7 @@
           "args": [
             0
           ],
-          "unlessFirstArg": "^\\s*(?:[\\[{]|(?:flask\\.)?(?:jsonify|send_file|send_from_directory|render_template|render_template_string|redirect|make_response|Response|abort|url_for)\\()"
+          "unlessFirstArg": "^\\s*(?:[\\[{]|(?:flask\\.)?(?:jsonify|send_file|send_from_directory|render_template|render_template_string|redirect|make_response|Response|abort|url_for)\\()|^(?:[^,(]|\\((?:[^()]|\\([^()]*\\))*\\))*\\.(?:to_dict|to_json|as_dict|model_dump|dict|serialize|to_collection_dict)\\("
         },
         {
           "callee": "make_response",

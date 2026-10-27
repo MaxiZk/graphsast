@@ -4,6 +4,7 @@ import {
   DEFAULT_IGNORE,
   DEFAULT_MAX_FILE_BYTES,
   GRAPHSAST_IGNORE_FILE,
+  hasMinifiedTwin,
   isMinifiedName,
   isProjectConfigName,
 } from "@graphsast/core/browser";
@@ -72,6 +73,17 @@ function extensionOf(path: string): string {
 }
 
 /** ¿Hace falta bajar este archivo para analizar? Mismos criterios que `selectUploads`. */
+const relativeSets = new WeakMap<readonly { relative: string }[], Set<string>>();
+/** Rutas relativas del árbol, una vez por lista. */
+function relativePaths(all: readonly { relative: string }[]): Set<string> {
+  let set = relativeSets.get(all);
+  if (!set) {
+    set = new Set(all.map((e) => e.relative));
+    relativeSets.set(all, set);
+  }
+  return set;
+}
+
 export function wantedPath(path: string, size: number): boolean {
   const parts = path.split("/");
   const name = parts.at(-1)!;
@@ -127,7 +139,7 @@ export async function importGithubRepo(
   const candidates = tree.tree
     .filter((e) => e.type === "blob" && e.path.startsWith(prefix))
     .map((e) => ({ path: e.path, relative: e.path.slice(prefix.length), size: e.size ?? 0 }))
-    .filter((e) => wantedPath(e.relative, e.size))
+    .filter((e, _, all) => wantedPath(e.relative, e.size) && !hasMinifiedTwin(e.relative, relativePaths(all)))
     .sort((a, b) => a.relative.localeCompare(b.relative));
   if (candidates.length === 0) {
     throw new GithubImportError(dir

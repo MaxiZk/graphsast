@@ -34,6 +34,12 @@ export interface SinkSpec {
    */
   unlessReceiverInit?: string;
   /**
+   * Expresión regular sobre el texto del receptor: si coincide, la llamada no
+   * es el sink. `this.userRepository.findOne({ ... })` es TypeORM, un ORM de
+   * SQL con parámetros, y no una colección de MongoDB.
+   */
+  unlessReceiver?: string;
+  /**
    * El sink vale solo si coincide alguna de estas expresiones regulares:
    * `receiverInit` sobre el inicializador de la variable receptora
    * (`new Finance(req.body)` en `finance.save()`), `firstArg` sobre el texto

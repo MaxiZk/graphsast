@@ -9,6 +9,7 @@ import {
   ScanInputError,
 } from "./files.js";
 import { scanPaths, scanSource } from "./scan.js";
+import { scanFiles } from "./scan-files.js";
 
 let root: string;
 
@@ -297,10 +298,24 @@ describe("bibliotecas minificadas", () => {
       writeFileSync(path.join(dir, "app.js"), "function h(req){ db.query(req.body); }\n");
       writeFileSync(path.join(dir, "jquery-3.2.1-min.js"), "function h(req){ db.query(req.body); }\n");
       writeFileSync(path.join(dir, "vendor.min.js"), "function h(req){ db.query(req.body); }\n");
+      writeFileSync(path.join(dir, ".pnp.cjs"), "function h(req){ db.query(req.body); }\n");
+      // La versión legible de una biblioteca que también viene minificada.
+      writeFileSync(path.join(dir, "vendor.js"), "function h(req){ db.query(req.body); }\n");
       expect(discoverFiles(dir).map((f) => path.basename(f))).toEqual(["app.js"]);
       expect(discoverFiles(path.join(dir, "vendor.min.js"))).toHaveLength(1);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("llamadas entre archivos", () => {
+  it("solo se siguen entre archivos de JavaScript y TypeScript", () => {
+    const result = scanFiles([
+      { path: "a.php", content: `<?php\n$svc = new Servicio();\n$svc->guardarRegistro($_GET["x"]);\n` },
+      { path: "b.php", content: `<?php\nclass Servicio {\n  function guardarRegistro($v) { mysqli_query($c, "SELECT " . $v); }\n}\n` },
+    ], { sources: "catalog" });
+    expect(result.totals.crossFileCalls).toBe(0);
+    expect(result.findings).toEqual([]);
   });
 });

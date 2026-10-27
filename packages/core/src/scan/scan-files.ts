@@ -253,11 +253,15 @@ export function scanFilesWithGraphs(
     }
   });
 
-  // Fase 2: llamadas entre archivos.
+  // Fase 2: llamadas entre archivos, solo entre archivos de JavaScript y
+  // TypeScript: para los otros lenguajes no hay resolución de imports, y
+  // adivinar el destino por nombre de método uniría miles de archivos (y
+  // hasta archivos de lenguajes distintos) en un solo grafo.
   const linkStarted = performance.now();
+  const linkable = parsed.filter((p) => (p.graph.language ?? "javascript") === "javascript");
   const cross = options.crossFile === false
     ? { edges: [], exactCallIds: new Set<string>(), calls: 0, pairs: [] }
-    : buildCrossModuleEdges(projectIndexOf(parsed, aliases), parsed);
+    : buildCrossModuleEdges(projectIndexOf(linkable, aliases), linkable);
   const components = connectedComponents(parsed.map((p) => p.abs), cross.pairs);
   const linkMs = performance.now() - linkStarted;
 

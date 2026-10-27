@@ -105,8 +105,10 @@ describe("expresiones regulares del catálogo", () => {
     const patterns: string[] = [];
     const collect = (spec: unknown) => {
       if (typeof spec !== "object" || spec === null) return;
-      const s = spec as { receiver?: string; unlessFirstArg?: string; onlyIf?: Record<string, string> };
+      const s = spec as { receiver?: string; unlessFirstArg?: string; unlessReceiver?: string; unlessReceiverInit?: string; onlyIf?: Record<string, string> };
       if (s.receiver) patterns.push(s.receiver);
+      if (s.unlessReceiver) patterns.push(s.unlessReceiver);
+      if (s.unlessReceiverInit) patterns.push(s.unlessReceiverInit);
       if (s.unlessFirstArg) patterns.push(s.unlessFirstArg);
       for (const p of Object.values(s.onlyIf ?? {})) patterns.push(p);
     };

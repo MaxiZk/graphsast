@@ -31,11 +31,12 @@ describe("selectUploads", () => {
     const selection = selectUploads([
       upload("public/js/jquery-3.2.1-min.js"),
       upload("public/js/bootstrap.min.js"),
+      upload("public/js/bootstrap.js"),
       upload("public/js/app.js"),
     ]);
     expect(selection.accepted.map((u) => u.path)).toEqual(["public/js/app.js"]);
-    expect(selection.minified).toBe(2);
-    expect(describeSelection(selection)).toContain("2 minificados (bibliotecas de terceros)");
+    expect(selection.minified).toBe(3);
+    expect(describeSelection(selection)).toContain("3 minificados (bibliotecas de terceros)");
   });
 
   it("descarta archivos de más de 1 MB, como el CLI", () => {

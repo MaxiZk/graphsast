@@ -108,15 +108,30 @@ export const DEFAULT_IGNORE = [
   ".nuxt",
   "vendor",
   ".venv",
+  // Plugins y versiones de Yarn guardados en el proyecto: código de terceros
+  // empaquetado (un plugin de 900 KB tardaba minutos en analizarse).
+  ".yarn",
 ];
 
 export const DEFAULT_MAX_FILE_BYTES = 1_000_000;
 
 /**
- * Bibliotecas minificadas (`jquery.min.js`, `jquery-3.2.1-min.js`): código de
- * terceros copiado al proyecto, sin nombres legibles. Al recorrer una carpeta
- * no se analizan; nombrado directamente, sí.
+ * Bibliotecas minificadas (`jquery.min.js`, `jquery-3.2.1-min.js`) y el
+ * cargador que genera Yarn PnP (`.pnp.cjs`): código de terceros o generado,
+ * sin nombres legibles. Al recorrer una carpeta no se analizan; nombrados
+ * directamente, sí.
  */
 export function isMinifiedName(name: string): boolean {
-  return /[.-]min\.[cm]?js$/i.test(name);
+  return /[.-]min\.[cm]?js$/i.test(name) || /^\.pnp\.(?:c?js|loader\.mjs)$/.test(name);
+}
+
+/**
+ * `materialize.js` junto a `materialize.min.js`: la versión legible de una
+ * biblioteca copiada al proyecto con su minificada. `paths` son las rutas de
+ * la misma carpeta o del proyecto entero, con `/`.
+ */
+export function hasMinifiedTwin(path: string, paths: ReadonlySet<string>): boolean {
+  const match = /^(.*)\.([cm]?js)$/i.exec(path);
+  if (!match || isMinifiedName(path.slice(path.lastIndexOf("/") + 1))) return false;
+  return paths.has(`${match[1]}.min.${match[2]}`) || paths.has(`${match[1]}-min.${match[2]}`);
 }
