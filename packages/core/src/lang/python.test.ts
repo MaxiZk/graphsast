@@ -89,4 +89,15 @@ app = Flask(__name__)
 def h():
     return "<p>" + request.args.get("q") + "</p>"`)).toEqual([79]);
   });
+
+  it("un manejador de http.server lee el pedido de self.path y self.headers", () => {
+    expect(cwesOf(`import http.server, sqlite3, urllib.parse
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        params = dict(urllib.parse.parse_qsl(self.path.split("?", 1)[1]))
+        sqlite3.connect("x").execute("SELECT * FROM t WHERE id=" + params["id"])`)).toEqual([89]);
+    expect(cwesOf(`class Otra:
+    def m(self):
+        sqlite3.connect("x").execute("SELECT * FROM t WHERE p=" + self.path)`)).toEqual([]);
+  });
 });

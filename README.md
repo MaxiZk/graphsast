@@ -136,7 +136,7 @@ corrección que muestra la web:
 
 | Lenguaje | Entradas | Además del catálogo |
 |---|---|---|
-| Python | `request.args`, `request.form`, `request.get_json()`... de Flask; el `request` de Django; parámetros de FastAPI | En una vista de Flask, lo que retorna es HTML (`@route.return`); `self.x` es un campo y `__init__` el constructor; imports con alias |
+| Python | `request.args`, `request.form`, `request.get_json()`... de Flask; el `request` de Django; parámetros de FastAPI; `self.path`, `self.headers` y `self.rfile` en un manejador de `http.server` | En una vista de Flask, lo que retorna es HTML (`@route.return`); `self.x` es un campo y `__init__` el constructor; imports con alias |
 | Java | `request` de un servlet; `@RequestParam`, `@PathVariable`, `@RequestBody`... | El `return` de un `@RestController` que devuelve `String` es HTML; `m(x)` dentro de la clase es `this.m(x)` |
 | PHP | `$_GET`, `$_POST`, `$_REQUEST`, `$_COOKIE`, `$_FILES`, las claves del pedido en `$_SERVER`, `php://input` | `echo`, `print`, `<?= ?>`, `include` y las comillas invertidas son destinos; `(int)` y `(string)` sanean |
 | Go | `r *http.Request`, `c *gin.Context` | `Decode(&x)` escribe en `x`; `a, err := f()`; imports con alias |
@@ -200,9 +200,10 @@ npx graphsast scan src lib                      # varias rutas
 ```
 
 En una carpeta se analizan `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.py`, `.java`, `.php` y `.go`.
-Siempre se excluyen `node_modules/`, `dist/`, `build/`, `coverage/` y `.git/`,
-y las bibliotecas minificadas (`*.min.js`, `*-min.js`; nombradas directamente,
-sí se analizan), y se respetan los `.gitignore` del proyecto analizado, incluidos los de las
+Siempre se excluyen `node_modules/`, `dist/`, `build/`, `coverage/` y `.git/`;
+por defecto también `.next/`, `.nuxt/`, `vendor/`, `.venv/` y `.yarn/`, las bibliotecas minificadas
+(`*.min.js`, `*-min.js`, `.pnp.cjs`) y la versión legible de una biblioteca que
+viene junto a su `.min.js` (nombrados directamente, sí se analizan). Se respetan los `.gitignore` del proyecto analizado, incluidos los de las
 carpetas superiores hasta la raíz del repositorio. Para excluir algo más:
 
 ```bash
@@ -479,7 +480,10 @@ validación sobre OWASP NodeGoat, `npm run github-eval` la de siete proyectos
 de GitHub (`eval-github.json`) y `npm run owasp-benchmark` la del
 [OWASP Benchmark](https://github.com/OWASP-Benchmark/BenchmarkJava) para Java
 (1.478 casos etiquetados de comandos, SQL, XSS y rutas; clona el repositorio
-en un commit fijo). Los 107 pares vulnerable/corregido de
+en un commit fijo). La prueba de campo con 50 proyectos de GitHub en la web y en
+la línea de comandos está en
+[`docs/validacion/2026-10-27-prueba-de-campo-50-proyectos.md`](docs/validacion/2026-10-27-prueba-de-campo-50-proyectos.md).
+Los 107 pares vulnerable/corregido de
 [`docs/validacion/pares/`](docs/validacion/pares/) corren con `npm test`: cada
 vulnerable tiene que dar un hallazgo de su familia y cada corregido, ninguno.
 `npm run demo -- <carpeta>` copia los cinco del conjunto `demo` (uno por

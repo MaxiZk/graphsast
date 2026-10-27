@@ -22,6 +22,17 @@ const JSON_RESPONSE_DECORATOR = /^(?:[\w.]+\.)?(?:marshal_with|marshal|response|
 /** Lecturas del pedido en Flask, Django y Starlette/FastAPI. */
 const REQUEST_INPUT = /^request\.(?:args|form|values|json|data|cookies|headers|files|GET|POST|COOKIES|FILES|META|body|query_params|path_params|query_string|full_path|url|path|stream)$/;
 const REQUEST_INPUT_CALL = /^request\.(?:get_json|get_data)$/;
+/** El pedido en un manejador de `http.server`: `self.path`, `self.headers`, el cuerpo en `self.rfile`. */
+const HANDLER_INPUT = /^self\.(?:path|headers|rfile|requestline)$/;
+const HANDLER_BASES = /\b(?:BaseHTTPRequestHandler|SimpleHTTPRequestHandler|CGIHTTPRequestHandler|StreamRequestHandler)\b/;
+
+/** ¿El nodo está dentro de una clase que hereda de un manejador de `http.server`/`socketserver`? */
+function inRequestHandler(node: TsNode): boolean {
+  for (let p = node.parent; p; p = p.parent) {
+    if (p.type === "class_definition") return HANDLER_BASES.test(p.childForFieldName("superclasses")?.text ?? "");
+  }
+  return false;
+}
 
 function normalize(text: string): string {
   return text.replace(/\s+/g, "").replace(/^self\./, "this.");
@@ -227,7 +238,8 @@ export function pythonSpec(): LanguageSpec {
     inputOf(node) {
       if (node.type === "attribute") {
         const text = node.text.replace(/\s+/g, "");
-        return REQUEST_INPUT.test(text) ? text : null;
+        if (REQUEST_INPUT.test(text)) return text;
+        return HANDLER_INPUT.test(text) && inRequestHandler(node) ? text : null;
       }
       if (node.type === "call") {
         const fn = node.childForFieldName("function")?.text.replace(/\s+/g, "") ?? "";
