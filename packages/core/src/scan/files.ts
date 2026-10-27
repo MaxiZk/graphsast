@@ -15,6 +15,7 @@ import {
   DEFAULT_IGNORE,
   DEFAULT_MAX_FILE_BYTES,
   GRAPHSAST_IGNORE_FILE,
+  hasMinifiedTwin,
   isMinifiedName,
   type ScanOptions,
 } from "./types.js";
@@ -141,7 +142,9 @@ function walk(
   const own = readIgnoreScopes(dir, ctx.gitignore);
   const active = own.length > 0 ? [...scopes, ...own] : scopes;
 
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+  const entries = readdirSync(dir, { withFileTypes: true });
+  const names = new Set(entries.map((e) => e.name));
+  for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (isIgnored(full, root, ctx.ignore)) continue;
     if (entry.isSymbolicLink()) continue;
@@ -154,7 +157,7 @@ function walk(
       walk(full, root, active, ctx, out);
       continue;
     }
-    if (isMinifiedName(entry.name)) continue;
+    if (isMinifiedName(entry.name) || hasMinifiedTwin(entry.name, names)) continue;
     if (!ctx.extensions.includes(path.extname(entry.name))) {
       if (ctx.configs && isProjectConfigName(entry.name)) ctx.configs.push(full);
       continue;

@@ -69,4 +69,24 @@ def x(nombre: str):
     const call = graph.nodes.find((n) => n.kind === "Call" && n.name === "os.system")!;
     expect(call.loc.col).toBe(`    año = "ñ"; `.length + 1);
   });
+
+  it("una vista que devuelve un diccionario o un objeto serializado responde JSON", () => {
+    expect(cwesOf(`from flask import Flask, request
+app = Flask(__name__)
+@app.route("/u")
+def u():
+    return User.query.get(request.args.get("id")).to_dict()`)).toEqual([]);
+    expect(cwesOf(`from flask import Flask, request
+from flask_apispec import marshal_with
+app = Flask(__name__)
+@app.route("/a")
+@marshal_with(schema)
+def a():
+    return request.args.get("q")`)).toEqual([]);
+    expect(cwesOf(`from flask import Flask, request
+app = Flask(__name__)
+@app.route("/h")
+def h():
+    return "<p>" + request.args.get("q") + "</p>"`)).toEqual([79]);
+  });
 });

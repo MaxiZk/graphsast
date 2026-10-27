@@ -66,6 +66,8 @@ describe("importGithubRepo", () => {
       { path: "src/db.ts", type: "blob", size: 20 },
       { path: "README.md", type: "blob", size: 5 },
       { path: "node_modules/x/index.js", type: "blob", size: 5 },
+      { path: "static/lib.js", type: "blob", size: 5 },
+      { path: "static/lib.min.js", type: "blob", size: 5 },
       { path: "tsconfig.json", type: "blob", size: 10 },
     ],
   };
@@ -84,7 +86,7 @@ describe("importGithubRepo", () => {
     expect(result.files.map((f) => f.path)).toEqual(["src/app.js", "src/db.ts", "tsconfig.json"]);
     expect(await result.files[0]!.file.text()).toBe("db.query(req.query.id)");
     expect(progress).toHaveLength(3);
-    expect(calls.some((c) => c.includes("README") || c.includes("node_modules"))).toBe(false);
+    expect(calls.some((c) => c.includes("README") || c.includes("node_modules") || c.includes("static/"))).toBe(false);
   });
 
   it("con una carpeta, las rutas quedan relativas a ella", async () => {

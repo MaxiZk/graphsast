@@ -31,123 +31,142 @@
       "onlyIf": {
         "receiverInit": "^\\s*(await\\s+)?new\\s+[\\w.$]+\\(\\s*(?!\\{(?![\\s\\S]*\\.\\.\\.))[^)\\s]",
         "firstArg": "^\\s*(?!\\{(?![\\s\\S]*\\.\\.\\.)|\\(|function\\b|async\\b|[\\w$]+\\s*=>)\\S"
-      }
+      },
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": ".create",
       "args": [
         0
       ],
-      "unlessFirstArg": "^\\s*\\{(?![\\s\\S]*\\.\\.\\.)"
+      "unlessFirstArg": "^\\s*\\{(?![\\s\\S]*\\.\\.\\.)",
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "findByIdAndUpdate",
       "args": [
         0,
         1
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "findByIdAndDelete",
       "args": [
         0
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "insertOne",
       "args": [
         0
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "updateOne",
       "args": [
         0,
         1
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "findOne",
       "args": [
         0
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "findOneAndUpdate",
       "args": [
         0,
         1
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "findOneAndDelete",
       "args": [
         0
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "findOneAndReplace",
       "args": [
         0,
         1
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "updateMany",
       "args": [
         0,
         1
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "deleteOne",
       "args": [
         0
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "deleteMany",
       "args": [
         0
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "replaceOne",
       "args": [
         0,
         1
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "insertMany",
       "args": [
         0
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "countDocuments",
       "args": [
         0
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": "aggregate",
       "args": [
         0
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": ".$where",
       "args": [
         0
-      ]
+      ],
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": ".find",
       "args": [
         0
       ],
-      "receiver": "^[A-Z][A-Za-z0-9_]*$|\\.collection\\(.*\\)$|[Cc]ollection$"
+      "receiver": "^[A-Z][A-Za-z0-9_]*$|\\.collection\\(.*\\)$|[Cc]ollection$",
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     },
     {
       "callee": ".find",
@@ -157,7 +176,8 @@
       "onlyIf": {
         "receiverInit": "\\.collection\\(",
         "firstArg": "^\\s*\\{"
-      }
+      },
+      "unlessReceiver": "(?:^|\\.)(?:[A-Za-z_$][\\w$]*Repository|repo|repository)$"
     }
   ],
   "sanitizers": [

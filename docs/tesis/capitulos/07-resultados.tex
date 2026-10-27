@@ -912,6 +912,54 @@ aplicaciones construidas para enseñar o para medir analizadores, con
 fallas más directas que las de un proyecto habitual, y la clasificación
 de los hallazgos sin etiqueta es de una sola persona.
 
+\subsection{Prueba de punta a punta de la versión web}\label{sec:prueba-web}
+
+Las mediciones anteriores usan el motor desde la línea de comandos. Para
+comprobar que la versión web entrega el mismo resultado, se la abrió con
+un navegador automatizado (Playwright con Chromium) sobre la compilación
+de producción servida en forma local, se cargó cada proyecto con el botón
+«Analizar carpeta» y se leyó el resultado de la página. La
+tabla~\ref{tab:prueba-web} compara esa lectura con la línea de comandos
+sobre las mismas carpetas.
+
+\begin{table}[H]
+    \centering
+    \caption{Versión web frente a línea de comandos sobre las mismas carpetas}
+    \label{tab:prueba-web}
+    \small
+    \begin{tabular}{l l r r r r}
+        \toprule
+        & & & \multicolumn{2}{c}{\tb{Hallazgos}} & \\
+        \cmidrule(lr){4-5}
+        \tb{Proyecto} & \tb{Lenguaje} & \tb{Archivos} & \tb{Web} & \tb{CLI} & \tb{Tiempo web} \\
+        \midrule
+        Demo, código malo & Cinco lenguajes & 5 & 10 & 10 & 0,6\,s \\
+        Demo, código bueno & Cinco lenguajes & 5 & 0 & 0 & 0,5\,s \\
+        vulpy, versión insegura & Python & 20 & 8 & 8 & 0,6\,s \\
+        vulpy, versión segura & Python & 19 & 3 & 3 & 0,6\,s \\
+        govwa & Go & 20 & 7 & 7 & 0,7\,s \\
+        DVWA, módulos & PHP & 162 & 56 & 56 & 1,2\,s \\
+        DVNA & JavaScript & 12 & 4 & 4 & 0,7\,s \\
+        dvws-node & JavaScript & 50 & 52 & 52 & 1,5\,s \\
+        realworld & JavaScript & 39 & 1 & 1 & 0,7\,s \\
+        boilerplate & JavaScript & 50 & 28 & 28 & 1,2\,s \\
+        NodeGoat & JavaScript & 27 & 11 & 11 & 0,7\,s \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+En los once casos la página informó los mismos hallazgos que la línea de
+comandos y la consola del navegador no registró errores. El tiempo web
+va desde que se elige la carpeta hasta que el resultado queda en
+pantalla, e incluye la lectura de los archivos y la carga de las
+gramáticas de tree-sitter. La importación por dirección de GitHub no se
+pudo ejercitar en el entorno de la prueba, cuya red no alcanza la API de
+GitHub; su lógica está cubierta por pruebas automatizadas con respuestas
+simuladas. Esta prueba verifica el funcionamiento de la interfaz y no
+reemplaza la validación con usuarios de la
+sección~\ref{sec:validacion-usuarios}: no mide si una persona entiende
+lo que la página le muestra.
+
 \subsection{Rendimiento}
 
 Sobre el banco sintético el análisis demandó 0,27\,ms por línea en la
@@ -922,8 +970,11 @@ comandos demandó 161\,ms (mediana de cinco ejecuciones), unos 0,08\,s
 por cada 1.000 líneas, frente a 8\,ms de la línea de base. Con la
 versión final, los 300 archivos analizados de Juice Shop demandan unos
 5\,s en la línea de comandos con el modelo de origen por defecto
-(sección~\ref{sec:pares}).
-\completar{Tiempo de análisis de NodeGoat en la versión web.}
+(sección~\ref{sec:pares}). En la versión web, NodeGoat se analizó en
+259\,ms (mediana de cinco ejecuciones en Chromium sin interfaz, en un
+contenedor Linux) y el resultado quedó en pantalla 696\,ms después de
+elegir la carpeta, con los mismos 11 hallazgos que la línea de comandos
+(sección~\ref{sec:prueba-web}).
 
 % -------------------------------------------------------------
 \section{Validación con usuarios y con un experto}\label{sec:validacion-usuarios}
@@ -942,29 +993,77 @@ cuestionario se presentan en el apéndice~\ref{apx:encuesta}. De forma
 complementaria se entrevistó a un desarrollador con experiencia en
 seguridad de aplicaciones (apéndice~\ref{apx:entrevista}).
 
-\paragraph{Participantes.} \completar{Cantidad, experiencia con
-JavaScript, período de las sesiones.}
+\paragraph{Aplicación.} El protocolo de sesiones no llegó a
+aplicarse: a la fecha de control no se habían confirmado cinco
+participantes y el riesgo R-06 se materializó. Se aplicó la contingencia
+prevista, que declara el resultado preliminar, y la convocatoria pasó a
+un formulario autoadministrado: cada persona analizó un proyecto propio
+en la versión web y respondió sobre lo que encontró la herramienta, si
+entendió el hallazgo, qué la ayudó a entenderlo y su disposición a pagar
+el precio del capítulo~\ref{cap:economica}. El formulario completo está
+en el apéndice~\ref{apx:encuesta}. A diferencia de las sesiones, no hay
+una condición de control con el reporte de texto: la comparación entre
+texto y grafo queda limitada a lo que cada participante declara.
+
+\paragraph{Participantes.} Respondieron tres personas entre el 21 y el
+23 de octubre de 2026. Una programa en JavaScript o TypeScript hace dos
+años o menos, otra entre tres y cinco, y la tercera hace cinco años o
+más. Dos trabajan en desarrollo de software y una estudia; solo una
+había usado antes una herramienta de análisis estático de seguridad,
+CodeQL. Los tres proyectos están escritos en TypeScript.
+\completar{Canal de la convocatoria y cantidad de personas invitadas.}
 
 \begin{table}[H]
     \centering
-    \caption{Resultados por condición en la validación con usuarios}
+    \caption{Respuestas al formulario de la validación con usuarios}
     \label{tab:h3-resultados}
-    \small
-    \begin{tabular}{l r r}
+    \footnotesize
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.25\textwidth} L L L}
         \toprule
-        \tb{Indicador} & \tb{Reporte de texto} & \tb{Grafo} \\
+        \tb{Indicador} & \tb{Participante 1} & \tb{Participante 2} & \tb{Participante 3} \\
         \midrule
-        Acierto, mediana (0 a 4) & \completar{..} & \completar{..} \\
-        Tiempo, mediana (s) & \completar{..} & \completar{..} \\
-        L1 comprensión del recorrido, mediana (1 a 5) & \completar{..} & \completar{..} \\
-        L2 claridad de la corrección, mediana (1 a 5) & \completar{..} & \completar{..} \\
-        Participantes con mejor resultado en la condición & \completar{..} & \completar{..} \\
+        Experiencia en JS/TS & 0 a 2 años & 3 a 5 años & 5 años o más \\
+        Proyecto analizado & Next.js & Express y NestJS, 2 archivos & Express, NestJS, Next.js y React, 1.500 archivos \\
+        Análisis & Terminó bien & Terminó bien & Terminó bien, pero tardó mucho \\
+        Hallazgos & Ninguno (no esperaba ninguno) & Ninguno (no esperaba ninguno) & 57: inyección SQL, de comandos y de código \\
+        Reales / falsas alarmas & -- & -- & 3 / 54 \\
+        Comprensión (1 a 5): recorrido, causa, corrección & -- & -- & 3, 5, 5 \\
+        Lo que más ayudó a entender & -- & -- & La explicación en texto \\
+        Sin el grafo, ¿costaría más? & -- & -- & Menos \\
+        Asistente & -- & -- & Lo usó, no le sirvió \\
+        Pestaña de ejemplos & La probó y la entendió & La probó y la entendió & -- \\
+        Pagaría USD 8 por mes & Solo con otras funciones & Sí & No \\
+        Recomendación (0 a 10) & 5 & 7 & 3 \\
         \bottomrule
-    \end{tabular}
+    \end{tabularx}
 \end{table}
 
-\completar{Preferencia declarada, respuestas sobre la disposición a pagar
-USD 8 mensuales (riesgo R-07) y observaciones de las sesiones.}
+\paragraph{Resultados.} Solo el tercer participante obtuvo hallazgos
+sobre los cuales responder las preguntas de comprensión, por lo que esa
+parte del formulario descansa en una sola persona
+(tabla~\ref{tab:h3-resultados}). Valoró con 5 que entendió por qué cada
+hallazgo es una vulnerabilidad y dónde corregirlo, y con 3 que entendió
+por dónde viaja el dato; tardó entre uno y tres minutos en entender un
+hallazgo, señaló la explicación en texto como lo que más lo ayudó y
+respondió que sin el grafo le costaría menos. De los 57 hallazgos
+consideró reales tres y falsas alarmas 54: su proyecto es un entorno de
+desarrollo local cuya API se comunica con la aplicación por un socket
+de Unix, sin exposición a la red, de modo que los parámetros de sus
+funciones no son entradas de un atacante remoto. Es el caso que el
+modelo de origen por defecto sobre-aproxima (sección~\ref{sec:proyectos-github}):
+todo parámetro no ligado por una llamada cuenta como entrada, y la
+versión web no ofrece el modelo del catálogo. El análisis se hizo con la
+versión publicada el 23 de octubre, anterior a las correcciones de la
+sección~\ref{sec:otros-lenguajes}, y no se volvió a medir sobre ese
+proyecto porque el código no es público. Los otros dos participantes
+analizaron proyectos sin hallazgos, no esperaban encontrar ninguno y
+probaron los ejemplos de la interfaz, que dijeron entender.
+
+Sobre el precio, una persona pagaría USD 8 por mes, otra no y la
+tercera solo con otras funciones; como justificación comparó el precio
+con el de un asistente de inteligencia artificial de propósito general.
+Las recomendaciones fueron 5, 7 y 3 sobre 10. Con tres respuestas,
+estas cifras describen a esas personas y no permiten generalizar.
 
 \paragraph{Entrevista.} \completar{Síntesis de la entrevista por tema.}
 
@@ -994,7 +1093,8 @@ caso.
         \toprule
         \tb{Fuente} & \tb{Hallazgo} & \tb{Decisión} & \tb{Estado} \\
         \midrule
-        Sesiones (n=\completar{..}) & \completar{...} & \completar{...} & \completar{...} \\
+        Formulario (n=3) & En un proyecto local sin exposición a la red, 54 de 57 hallazgos fueron falsas alarmas: los parámetros de sus funciones no son entradas remotas. & Documentar el modelo de origen del catálogo (\texttt{--sources catalog}) para ese caso y ofrecerlo en la versión web. & Pendiente \\
+        Formulario (n=3) & El análisis de 1.500 archivos tardó mucho. & Medir el tiempo de la versión web sobre proyectos grandes. & Pendiente \\
         Entrevista & \completar{...} & \completar{...} & \completar{...} \\
         \midrule
         Prueba libre & Una validación con expresión regular anclada seguida
@@ -1107,7 +1207,7 @@ capítulo~\ref{cap:conclusiones}.
         \midrule
         H1 & Banco sintético: 29 de 29 casos vulnerables detectados, incluidos recorridos entre funciones y entre archivos; la línea de base también detecta los 29. NodeGoat: 3 de 6 vulnerabilidades detectadas por ambos detectores; las 3 omisiones llegan a operaciones fuera del catálogo. Proyectos de GitHub, versión final: precisión de 0,41 frente a 0,10 de la línea de base, con exhaustividad de 0,82 frente a 0,88. Pares vulnerable/corregido: 54 de 54 en la versión final; 19 de 21 en la primera ejecución del conjunto de control. OWASP Benchmark de Java: 777 de 777 casos vulnerables (77\,\% en la primera medición). & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:pares}, \ref{sec:otros-lenguajes} \\
         H2 & Banco sintético: 0 falsos positivos en 14 casos seguros, tres de ellos saneados y tres con nombres engañosos; dos casos vulnerables con saneamientos que no protegen el destino se detectan. La línea de base produce 5 falsos positivos en el banco. En NodeGoat, 1 falso positivo en ambos detectores. En los proyectos de GitHub, versión final, 63 falsas alarmas frente a 420 de la línea de base, y 18 frente a 117 en los tres proyectos sin vulnerabilidades documentadas. OWASP Benchmark de Java: tasa de falsos positivos de 0,26 (0,60 en la primera medición); DVWA, vulpy y govwa: las versiones corregidas no se marcan salvo dos casos explicados. Un falso positivo por coincidencia de nombres fuera del banco. & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:otros-lenguajes}, \ref{sec:resultados-negativos} \\
-        H3 & \completar{Resultados de las sesiones y de la entrevista.} & \ref{sec:validacion-usuarios} \\
+        H3 & Sin sesiones: R-06 se materializó y se aplicó la contingencia. Formulario con tres participantes sobre proyectos propios; solo uno obtuvo hallazgos, entendió por qué eran vulnerabilidades y dónde corregirlas (5 de 5), señaló la explicación en texto como lo que más lo ayudó y respondió que sin el grafo le costaría menos. 54 de sus 57 hallazgos fueron falsas alarmas. \completar{Entrevista.} & \ref{sec:validacion-usuarios} \\
         \bottomrule
     \end{tabularx}
 \end{table}

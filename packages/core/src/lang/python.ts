@@ -16,6 +16,8 @@ import type { BindingInfo, CallInfo, FunctionInfo, LanguageSpec, ParamInfo } fro
  */
 
 const ROUTE_METHODS = new Set(["route", "get", "post", "put", "delete", "patch"]);
+/** `@marshal_with(schema)` y similares: la vista responde el objeto serializado como JSON. */
+const JSON_RESPONSE_DECORATOR = /^(?:[\w.]+\.)?(?:marshal_with|marshal|response|output|json_response|returns)\b/;
 
 /** Lecturas del pedido en Flask, Django y Starlette/FastAPI. */
 const REQUEST_INPUT = /^request\.(?:args|form|values|json|data|cookies|headers|files|GET|POST|COOKIES|FILES|META|body|query_params|path_params|query_string|full_path|url|path|stream)$/;
@@ -133,7 +135,7 @@ export function pythonSpec(): LanguageSpec {
       // `self`/`cls` no ocupan una posición de argumento en `obj.m(x)`.
       if (owner !== null && !decoratorNames.includes("staticmethod")) params = params.slice(1);
       const name = node.childForFieldName("name")?.text ?? "";
-      const routeHandler = isFlask && decorators.some((d) => {
+      const routeHandler = isFlask && !decoratorNames.some((d) => JSON_RESPONSE_DECORATOR.test(d)) && decorators.some((d) => {
         const expr = d.namedChildren[0];
         if (expr?.type !== "call") return false;
         const fn = expr.childForFieldName("function");

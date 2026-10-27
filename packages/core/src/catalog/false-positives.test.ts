@@ -38,9 +38,18 @@ describe("inserciones: el body entero sí, campos elegidos no", () => {
     expect(cwesOf(handler(`const finance = new Finance(req.body);\n  await finance.save();`))).toEqual([943]);
   });
 
-  it("save que recibe el dato como argumento (repositorios) sí", () => {
-    expect(cwesOf(handler(`await repo.save(req.body);`))).toEqual([943]);
-    expect(cwesOf(handler(`await repo.save({ name: req.body.name });`))).toEqual([]);
+  it("las consultas de un repositorio de ORM (TypeORM) no son MongoDB", () => {
+    expect(cwesOf(handler(`await this.userRepository.findOne({ username: req.query.author });`))).toEqual([]);
+    expect(cwesOf(handler(`await repo.find({ where: { id: req.params.id } });`))).toEqual([]);
+    expect(cwesOf(handler(`await users.findOne({ username: req.query.author });`))).toEqual([943]);
+  });
+
+  it("save que recibe el dato como argumento sí, salvo en un repositorio de ORM", () => {
+    expect(cwesOf(handler(`await store.save(req.body);`))).toEqual([943]);
+    expect(cwesOf(handler(`await store.save({ name: req.body.name });`))).toEqual([]);
+    // TypeORM: guardar una entidad arma un INSERT/UPDATE con parámetros.
+    expect(cwesOf(handler(`await repo.save(req.body);`))).toEqual([]);
+    expect(cwesOf(handler(`await this.userRepository.save(req.body);`))).toEqual([]);
   });
 
   it("save con un callback no recibe el dato: req.session.save(() => ...) no es hallazgo", () => {
