@@ -21,7 +21,7 @@ de cada elección tecnológica. Regla: nada ``porque sí''.
     \item \textbf{Infraestructura y base de datos}: dónde se aloja cada
           componente, escalabilidad, costos (enlazados al
           capítulo~\ref{cap:economica}), motor y modelo de datos.
-    \item \textbf{Diseño y \gls{ux}}: quién lo usa, mockups, decisiones de
+    \item \textbf{Diseño y experiencia de usuario}: quién lo usa, mockups, decisiones de
           diseño y \textbf{cómo se validó con usuarios} (la cátedra lo marca
           como importante; cuestionario en el apéndice~\ref{apx:encuesta}).
     \item \textbf{Seguridad, calidad y despliegue}: autenticación, control
@@ -46,8 +46,8 @@ El procesamiento se inicia con los archivos fuente que el usuario selecciona en 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\textwidth]{figuras/arquitectura.png}
-    \caption{Arquitectura de GraphSAST: pipeline de análisis por etapas, desde los archivos del proyecto hasta la visualización y los reportes, con enlace entre archivos}
+    \includegraphics[width=\textwidth]{figuras/arquitectura.png}
+    \caption{Arquitectura de GraphSAST: pipeline de análisis por etapas, desde los archivos del proyecto hasta la visualización y los reportes}
     \label{fig:arquitectura}
 \end{figure}
 
@@ -96,8 +96,8 @@ La figura siguiente presenta el análisis de un caso vulnerable. El dato ingresa
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{figuras/deteccion.png}
-    \caption{Detección de vulnerabilidad (CWE-89): el dato fluye desde el parámetro de entrada hasta la operación de consulta sin saneamiento intermedio. El camino de riesgo se resalta en la visualización}
+    \includegraphics[width=0.85\textwidth]{figuras/deteccion.png}
+    \caption{Panel del grafo de la versión web, detección de vulnerabilidad (CWE-89): el dato fluye desde el parámetro de entrada hasta la operación de consulta sin saneamiento intermedio. El camino de riesgo se resalta en naranja y el resto del grafo se atenúa}
     \label{fig:deteccion}
 \end{figure}
 
@@ -105,8 +105,8 @@ El comportamiento ante un dato correctamente validado resulta particularmente re
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\textwidth]{figuras/saneado.png}
-    \caption{Caso saneado: el mismo patrón de flujo con una operación de saneamiento intermedia. El sistema identifica el origen y el destino sensible, pero descarta el hallazgo al constatar el saneamiento en el recorrido}
+    \includegraphics[width=0.85\textwidth]{figuras/saneado.png}
+    \caption{Panel del grafo de la versión web, caso saneado: el mismo patrón de flujo con una operación de saneamiento intermedia. El sistema identifica el origen y el destino sensible, pero descarta el hallazgo al constatar el saneamiento en el recorrido}
     \label{fig:saneado}
 \end{figure}
 
@@ -114,7 +114,7 @@ La interfaz expone asimismo las métricas correspondientes a cada ejecución, qu
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{figuras/metricas.png}
+    \includegraphics[width=0.75\textwidth]{figuras/metricas.png}
     \caption{Panel de métricas y líneas del camino de riesgo correspondientes al análisis ejecutado}
     \label{fig:metricas}
 \end{figure}
@@ -145,7 +145,7 @@ La evaluación cuantitativa se ejecuta sobre un banco de pruebas etiquetado y re
 
 Corresponde delimitar el alcance de estos valores. Se obtienen sobre un corpus sintético reducido, construido por el propio autor y acotado a las construcciones sintácticas que el analizador cubre, por lo que no constituyen evidencia de desempeño sobre proyectos reales ni admiten generalización. Su función en esta instancia es la de una prueba de regresión que verifica que el motor no emite alertas sobre los casos correctamente saneados ni omite los recorridos vulnerables conocidos. La comparación cuantitativa con una línea de base, prevista en el diseño de investigación del Capítulo~\ref{cap:metodologia}, se presenta en la sección~\ref{sec:linea-base}, y la validación sobre una aplicación deliberadamente vulnerable, en la sección~\ref{sec:nodegoat}. La validación frente a vulnerabilidades documentadas de paquetes se presenta a continuación.
 
-Para contrastar el sistema con vulnerabilidades reales se empleó un corpus de seis advisories del ecosistema npm publicados en la base de datos de advisories de GitHub, relevados el 1 de septiembre de 2026 y congelados para que la medición resulte reproducible, restringidos a las debilidades del catálogo. Para cada caso se descargan del registro de npm la versión vulnerable del paquete y la versión que corrige la falla, se analizan ambas contando solo los hallazgos de la debilidad del advisory y se registran dos resultados: si la versión vulnerable presenta hallazgos (detección) y si la corrección del mantenedor reduce su cantidad (discriminación). La discriminación constituye la evidencia fuerte, dado que indica que el hallazgo se vincula con la vulnerabilidad y no con un patrón presente en todo el paquete.
+Para contrastar el sistema con vulnerabilidades reales se empleó un corpus de seis advisories del ecosistema npm publicados en la base de datos de advisories de GitHub \citep{ghadvisory}, relevados el 1 de septiembre de 2026 y congelados para que la medición resulte reproducible, restringidos a las debilidades del catálogo. Para cada caso se descargan del registro de npm la versión vulnerable del paquete y la versión que corrige la falla, se analizan ambas contando solo los hallazgos de la debilidad del advisory y se registran dos resultados: si la versión vulnerable presenta hallazgos (detección) y si la corrección del mantenedor reduce su cantidad (discriminación). La discriminación constituye la evidencia fuerte, dado que indica que el hallazgo se vincula con la vulnerabilidad y no con un patrón presente en todo el paquete.
 
 \begin{table}[H]
     \centering
@@ -309,7 +309,7 @@ La identificación de una vulnerabilidad se resuelve como un problema de accesib
 
 La relación de saneamiento cumple un rol central para evitar falsas alarmas: si una variable fue validada en el trayecto, el sistema descarta el camino. Un analizador basado en coincidencia de patrones carece de esa información y debe reportar el caso como potencialmente vulnerable.
 
-Durante la implementación de las consultas Cypher sobre Neo4j surgió una dificultad concreta con las llamadas recursivas o cíclicas entre funciones, que generaban recorridos de longitud indefinida y demoraban el motor. Para resolverlo se acotó la profundidad de búsqueda a quince saltos entre el origen y el destino. Ese límite es el valor por defecto en los dos motores; cada familia del catálogo puede fijar uno propio, y la línea de comandos permite reemplazarlo para todas. La restricción evita los recorridos indefinidos sin comprometer la detección en los flujos habituales de una aplicación web: sobre el banco de pruebas de 43 casos, el análisis completo demandó alrededor de 52 ms, aproximadamente 0,27 ms por línea de código (tabla~\ref{tab:banco-sintetico}).
+Durante la implementación de las consultas Cypher sobre Neo4j surgió una dificultad concreta con las llamadas recursivas o cíclicas entre funciones, que generaban recorridos de longitud indefinida y demoraban el motor. Para resolverlo se acotó la profundidad de búsqueda entre el origen y el destino: primero a 15 aristas y, en la versión final, a 30, porque el motor pasó a seguir cada reasignación de una variable (sección~\ref{sec:otros-lenguajes}). Ese límite es el valor por defecto en los dos motores; cada familia del catálogo puede fijar uno propio, y la línea de comandos permite reemplazarlo para todas. La restricción evita los recorridos indefinidos sin comprometer la detección en los flujos habituales de una aplicación web: sobre el banco de pruebas de 43 casos, el análisis completo demandó alrededor de 52 ms, aproximadamente 0,27 ms por línea de código (tabla~\ref{tab:banco-sintetico}).
 
 \section{Diseño e interacción}\label{sec:n4.6}
 
@@ -350,7 +350,7 @@ Se incorporaron etiquetas descriptivas en los controles de la interfaz y regione
 
 \subsection{Estrategia de pruebas}\label{sec:n4.7.1}
 
-El proyecto cuenta con una suite de pruebas automatizadas ejecutadas mediante Vitest. Las pruebas se organizan siguiendo la estructura por etapas del sistema, verificando de forma independiente el análisis sintáctico, la construcción de la representación intermedia, el grafo de llamadas, el análisis de flujo de datos, el motor de contaminación, la carga del catálogo de reglas, la generación de sentencias Cypher, la selección de motor, la construcción de informes, el análisis entre archivos y la carga de archivos de la versión web, además del módulo de visualización, la explicación de los hallazgos y el asistente. La suite comprende 444 pruebas distribuidas en 41 archivos: 355 del motor y 89 de la interfaz web. Seis de las del motor verifican la paridad con Neo4j y se ejecutan solo cuando hay una instancia activa. Cada cambio se valida además en un flujo de integración continua que ejecuta la suite y el banco de pruebas, construye la imagen de contenedor y verifica el motor contra una instancia real de Neo4j. Esta organización deriva directamente de la decisión arquitectónica adoptada: la separación en etapas permite verificar cada componente de manera aislada y localizar con precisión el origen de una falla.
+El proyecto cuenta con una suite de pruebas automatizadas ejecutadas mediante Vitest. Las pruebas se organizan siguiendo la estructura por etapas del sistema, verificando de forma independiente el análisis sintáctico, la construcción de la representación intermedia, el grafo de llamadas, el análisis de flujo de datos, el motor de contaminación, la carga del catálogo de reglas, la generación de sentencias Cypher, la selección de motor, la construcción de informes, el análisis entre archivos y la carga de archivos de la versión web, además del módulo de visualización, la explicación de los hallazgos y el asistente. En la versión final, la suite comprende 650 pruebas distribuidas en 51 archivos: 552 del motor y 98 de la interfaz web. Además, ocho pruebas del motor verifican la paridad con Neo4j y se ejecutan solo cuando hay una instancia activa, por lo que sin ella figuran como omitidas. Cada cambio se valida además en un flujo de integración continua que ejecuta la suite y el banco de pruebas, construye la imagen de contenedor y verifica el motor contra una instancia real de Neo4j. Esta organización deriva directamente de la decisión arquitectónica adoptada: la separación en etapas permite verificar cada componente de manera aislada y localizar con precisión el origen de una falla.
 
 De modo complementario a las pruebas unitarias, la aplicación incorpora casos de demostración que reproducen patrones habituales de código y verifican el comportamiento del sistema tanto ante recorridos vulnerables como ante recorridos correctamente saneados.
 

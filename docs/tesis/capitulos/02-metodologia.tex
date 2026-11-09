@@ -71,7 +71,20 @@ El proyecto se apoya en la teoría de grafos, en los métodos de compilación (a
 
 \subsection{Técnicas de recolección de datos}\label{sec:n2.3.2}
 
-Selección de repositorios públicos con vulnerabilidades documentadas y construcción de casos sintéticos con fallas controladas.
+Selección de repositorios públicos con vulnerabilidades documentadas y construcción de casos sintéticos con fallas controladas. El corpus de evaluación se compone de:
+
+\begin{itemize}
+    \item un banco sintético de 43 casos, con vulnerabilidades y controles seguros construidos a propósito;
+    \item seis advisories de paquetes de npm, con la versión vulnerable y la corregida de cada paquete;
+    \item OWASP NodeGoat, una aplicación construida para enseñar los riesgos del OWASP Top 10;
+    \item siete repositorios públicos de GitHub, con 34 vulnerabilidades documentadas por sus autores;
+    \item pares de código vulnerable y corregido, y proyectos vulnerables a propósito en Python, Java, PHP y Go, incluido el OWASP Benchmark de Java, cuyos casos ya vienen etiquetados;
+    \item una prueba de campo con 50 proyectos de GitHub, que compara la versión web con la línea de comandos.
+\end{itemize}
+
+\paragraph{Etiquetado.} En cada proyecto, antes de ejecutar el analizador, el autor etiquetó las vulnerabilidades que el propio proyecto documenta en sus guías, en sus soluciones o en comentarios del código, restringidas a las familias del catálogo. Las etiquetas se guardan en archivos JSON versionados en el repositorio, junto con el commit analizado. En el OWASP Benchmark se usan las etiquetas que publica el proyecto.
+
+\paragraph{Criterio de acierto.} Un hallazgo cuenta como verdadero positivo si es de la misma familia CWE que la vulnerabilidad etiquetada, está en el mismo archivo y su destino cae dentro del rango de líneas etiquetado o a tres líneas o menos de la línea etiquetada. Una vulnerabilidad etiquetada sin hallazgo que cumpla esa condición es un falso negativo. Los hallazgos sin etiqueta se revisan a mano: si corresponden a un problema real se cuentan como aciertos no etiquetados, y si no, como falsos positivos.
 
 \subsection{Instrumentos de recolección de datos}\label{sec:n2.3.3}
 
@@ -89,9 +102,15 @@ Ejecución del analizador sobre cada caso, generación del grafo, ejecución de 
 
 Cálculo de las métricas de desempeño, comparación contra la herramienta de referencia y análisis de los tiempos de cómputo en función del tamaño del código.
 
-\subsection{Síntesis y conclusiones}\label{sec:n2.3.7}
+\subsection{Evaluación de las hipótesis}\label{sec:n2.3.7}
 
-Se evaluarán las hipótesis H1-H3 a partir de los resultados, determinando si el enfoque por grafos mejora la detección y reduce el ruido respecto del análisis por patrones.
+\paragraph{H1 y H2.} Se contrastan comparando GraphSAST con una línea de base que usa el mismo catálogo de orígenes, destinos y saneamientos, pero busca por expresiones regulares sin seguir el flujo del dato. Los dos detectores se ejecutan sobre el mismo corpus y con el mismo criterio de acierto. H1 se considera respaldada si GraphSAST obtiene mayor precisión que la línea de base; H2, si emite menos falsos positivos.
+
+\paragraph{H3.} Se diseñó un estudio intra-sujeto: cada participante resuelve un caso con el reporte de texto y otro con la visualización del grafo, con el orden alternado entre participantes. Los dos casos tienen la misma estructura y difieren en la debilidad. La muestra prevista era de cinco a ocho personas que programan en JavaScript o TypeScript y no participaron del desarrollo, convocadas en forma voluntaria a sesiones remotas de veinte minutos. Por cada tarea se registran el acierto en cuatro preguntas, según una clave de corrección fijada antes de las sesiones, el tiempo y dos valoraciones en escala de 1 a 5, con el instrumento del apéndice~\ref{apx:encuesta}. El análisis compara, para cada participante, los aciertos, el tiempo y las valoraciones con el grafo frente a los obtenidos con el texto. Si no se reúnen cinco participantes, se aplica la contingencia del riesgo R-06: un formulario autoadministrado, sin condición de control, cuyas respuestas no alcanzan para contrastar la hipótesis.
+
+\subsection{Síntesis y conclusiones}\label{sec:n2.3.8}
+
+Se evalúan las hipótesis H1 a H3 a partir de los resultados, determinando si el enfoque por grafos mejora la detección y reduce el ruido respecto del análisis por patrones.
 
 \section{Detalle del proyecto}\label{sec:n2.4}
 
@@ -125,7 +144,7 @@ El cronograma se organiza en etapas de desarrollo, validación y redacción, aju
 
 \subsection{Costos}\label{sec:n2.4.3}
 
-El proyecto se plantea como un prototipo académico de bajo costo, priorizando herramientas libres, documentación pública y recursos propios.
+El proyecto se plantea como un prototipo académico de bajo costo, priorizando herramientas libres, documentación pública y recursos propios. El único costo es el de las horas de desarrollo, que no implica un desembolso pero sí se valoriza, con el mismo valor hora que usa la justificación económica.
 
 \begin{table}[H]
     \centering
@@ -138,8 +157,9 @@ El proyecto se plantea como un prototipo académico de bajo costo, priorizando h
         \midrule
         Hardware & Equipo de cómputo personal de desarrollo. & Sin costo adicional \\
         Software y base de datos & ts-morph, Neo4j Community, Cytoscape.js, Vite, Vitest. & Licencias open source / gratuitas \\
-        Datos de prueba & Repositorios públicos (OWASP, NIST SARD, GitHub). & Acceso público sin costo \\
-        Total estimado & — & USD 0,00 \\
+        Datos de prueba & Repositorios públicos: OWASP \citep{owaspbenchmark}, NIST SARD \citep{nistsard} y GitHub. & Acceso público sin costo \\
+        Horas de desarrollo & 205 horas del alumno durante el prototipo, valorizadas a USD 15 por hora (capítulo~\ref{cap:economica}). & USD 3.075 (costo de las horas, sin desembolso) \\
+        Total estimado & — & USD 3.075, sin desembolsos de dinero \\
         \bottomrule
     \end{tabularx}
 \end{table}

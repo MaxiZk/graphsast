@@ -25,9 +25,6 @@ indica en qué medida se alcanzó, con referencia a la sección que lo
 demuestra.
 \end{guia}
 
-% BORRADOR al 19/10/2026: redactado con la evidencia del capítulo 7. El
-% autor debe revisar y reescribir cada afirmación. Los marcadores que
-% quedan dependen de las sesiones de validación de H3.
 
 La pregunta de investigación del capítulo~\ref{cap:introduccion} plantea
 si un analizador basado en grafos de flujo de datos detecta
@@ -36,7 +33,7 @@ positivos que las herramientas basadas en coincidencia de patrones de
 texto. La respuesta se organiza en torno a las tres hipótesis: H1 y H2
 se contrastan con el banco sintético, con OWASP NodeGoat, con siete
 repositorios de GitHub y con una línea de base que usa el mismo catálogo sin
-seguir el flujo del dato; H3, con la validación con usuarios. Las cifras
+seguir el flujo del dato. H3 debía contrastarse con sesiones de validación con usuarios que no llegaron a realizarse, por lo que queda sin contrastar y pasa al trabajo futuro. Las cifras
 del banco y de NodeGoat corresponden a la versión medida del 24 de
 septiembre (sección~\ref{sec:nodegoat}), y las de los proyectos de
 GitHub, a las versiones del 22 de octubre
@@ -96,7 +93,7 @@ en que el código real protege un dato.
 
 \paragraph{H3.} La visualización del recorrido facilita la
 interpretación del riesgo frente al listado en texto.
-La evidencia no alcanza para confirmarla. Las sesiones que
+La hipótesis queda sin contrastar. Las sesiones que
 comparaban el reporte de texto con el grafo no se realizaron por falta de
 participantes (riesgo R-06), y el formulario que las reemplazó reunió
 tres respuestas, de las cuales una sola evaluó un hallazgo. Esa persona
@@ -131,7 +128,7 @@ su aporte fue identificar errores de detección.
         OE-3 & RF-03 a RF-05; tabla~\ref{tab:confusion} & Cumplido y ampliado & Seis familias en lugar de tres: se sumaron CWE-943, CWE-22 y CWE-95 \\
         OE-4 & RF-10 & Cumplido con cambio de rol & Neo4j opera como motor opcional, con paridad verificada en cada cambio; el recorrido en memoria es el modo por defecto \\
         OE-5 & RF-06, RF-07; capítulo~\ref{cap:marco-tecnologico} & Cumplido & La visualización se publicó como aplicación web que analiza en el navegador y explica cada hallazgo \\
-        OE-6 & Secciones~\ref{sec:pruebas} y~\ref{sec:validacion-usuarios} & Parcial & Validación sobre código real con NodeGoat y siete repositorios de GitHub (40 vulnerabilidades etiquetadas), revisada por una sola persona, y prueba de campo de la versión web con 50 proyectos de GitHub; validación con usuarios preliminar, con tres respuestas a un formulario en lugar de las sesiones previstas \\
+        OE-6 & Secciones~\ref{sec:pruebas} y~\ref{sec:validacion-usuarios} & Parcial & Validación sobre código real con NodeGoat y siete repositorios de GitHub (40 vulnerabilidades etiquetadas), revisada por una sola persona, y prueba de campo de la versión web con 50 proyectos de GitHub; H3 sin contrastar, con tres respuestas a un formulario en lugar de las sesiones previstas \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -168,8 +165,12 @@ pruebas. El asistente sobre un hallazgo introduce un compromiso explícito
 entre ayuda y confidencialidad, que se resolvió dejando su uso a decisión
 del usuario y enviando solo el hallazgo consultado.
 
-\paragraph{Económicas.} El capítulo~\ref{cap:economica} identificó la
-captación de usuarios como la condición crítica de la viabilidad, y el
+\paragraph{Económicas.} Con el valor hora de USD 15, la inversión inicial
+es de USD 9.575 y el valor actual neto a cinco años, de USD 17.717, con una
+tasa interna de retorno del 58,6~\% y repago en 2,52 años. El
+capítulo~\ref{cap:economica} identificó la
+captación de usuarios como la condición crítica de la viabilidad: el valor
+actual neto se anula con el 43~\% de los usuarios proyectados. El
 riesgo R-07 señala la competencia de herramientas gratuitas en
 determinadas condiciones de uso. De los tres participantes, uno pagaría USD 8
 mensuales, otro no y el tercero solo con otras funciones, comparando el
@@ -264,9 +265,11 @@ hallazgos y su grafo a los agentes de programación, pedido en el
 seguimiento de la validación con usuarios; el análisis de motores de
 plantillas; nuevas familias del catálogo, como la falsificación de
 peticiones del lado del servidor (CWE-918) y la redirección abierta
-(CWE-601); la resolución de llamadas con información de tipos; y la
-validación con una muestra mayor de usuarios y con proyectos reales de
-mayor tamaño.
+(CWE-601); la resolución de llamadas con información de tipos; la
+validación con proyectos reales de mayor tamaño; y el contraste de H3
+con las sesiones diseñadas en la sección~\ref{sec:validacion-usuarios},
+con al menos cinco participantes que resuelvan un caso con el reporte
+de texto y otro con el grafo.
 
 % -------------------------------------------------------------
 \section{Contribución al conocimiento}\label{sec:contribucion}
