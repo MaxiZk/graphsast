@@ -50,13 +50,13 @@ El producto se orienta a tres segmentos:
 
 \subsection{Relación entre público y precio}\label{sec:n5.1.3}
 
-Las soluciones corporativas consolidadas del mercado operan con contratos anuales de miles de dólares y requieren servidores dedicados. Frente a ellas, USD 8 mensuales equivalen aproximadamente a una hora de desarrollo junior en Argentina, según la tarifa de referencia adoptada en la sección~\ref{sec:n5.2}. Ese orden de magnitud elimina la barrera de entrada para un profesional independiente o para el responsable técnico de una empresa pequeña, dado que la decisión de compra no requiere aprobaciones presupuestarias complejas.
+Las soluciones corporativas consolidadas del mercado operan con contratos anuales de miles de dólares y requieren servidores dedicados. Frente a ellas, USD 8 mensuales equivalen a algo más de media hora de trabajo de un desarrollador junior, según el valor hora adoptado en la sección~\ref{sec:n5.2}. Ese orden de magnitud elimina la barrera de entrada para un profesional independiente o para el responsable técnico de una empresa pequeña, dado que la decisión de compra no requiere aprobaciones presupuestarias complejas.
 
 \subsection{Dimensionamiento del mercado}\label{sec:n5.1.4}
 
-\paragraph{Mercado total direccionable.} El relevamiento global de SlashData (State of the Developer Nation) y el reporte anual GitHub Octoverse ubican a JavaScript y TypeScript de forma constante a la cabeza del ranking de adopción, con una base mundial superior a los veinte millones de programadores. La distribución como aplicación web, accesible desde el navegador sin instalación, junto con la publicación de la herramienta de línea de comandos en el registro de paquetes npm, canal habitual de las herramientas de desarrollo del ecosistema JavaScript, permite alcanzar esa base sin intermediarios comerciales.
+\paragraph{Mercado total direccionable.} El relevamiento global de SlashData, State of the Developer Nation \citep{slashdata}, y el reporte anual de GitHub \citep{octoverse} ubican a JavaScript y TypeScript de forma constante a la cabeza del ranking de adopción, con una base mundial superior a los veinte millones de programadores. La distribución como aplicación web, accesible desde el navegador sin instalación, junto con la publicación de la herramienta de línea de comandos en el registro de paquetes npm \citep{npmregistry}, canal habitual de las herramientas de desarrollo del ecosistema JavaScript, permite alcanzar esa base sin intermediarios comerciales.
 
-\paragraph{Mercado disponible regional.} Para dimensionar el mercado local se parte del dato publicado por el Observatorio Permanente de la Industria del Software y Servicios Informáticos (OPSSI) de CESSI, que registra 162.598 puestos de trabajo formales en el sector al primer trimestre de 2026. Dado que esa cifra comprende la totalidad de las funciones de las empresas —gestión, soporte, infraestructura y administración—, la proporción estrictamente técnica se estima a partir de los relevamientos de la Encuesta de Sueldos de Sysarmy, en los que los roles de desarrollo concentran entre el 50 \% y el 60 \% del personal técnico. Asumiendo de forma conservadora que entre un 35 \% y un 50 \% de ese personal de desarrollo trabaja sobre aplicaciones web en el ecosistema JavaScript/TypeScript, el mercado accesible local se ubica en un orden de entre 28.000 y 49.000 desarrolladores.
+\paragraph{Mercado disponible regional.} Para dimensionar el mercado local se parte del dato publicado por el Observatorio Permanente de la Industria del Software y Servicios Informáticos (OPSSI) de la CESSI \citep{cessiopssi}, que registra 162.598 puestos de trabajo formales en el sector al primer trimestre de 2026. Dado que esa cifra comprende la totalidad de las funciones de las empresas —gestión, soporte, infraestructura y administración—, la proporción estrictamente técnica se estima a partir de los relevamientos de la Encuesta de Sueldos de Sysarmy \citep{openqube}, en los que los roles de desarrollo concentran entre el 50 \% y el 60 \% del personal técnico. Asumiendo de forma conservadora que entre un 35 \% y un 50 \% de ese personal de desarrollo trabaja sobre aplicaciones web en el ecosistema JavaScript/TypeScript, el mercado accesible local se ubica en un orden de entre 28.000 y 49.000 desarrolladores.
 
 \paragraph{Mercado objetivo.} La proyección contempla alcanzar 20 usuarios en el primer año y escalar gradualmente hasta 300 usuarios activos en el quinto. Sobre el mercado accesible estimado, esos 300 suscriptores representan una cuota de penetración de entre el 0,6 \% y el 1,1 \%, lo que muestra que la factibilidad del flujo no descansa en metas de captación desmedidas.
 
@@ -89,7 +89,7 @@ Los parámetros de dedicación correspondientes a la fase de prototipo y a las t
 
 \subsection{Determinación del valor hora}\label{sec:n5.2.2}
 
-Se adoptó un valor de USD 8 por hora como costo total para el empleador. La cifra se construye en tres pasos. La Encuesta de Sueldos 2026.01 de Sysarmy, analizada por OpenQube, reporta para la categoría Junior en Argentina una mediana salarial bruta de ARS 1.538.500 mensuales; sobre un estándar de 160 horas laborales mensuales, ello equivale a ARS 9.616 por hora de salario bruto. A dicho valor corresponde adicionar las contribuciones patronales y cargas sociales, que en el régimen argentino incrementan el costo laboral en aproximadamente un 25 \% respecto del salario bruto, con lo que el costo por hora asciende a ARS 12.020. Convertido al tipo de cambio mayorista de referencia indicado en la sección~\ref{sec:n5.4}, el valor resultante se ubica en el orden de USD 8 por hora.
+Se adopta un valor de USD 15 por hora, que es la referencia de la cátedra para el costo de un desarrollador junior. Una primera estimación había partido de la Encuesta de Sueldos 2026.01 de Sysarmy, analizada por OpenQube \citep{openqube}, que reporta para la categoría Junior en Argentina una mediana salarial bruta de ARS 1.538.500 mensuales: sobre 160 horas laborales mensuales, ARS 9.616 por hora; con un 25 \% de contribuciones patronales, ARS 12.020; y al tipo de cambio de la sección~\ref{sec:n5.4}, alrededor de USD 8 por hora. Ese cálculo subestimaba el costo para el empleador, porque el 25 \% de cargas no incluía el sueldo anual complementario (aguinaldo) ni las vacaciones. Se adopta, por lo tanto, el valor de la cátedra, más alto, para no subestimar la inversión ni el costo de mantenimiento.
 
 Se emplea el costo total para el empleador, y no el salario bruto percibido, por tratarse de la magnitud que refleja el verdadero consumo de recursos que implica cada hora de desarrollo.
 
@@ -106,13 +106,13 @@ En la tabla~\ref{tab:inversion} se detallan las erogaciones previstas para el A�
         \toprule
         \tb{Concepto} & \tb{Cálculo} & \tb{Importe (USD)} \\
         \midrule
-        Desarrollo del prototipo & 205 h $\times$ USD 8 & 1.640 \\
-        Desarrollo hasta versión comercializable & 400 h $\times$ USD 8 & 3.200 \\
+        Desarrollo del prototipo & 205 h $\times$ USD 15 & 3.075 \\
+        Desarrollo hasta versión comercializable & 400 h $\times$ USD 15 & 6.000 \\
         Marketing y lanzamiento inicial & Sitio informativo, registro y difusión & 500 \\
         Licencias de software & Pila tecnológica de código abierto & 0 \\
         Hardware y equipamiento & Equipo informático propio disponible & 0 \\
         Infraestructura de servidores & Plan gratuito de Vercel durante el desarrollo, sin uso comercial & 0 \\
-        Total inversión inicial (Año 0) &  & 5.340 \\
+        Total inversión inicial (Año 0) &  & 9.575 \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -121,11 +121,11 @@ En la tabla~\ref{tab:inversion} se detallan las erogaciones previstas para el A�
 
 Los costos operativos anuales necesarios para sostener la herramienta durante el horizonte de cinco años comprenden tres componentes.
 
-El primero corresponde al mantenimiento técnico y al soporte. Se estiman seis horas mensuales destinadas a la atención de incidencias, la corrección de errores y la actualización del catálogo de reglas, valorizadas al costo horario adoptado, lo que arroja un costo anual fijo de USD 576.
+El primero corresponde al mantenimiento técnico y al soporte. Se estiman seis horas mensuales destinadas a la atención de incidencias, la corrección de errores y la actualización del catálogo de reglas, valorizadas al costo horario adoptado de USD 15, lo que arroja un costo anual fijo de USD 1.080.
 
-El segundo corresponde al alojamiento y al dominio. La aplicación web se publica en Vercel, cuyo plan gratuito se limita al uso personal no comercial; la comercialización exige el plan Pro, con un abono fijo de USD 20 mensuales (USD 240 anuales) que incluye 1 TB mensual de transferencia de datos, volumen holgado para una aplicación estática cuyo análisis se ejecuta en el navegador. La validación de las licencias se resuelve con una función de servidor de consumo marginal, cuyo excedente sobre el uso incluido en el plan se factura a USD 0,60 por millón de invocaciones. La renovación del dominio .com cuesta USD 11,25 anuales en el registrador de Vercel, redondeados a USD 11.
+El segundo corresponde al alojamiento y al dominio. La aplicación web se publica en Vercel, cuyo plan gratuito se limita al uso personal no comercial \citep{vercelfairuse}; la comercialización exige el plan Pro, con un abono fijo de USD 20 mensuales \citep{vercelpricing} (USD 240 anuales) que incluye 1 TB mensual de transferencia de datos, volumen holgado para una aplicación estática cuyo análisis se ejecuta en el navegador. La validación de las licencias se resuelve con una función de servidor de consumo marginal, cuyo excedente sobre el uso incluido en el plan se factura a USD 0,60 por millón de invocaciones. La renovación del dominio .com cuesta USD 11,25 anuales en el registrador de Vercel, redondeados a USD 11.
 
-El tercero corresponde a las comisiones de cobro. El cobro de las suscripciones y la emisión de licencias se delegan en Lemon Squeezy, que actúa como comerciante registrado (merchant of record): procesa los pagos, liquida los impuestos al consumo de cada país y emite claves de licencia que vencen junto con la suscripción, por lo que la aplicación no necesita administrar cuentas de usuario propias. Su comisión es del 5 \% más USD 0,50 por transacción, sin cargo mensual; Paddle, alternativa equivalente, aplica la misma tarifa. Con facturación anual, cada suscriptor genera una transacción de USD 96 y una comisión de USD 5,30, de modo que este rubro crece con la base de usuarios.
+El tercero corresponde a las comisiones de cobro. El cobro de las suscripciones y la emisión de licencias se delegan en Lemon Squeezy \citep{lemonlicense}, que actúa como comerciante registrado (merchant of record): procesa los pagos, liquida los impuestos al consumo de cada país y emite claves de licencia que vencen junto con la suscripción, por lo que la aplicación no necesita administrar cuentas de usuario propias. Su comisión es del 5 \% más USD 0,50 por transacción, sin cargo mensual \citep{lemonpricing}; Paddle, alternativa equivalente, aplica la misma tarifa \citep{paddlepricing}. Con facturación anual, cada suscriptor genera una transacción de USD 96 y una comisión de USD 5,30, de modo que este rubro crece con la base de usuarios.
 
 \begin{table}[H]
     \centering
@@ -136,11 +136,11 @@ El tercero corresponde a las comisiones de cobro. El cobro de las suscripciones 
         \toprule
         \tb{Rubro} & \tb{Año 1} & \tb{Año 2} & \tb{Año 3} & \tb{Año 4} & \tb{Año 5} \\
         \midrule
-        Mantenimiento y soporte & 576 & 576 & 576 & 576 & 576 \\
+        Mantenimiento y soporte & 1.080 & 1.080 & 1.080 & 1.080 & 1.080 \\
         Alojamiento (Vercel Pro) & 240 & 240 & 240 & 240 & 240 \\
         Dominio & 11 & 11 & 11 & 11 & 11 \\
         Comisiones de cobro & 106 & 318 & 636 & 1.060 & 1.590 \\
-        Costo operativo total anual & 933 & 1.145 & 1.463 & 1.887 & 2.417 \\
+        Costo operativo total anual & 1.437 & 1.649 & 1.967 & 2.391 & 2.921 \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -149,7 +149,7 @@ El tercero corresponde a las comisiones de cobro. El cobro de las suscripciones 
 
 \subsection{Supuestos del flujo}\label{sec:n5.4.1}
 
-\paragraph{Moneda de cuenta.} La totalidad del flujo se expresa en dólares estadounidenses, con el objeto de aislar la proyección del efecto de la inflación en moneda local. Como referencia para los costos originados en pesos se tomó el tipo de cambio mayorista de la Comunicación «A» 3500 del Banco Central de la República Argentina, que al 11 de septiembre de 2026 se ubicó en ARS 1.509,91 por dólar.
+\paragraph{Moneda de cuenta.} La totalidad del flujo se expresa en dólares estadounidenses, con el objeto de aislar la proyección del efecto de la inflación en moneda local. Como referencia para los costos originados en pesos se tomó el tipo de cambio mayorista de la Comunicación «A» 3500 del Banco Central de la República Argentina \citep{bcraa3500}, que al 11 de septiembre de 2026 se ubicó en ARS 1.509,91 por dólar.
 
 \paragraph{Ingreso por usuario.} Cada suscriptor activo abona USD 96 por año en un único pago anual, equivalentes a USD 8 mensuales. Los impuestos al consumo que liquida el procesador de pagos se suman al precio y no forman parte del ingreso.
 
@@ -166,23 +166,23 @@ El tercero corresponde a las comisiones de cobro. El cobro de las suscripciones 
         \toprule
         \tb{Año} & \tb{Usuarios} & \tb{Ingresos} & \tb{Costos} & \tb{Flujo neto} & \tb{Flujo acumulado} \\
         \midrule
-        0 & — & — & — & $-$5.340 & $-$5.340 \\
-        1 & 20 & 1.920 & $-$933 & 987 & $-$4.353 \\
-        2 & 60 & 5.760 & $-$1.145 & 4.615 & 262 \\
-        3 & 120 & 11.520 & $-$1.463 & 10.057 & 10.319 \\
-        4 & 200 & 19.200 & $-$1.887 & 17.313 & 27.632 \\
-        5 & 300 & 28.800 & $-$2.417 & 26.383 & 54.015 \\
-        Total &  & 67.200 & $-$7.845 & 54.015 &  \\
+        0 & — & — & — & $-$9.575 & $-$9.575 \\
+        1 & 20 & 1.920 & $-$1.437 & 483 & $-$9.092 \\
+        2 & 60 & 5.760 & $-$1.649 & 4.111 & $-$4.981 \\
+        3 & 120 & 11.520 & $-$1.967 & 9.553 & 4.572 \\
+        4 & 200 & 19.200 & $-$2.391 & 16.809 & 21.381 \\
+        5 & 300 & 28.800 & $-$2.921 & 25.879 & 47.260 \\
+        Total &  & 67.200 & $-$10.365 & 47.260 &  \\
         \bottomrule
     \end{tabularx}
 \end{table}
 
-La figura~\ref{fig:flujo-fondos} representa el mismo flujo: las barras corresponden al flujo neto de cada año y la línea, al acumulado, que cruza el cero a los 1,94 años.
+La figura~\ref{fig:flujo-fondos} representa el mismo flujo: las barras corresponden al flujo neto de cada año y la línea, al acumulado, que cruza el cero a los 2,52 años.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{figuras/flujo-fondos.png}
-    \caption{Flujo de fondos neto y acumulado, en dólares (Años 0 a 5). El acumulado se vuelve positivo a los 1,94 años}
+    \caption{Flujo de fondos neto y acumulado, en dólares (Años 0 a 5). El acumulado se vuelve positivo a los 2,52 años}
     \label{fig:flujo-fondos}
 \end{figure}
 
@@ -190,11 +190,11 @@ La figura~\ref{fig:flujo-fondos} representa el mismo flujo: las barras correspon
 
 Se adopta una tasa de descuento del 20 \% anual en dólares. La tasa integra los tres componentes conceptuales del costo de capital.
 
-\paragraph{Costo de oportunidad del capital.} El rendimiento de un activo libre de riesgo en dólares, representado por los bonos del Tesoro de los Estados Unidos a diez años, se ubica en torno al 3,8 \% y el 4,3 \% anual. Una inversión diversificada de mercado en el índice S\&P 500 promedia históricamente un retorno nominal del 9 \% al 10 \% anual en moneda dura.
+\paragraph{Costo de oportunidad del capital.} El rendimiento de un activo libre de riesgo en dólares, representado por los bonos del Tesoro de los Estados Unidos a diez años, se ubica en torno al 3,8 \% y el 4,3 \% anual \citep{treasuryrates}. Una inversión diversificada de mercado en el índice S\&P 500 promedia históricamente un retorno nominal del 9 \% al 10 \% anual en moneda dura \citep{damodaranreturns}.
 
-\paragraph{Inflación de la moneda de evaluación.} Al confeccionar el flujo en dólares se neutraliza la inflación local en pesos, e incide únicamente la meta de inflación de largo plazo del Comité Federal de Mercado Abierto de la Reserva Federal de los Estados Unidos, fijada en el 2 \% anual.
+\paragraph{Inflación de la moneda de evaluación.} Al confeccionar el flujo en dólares se neutraliza la inflación local en pesos, e incide únicamente la meta de inflación de largo plazo del Comité Federal de Mercado Abierto de la Reserva Federal de los Estados Unidos, fijada en el 2 \% anual \citep{fedinflation}.
 
-\paragraph{Riesgo específico de etapa temprana.} El proyecto consiste en una herramienta de software que parte sin antecedentes comerciales ni base instalada. La literatura de finanzas corporativas aplicada a la valuación de emprendimientos tecnológicos —en particular las bases de datos de costo de capital de Aswath Damodaran, de la Stern School of Business de la Universidad de Nueva York, y los rangos de referencia empleados para inversiones en etapa semilla— establece tasas de corte de entre el 18 \% y el 25 \% anual en dólares para proyectos tecnológicos incipientes.
+\paragraph{Riesgo específico de etapa temprana.} El proyecto consiste en una herramienta de software que parte sin antecedentes comerciales ni base instalada. La literatura de finanzas corporativas aplicada a la valuación de emprendimientos tecnológicos —en particular las bases de datos de costo de capital de Aswath Damodaran, de la Stern School of Business de la Universidad de Nueva York \citep{damodaranwacc}, y los rangos de referencia empleados para inversiones en etapa semilla— establece tasas de corte de entre el 18 \% y el 25 \% anual en dólares para proyectos tecnológicos incipientes.
 
 Una tasa del 20 \% anual reconoce el costo de oportunidad del capital y remunera de manera adecuada la prima de riesgo asociada a un desarrollo sin tracción comercial previa.
 
@@ -211,23 +211,23 @@ A partir del flujo de fondos de la tabla~\ref{tab:flujo-caja}, y aplicando la ta
         \toprule
         \tb{Indicador} & \tb{Resultado} & \tb{Criterio de decisión} & \tb{Conclusión} \\
         \midrule
-        Período de repago simple & 1,94 años & Menor al horizonte de evaluación & Aceptable \\
-        Período de repago descontado & 2,23 años & Menor al horizonte de evaluación & Aceptable \\
-        Valor Actual Neto (20 \%) & USD 23.459 & VAN > 0 & Crea valor \\
-        Tasa Interna de Retorno & 93,5 \% & TIR > 20 \% & Supera el mínimo exigido \\
+        Período de repago simple & 2,52 años & Menor al horizonte de evaluación & Aceptable \\
+        Período de repago descontado & 3,10 años & Menor al horizonte de evaluación & Aceptable \\
+        Valor Actual Neto (20 \%) & USD 17.717 & VAN > 0 & Crea valor \\
+        Tasa Interna de Retorno & 58,6 \% & TIR > 20 \% & Supera el mínimo exigido \\
         \bottomrule
     \end{tabularx}
 \end{table}
 
 \subsection{Lectura de los indicadores}\label{sec:n5.6.1}
 
-\paragraph{Repago simple (1,94 años).} El proyecto recupera la inversión inicial durante el segundo año de operación, únicamente con sus flujos netos de caja.
+\paragraph{Repago simple (2,52 años).} El proyecto recupera la inversión inicial durante el tercer año de operación, únicamente con sus flujos netos de caja.
 
-\paragraph{Repago descontado (2,23 años).} Medido en dinero de hoy, el recupero se posterga aproximadamente tres meses y medio respecto del cálculo sin descontar; esa diferencia constituye el precio del tiempo.
+\paragraph{Repago descontado (3,10 años).} Medido en dinero de hoy, el recupero se posterga aproximadamente siete meses respecto del cálculo sin descontar; esa diferencia constituye el precio del tiempo.
 
-\paragraph{Valor Actual Neto (USD 23.459).} El proyecto devuelve la inversión, remunera el 20 \% anual exigido y deja un excedente cercano a los USD 23.500, medidos en dinero de hoy.
+\paragraph{Valor Actual Neto (USD 17.717).} El proyecto devuelve la inversión, remunera el 20 \% anual exigido y deja un excedente cercano a los USD 17.700, medidos en dinero de hoy.
 
-\paragraph{Tasa Interna de Retorno (93,5 \%).} El rendimiento anual implícito supera ampliamente la tasa exigida; la tasa de corte podría elevarse hasta ese valor antes de que el proyecto dejara de convenir.
+\paragraph{Tasa Interna de Retorno (58,6 \%).} El rendimiento anual implícito supera ampliamente la tasa exigida; la tasa de corte podría elevarse hasta ese valor antes de que el proyecto dejara de convenir.
 
 \section{Análisis de sensibilidad y escenarios}\label{sec:n5.7}
 
@@ -244,12 +244,12 @@ En la tabla~\ref{tab:sensibilidad-tasa} se evalúa la respuesta del Valor Actual
         \toprule
         \tb{Tasa de descuento} & \tb{Valor Actual Neto (USD)} \\
         \midrule
-        10 \% & 35.134 \\
-        15 \% & 28.636 \\
-        20 \% (tasa base) & 23.459 \\
-        25 \% & 19.289 \\
-        30 \% & 15.895 \\
-        40 \% & 10.797 \\
+        10 \% & 28.989 \\
+        15 \% & 22.712 \\
+        20 \% (tasa base) & 17.717 \\
+        25 \% & 13.699 \\
+        30 \% & 10.433 \\
+        40 \% & 5.536 \\
         \bottomrule
     \end{tabularx}
 \end{table}
@@ -276,14 +276,14 @@ Siendo la adopción de usuarios la variable de mayor dispersión, la tabla~\ref{
         \toprule
         \tb{Escenario} & \tb{Supuesto de usuarios} & \tb{VAN (USD)} & \tb{TIR} \\
         \midrule
-        Pesimista & Mitad de los usuarios proyectados (10 a 150) & 7.823 & 51,7 \% \\
-        Base & Proyección original adoptada (20 a 300) & 23.459 & 93,5 \% \\
-        Optimista & 50 \% adicional sobre la base (30 a 450) & 39.096 & 125,5 \% \\
+        Pesimista & Mitad de los usuarios proyectados (10 a 150) & 2.081 & 25,9 \% \\
+        Base & Proyección original adoptada (20 a 300) & 17.717 & 58,6 \% \\
+        Optimista & 50 \% adicional sobre la base (30 a 450) & 33.353 & 82,4 \% \\
         \bottomrule
     \end{tabularx}
 \end{table}
 
-En el escenario pesimista, captando únicamente la mitad de los usuarios proyectados, el Valor Actual Neto resulta positivo en USD 7.823 y la Tasa Interna de Retorno alcanza el 51,7 \%, superando por 31,7 puntos porcentuales la tasa mínima exigida. El proyecto cuenta, por lo tanto, con margen para absorber desvíos en la captación sin comprometer su conveniencia financiera.
+En el escenario pesimista, captando únicamente la mitad de los usuarios proyectados, el Valor Actual Neto resulta positivo en USD 2.081 y la Tasa Interna de Retorno alcanza el 25,9 \%, apenas 5,9 puntos porcentuales por encima de la tasa mínima exigida. El margen es estrecho: el Valor Actual Neto se anula con el 43 \% de los usuarios proyectados, es decir, unos 9 usuarios el primer año y 130 el quinto. Por debajo de esa adopción el proyecto deja de convenir.
 
 \section{Conclusión}\label{sec:n5.8}
 
@@ -291,7 +291,7 @@ El análisis muestra que el proyecto resulta viable desde el punto de vista econ
 
 \subsection{Condición crítica}\label{sec:n5.8.1}
 
-La variable determinante es la captación de usuarios. La inversión de capital es reducida y los costos operativos resultan bajos gracias a que el análisis se ejecuta en el navegador de cada usuario y el servidor entrega archivos estáticos; solo el asistente opcional consume un servicio externo. En consecuencia, el riesgo del proyecto no reside en la estructura de costos sino, de manera prácticamente exclusiva, en alcanzar la masa crítica inicial de suscriptores.
+La variable determinante es la captación de usuarios. La inversión de capital es moderada y los costos operativos resultan bajos gracias a que el análisis se ejecuta en el navegador de cada usuario y el servidor entrega archivos estáticos; solo el asistente opcional consume un servicio externo. En consecuencia, el riesgo del proyecto no reside en la estructura de costos sino, de manera prácticamente exclusiva, en alcanzar la masa crítica inicial de suscriptores.
 
 \subsection{Magnitud de la Tasa Interna de Retorno}\label{sec:n5.8.2}
 
@@ -299,8 +299,8 @@ El valor obtenido para la Tasa Interna de Retorno responde a la naturaleza econ�
 
 \subsection{Limitaciones del modelo}\label{sec:n5.8.3}
 
-La evaluación incorpora cuatro simplificaciones que conviene explicitar. En primer lugar, no se incluye una partida continua de costo de adquisición de clientes más allá del gasto de lanzamiento, por asumirse un crecimiento orgánico a través de comunidades técnicas, foros de seguridad y el registro de paquetes npm. En segundo lugar, no se modeló una tasa explícita de deserción: la cantidad de usuarios de cada período se toma como el saldo neto resultante entre altas y cancelaciones. En tercer lugar, se supone facturación anual: si los suscriptores pagaran mes a mes, cada uno generaría doce transacciones y la comisión anual por usuario pasaría de USD 5,30 a USD 10,80, con lo que el Valor Actual Neto descendería a USD 21.563 y la Tasa Interna de Retorno al 89,1 \%; tampoco se incluyeron los cargos adicionales menores que el procesador advierte para algunas transacciones realizadas fuera de Estados Unidos. En cuarto lugar, el asistente que se incorporó a la versión web después de esta evaluación consulta un modelo de lenguaje con un costo por uso que no forma parte de los costos operativos de la tabla~\ref{tab:costos-operativos}; al tratarse de una función opcional, ese costo puede acotarse con un límite de consultas por suscriptor o reservarse para un plan superior. La incorporación de estos factores reduciría los indicadores obtenidos, si bien el margen que muestra el escenario pesimista sugiere que la conclusión general se mantendría.
+La evaluación incorpora cuatro simplificaciones que conviene explicitar. En primer lugar, no se incluye una partida continua de costo de adquisición de clientes más allá del gasto de lanzamiento, por asumirse un crecimiento orgánico a través de comunidades técnicas, foros de seguridad y el registro de paquetes npm. En segundo lugar, no se modeló una tasa explícita de deserción: la cantidad de usuarios de cada período se toma como el saldo neto resultante entre altas y cancelaciones. En tercer lugar, se supone facturación anual: si los suscriptores pagaran mes a mes, cada uno generaría doce transacciones y la comisión anual por usuario pasaría de USD 5,30 a USD 10,80, con lo que el Valor Actual Neto descendería a USD 15.821 y la Tasa Interna de Retorno al 55,3 \%; tampoco se incluyeron los cargos adicionales menores que el procesador advierte para algunas transacciones realizadas fuera de Estados Unidos. En cuarto lugar, el asistente que se incorporó a la versión web después de esta evaluación consulta un modelo de lenguaje con un costo por uso que no forma parte de los costos operativos de la tabla~\ref{tab:costos-operativos}; al tratarse de una función opcional, ese costo puede acotarse con un límite de consultas por suscriptor o reservarse para un plan superior. La incorporación de estos factores reduciría los indicadores obtenidos. En el escenario base la conclusión se mantiene; en el pesimista, el margen es chico: con facturación mensual, el Valor Actual Neto pesimista bajaría a USD 1.133.
 
 \subsection{Conclusión general}\label{sec:n5.8.4}
 
-Bajo la condición de que la efectividad técnica del análisis sustente la recomendación entre desarrolladores y se sostenga la adopción mínima correspondiente al escenario pesimista, el proyecto se justifica económicamente para su ejecución.
+Bajo la condición de que la efectividad técnica del análisis sustente la recomendación entre desarrolladores y se supere la adopción mínima de equilibrio, en torno al 43 \% de la proyección base, el proyecto se justifica económicamente para su ejecución.

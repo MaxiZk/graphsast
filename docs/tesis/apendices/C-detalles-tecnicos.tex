@@ -26,13 +26,14 @@ capítulo~\ref{cap:resultados}.
         \toprule
         \tb{Componente} & \tb{Versión} & \tb{Uso} \\
         \midrule
-        GraphSAST & 0.1.0 & Versión del motor, del CLI y del SARIF \\
+        GraphSAST & 0.1.3 & Versión del motor, del CLI y del SARIF \\
         Node.js & 26.7.0 & Entorno de ejecución de la línea de comandos \\
         TypeScript & 5.9.3 & Lenguaje y compilador \\
-        ts-morph & 23.0.0 & Análisis sintáctico \\
+        ts-morph & 28.0.0 & Análisis sintáctico de JavaScript y TypeScript \\
+        web-tree-sitter & 0.27.1 & Análisis sintáctico de Python, Java, PHP y Go \\
         Cytoscape.js & 3.34.0 & Visualización del grafo \\
-        Vite & 5.4.21 & Empaquetado de la versión web \\
-        Vitest & 2.1.9 & Pruebas automatizadas \\
+        Vite & 8.3.4 & Empaquetado de la versión web \\
+        Vitest & 5.0.3 & Pruebas automatizadas \\
         neo4j-driver & 6.2.0 & Cliente de Neo4j \\
         Neo4j & 5 Community & Base de datos de grafos (imagen \texttt{neo4j:5-community}) \\
         \bottomrule
@@ -50,7 +51,7 @@ capítulo~\ref{cap:resultados}.
         \toprule
         \tb{Parámetro} & \tb{Valor} & \tb{Efecto} \\
         \midrule
-        \texttt{-{}-max-depth} & 15 & Longitud máxima del camino entre origen y destino \\
+        \texttt{-{}-max-depth} & 30 & Longitud máxima del camino entre origen y destino \\
         \texttt{-{}-max-file-bytes} & 1.000.000 & Tamaño máximo de un archivo analizado \\
         Análisis entre archivos & Activo & Se desactiva con \texttt{-{}-no-cross-file} \\
         \bottomrule
@@ -70,7 +71,7 @@ la tabla~\ref{tab:catalogo}.
 
 \begin{lstlisting}[caption={Comandos para reproducir las mediciones del capítulo~\ref{cap:resultados}}, label={lst:reproduccion}]
 npm install
-npm test                 # suite automatizada (247 pruebas)
+npm test                 # suite automatizada (650 pruebas)
 npm run benchmark        # banco sintetico (43 casos)
 npm run cve:run          # advisories de npm
 npm run scan -- scan docs/validacion/h3/caso-a --verbose

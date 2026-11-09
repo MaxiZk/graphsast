@@ -215,8 +215,10 @@ panel de resultado explica el hallazgo paso a paso. El endpoint saneado
 
 \subsection{Pruebas automatizadas}
 
-La suite automatizada comprende 247 pruebas en 27 archivos, ejecutadas
-con Vitest: 219 corresponden al motor y 28 a la interfaz web. La
+En la versión del 24 de septiembre de 2026, la suite automatizada
+comprendía 247 pruebas en 27 archivos, ejecutadas con Vitest: 219
+correspondían al motor y 28 a la interfaz web. Esa es la versión que
+describe la tabla~\ref{tab:suite}. La
 tabla~\ref{tab:suite} las agrupa por etapa del procesamiento. En la
 ejecución del 24 de septiembre de 2026 todas las pruebas resultaron
 satisfactorias. En esa versión, la paridad entre el motor Cypher y el
@@ -424,8 +426,10 @@ NG-05 y NG-06, que el analizador no procesa. Ninguna omisión se debe a
 una construcción del lenguaje que el motor no siga, por lo que el
 desglose por construcción que preveía el riesgo R-01 no pudo medirse
 sobre este corpus. En NG-04 el recorrido además cruza archivos mediante
-\texttt{require}, que el motor no sigue (sección~\ref{sec:n4.2.5}), de
-modo que agregar \texttt{find} al catálogo no alcanzaría para detectarla.
+\texttt{require}, que la versión medida del motor no seguía, de modo que
+agregar \texttt{find} al catálogo no habría alcanzado para detectarla. El
+seguimiento de \texttt{require} se incorporó el 10 de octubre
+(sección~\ref{sec:n4.2.5}), después de esta medición.
 
 Cada detector emitió un hallazgo sin etiqueta, el mismo: en
 \texttt{Gruntfile.js}, la tarea \texttt{db-reset} arma un comando con el
@@ -617,32 +621,39 @@ que se ejecuta. Este resultado coincide con el de NodeGoat: sobre código
 real, la exhaustividad está limitada por el catálogo más que por el
 recorrido del grafo.
 
-\paragraph{Versión final.} La mayoría de las correcciones de la versión
-final surgió de los pares de código (sección~\ref{sec:pares}). Al
-revisar su efecto sobre estos proyectos y sobre NodeGoat se hicieron
-tres ajustes más para no sumar falsas alarmas: los métodos que devuelven
-texto, como \texttt{trim}, cuentan como saneamiento de NoSQL; una
-respuesta con una variable inicializada como objeto se reconoce como
-JSON; y las consultas de MongoDB reciben el dato solo por su filtro y su
-actualización, no por el objeto sobre el que se invocan. Esta medición,
-por lo tanto, ya no es independiente de los ajustes, como sí lo era la
-primera. La detección subió de 21 a 28 de las 34 vulnerabilidades, con
-60 falsas alarmas en lugar de 58: la precisión
-pasó de 0,38 a 0,41 y el $F_1$, de 0,47 a 0,55.
-Con el modelo del catálogo, la
-precisión llegó a 0,55. Los cambios del motor de la
-sección~\ref{sec:otros-lenguajes}, sobre todo seguir el dato que se
-agrega a una colección, sumaron tres falsas alarmas con cada modelo y un
-problema real más: en vulnerable-node, la actualización del perfil arma
-las columnas del \texttt{UPDATE} con las claves del cuerpo del pedido.
-Con esa versión, que es la de la tabla~\ref{tab:github-metricas}, el
-modelo por defecto da 63 falsas alarmas, precisión de 0,41 y $F_1$ de
-0,54, y el del catálogo, 34, 0,54 y 0,63. La línea de base también
-marca ese destino, por lo que pasa a 420 falsas alarmas. Se recuperaron las cinco consultas \texttt{find},
-la descarga con \texttt{res.download} y la escritura con
-\texttt{res.write}. La línea de base también ganó detecciones, porque usa
-el mismo catálogo, y con él sus falsas alarmas subieron a 421 (420 con la
-reclasificación de la sección~\ref{sec:otros-lenguajes}). Quedan seis
+\paragraph{Versión final.} Las filas \enquote{Final} de la
+tabla~\ref{tab:github-metricas} corresponden a la versión de entrega. Con
+el modelo de origen por defecto, GraphSAST detecta 28 de las 34
+vulnerabilidades, con 63 falsas alarmas, precisión de 0,41 y $F_1$ de
+0,54; con el modelo del catálogo, 26 de 34, con 34 falsas alarmas,
+precisión de 0,54 y $F_1$ de 0,63. La línea de base detecta 30 y emite
+420 falsas alarmas, con precisión de 0,10. Frente a la medición de
+\texttt{4cf721b} hubo tres grupos de cambios.
+
+Primero, el catálogo amplió la regla de \texttt{find} para aceptar
+colecciones nombradas en minúscula y registró \texttt{res.download} y
+\texttt{res.write} como destinos. Así se recuperaron siete de las
+omisiones: las cinco consultas \texttt{find}, la descarga y la escritura.
+Con eso la detección pasó de 21 a 28. La línea de base también ganó esas
+detecciones, porque usa el mismo catálogo, y con ellas sumó falsas
+alarmas.
+
+Segundo, para no sumar falsas alarmas con esas reglas se hicieron tres
+ajustes: los métodos que devuelven texto, como \texttt{trim}, cuentan
+como saneamiento de NoSQL; una respuesta con una variable inicializada
+como objeto se reconoce como JSON; y las consultas de MongoDB reciben el
+dato solo por su filtro y su actualización, no por el objeto sobre el que
+se invocan.
+
+Tercero, los cambios del motor de la sección~\ref{sec:otros-lenguajes},
+sobre todo seguir el dato que se agrega a una colección, sumaron tres
+falsas alarmas con cada modelo y un problema real más: en
+vulnerable-node, la actualización del perfil arma las columnas del
+\texttt{UPDATE} con las claves del cuerpo del pedido. La línea de base
+también marca ese destino.
+
+Como los ajustes se hicieron mirando estos proyectos, la medición final
+ya no es independiente, como sí lo era la primera. Quedan seis
 omisiones: la actualización de MongoDB con el método \texttt{update}, en
 desuso; las opciones de \texttt{res.render}; los dos casos de Angular; la
 escritura de archivo desde GraphQL y el contexto de \texttt{vm}. Las tres
@@ -783,7 +794,7 @@ versiones del mismo código: DVWA en PHP (commit \texttt{a1978a2}), cuyos
 módulos tienen tres niveles vulnerables y uno corregido; vulpy en Python
 (\texttt{5249cc8}), con la misma aplicación de Flask en una versión
 insegura y otra segura; y govwa en Go (\texttt{4058f79}), con funciones
-vulnerables y seguras lado a lado. Se sumó el OWASP Benchmark de Java
+vulnerables y seguras lado a lado. Se sumó el OWASP Benchmark de Java \citep{owaspbenchmark}
 (\texttt{c3379bd}), cuyos servlets de prueba están etiquetados como
 vulnerables o no; se usaron los 1.478 casos de las cuatro categorías que
 corresponden a familias del catálogo. Cada archivo se analizó por
@@ -1322,7 +1333,7 @@ capítulo~\ref{cap:conclusiones}.
         \midrule
         H1 & Banco sintético: 29 de 29 casos vulnerables detectados, incluidos recorridos entre funciones y entre archivos; la línea de base también detecta los 29. NodeGoat: 3 de 6 vulnerabilidades detectadas por ambos detectores; las 3 omisiones llegan a operaciones fuera del catálogo. Proyectos de GitHub, versión final: precisión de 0,41 frente a 0,10 de la línea de base, con exhaustividad de 0,82 frente a 0,88. Pares vulnerable/corregido: 54 de 54 en la versión final; 19 de 21 en la primera ejecución del conjunto de control. OWASP Benchmark de Java: 777 de 777 casos vulnerables (77\,\% en la primera medición). & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:pares}, \ref{sec:otros-lenguajes} \\
         H2 & Banco sintético: 0 falsos positivos en 14 casos seguros, tres de ellos saneados y tres con nombres engañosos; dos casos vulnerables con saneamientos que no protegen el destino se detectan. La línea de base produce 5 falsos positivos en el banco. En NodeGoat, 1 falso positivo en ambos detectores. En los proyectos de GitHub, versión final, 63 falsas alarmas frente a 420 de la línea de base, y 18 frente a 117 en los tres proyectos sin vulnerabilidades documentadas. OWASP Benchmark de Java: tasa de falsos positivos de 0,26 (0,60 en la primera medición); DVWA, vulpy y govwa: las versiones corregidas no se marcan salvo dos casos explicados. Un falso positivo por coincidencia de nombres fuera del banco. & \ref{sec:pruebas}, \ref{sec:proyectos-github}, \ref{sec:otros-lenguajes}, \ref{sec:resultados-negativos} \\
-        H3 & Sin sesiones: R-06 se materializó y se aplicó la contingencia. Formulario con tres participantes sobre proyectos propios; solo uno obtuvo hallazgos, entendió por qué eran vulnerabilidades y dónde corregirlas (5 de 5), señaló la explicación en texto como lo que más lo ayudó y respondió que sin el grafo le costaría menos. 54 de sus 57 hallazgos fueron falsas alarmas. En un seguimiento por mensaje, los participantes 1 y 3 dijeron que entendieron el recorrido del dato gracias al grafo. & \ref{sec:validacion-usuarios} \\
+        H3 & No contrastada. Sin sesiones: R-06 se materializó y se aplicó la contingencia. Formulario con tres participantes sobre proyectos propios; solo uno obtuvo hallazgos, entendió por qué eran vulnerabilidades y dónde corregirlas (5 de 5), señaló la explicación en texto como lo que más lo ayudó y respondió que sin el grafo le costaría menos. 54 de sus 57 hallazgos fueron falsas alarmas. En un seguimiento por mensaje, los participantes 1 y 3 dijeron que entendieron el recorrido del dato gracias al grafo. & \ref{sec:validacion-usuarios} \\
         \bottomrule
     \end{tabularx}
 \end{table}
